@@ -6,6 +6,7 @@ import Underline from '@tiptap/extension-underline';
 import StarterKit from '@tiptap/starter-kit';
 import { EditorContent, useEditor } from '@tiptap/vue-3';
 import { useForm } from '@inertiajs/vue3';
+import { echo } from '@laravel/echo-vue';
 import { Bold, Code, Italic, List, ListOrdered, Paperclip, Quote, Send, Strikethrough, Underline as UnderlineIcon, X } from 'lucide-vue-next';
 import { ref } from 'vue';
 
@@ -50,6 +51,11 @@ function send() {
     }).post(route('community.messages.store', props.channelId), {
         preserveScroll: true,
         forceFormData: true,
+        // Tell the backend which socket connection is ours, so its
+        // broadcast()->toOthers() call can skip echoing the message back to
+        // the tab that just sent it (Inertia uses fetch(), not axios, so we
+        // can't rely on the usual global axios header for this).
+        headers: echo().socketId() ? { 'X-Socket-Id': echo().socketId() } : {},
         onSuccess: () => {
             editor.value?.commands.clearContent();
             taskTitle.value = '';
