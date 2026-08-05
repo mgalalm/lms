@@ -20,3 +20,4 @@ Route::middleware(['auth', 'verified', 'role:teacher'])->prefix('teaching')->nam
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/webhooks.php';
+require __DIR__.'/community.php';

@@ -98,3 +98,49 @@ export interface Paginated<T> {
         total: number;
     };
 }
+
+export type ChannelType = 'direct' | 'group';
+
+export interface Channel {
+    id: number;
+    type: ChannelType;
+    name: string | null;
+    code: string | null;
+    member_count: number;
+    last_message: { preview: string; created_at: string } | null;
+    unread_count: number;
+}
+
+export type MessageType = 'text' | 'task_card';
+
+export interface MessageAttachment {
+    path: string;
+    url: string;
+    filename: string;
+    mime: string;
+    size: number;
+}
+
+export interface MessageTaskMeta {
+    title: string;
+    accent_color?: string;
+    icon?: string;
+}
+
+export interface MessageUser {
+    id: number;
+    name: string;
+    role: string | null;
+    code: string | null;
+}
+
+export interface Message {
+    id: number;
+    channel_id: number;
+    type: MessageType;
+    body: string | null;
+    meta: MessageTaskMeta | null;
+    attachments: MessageAttachment[] | null;
+    created_at: string;
+    user: MessageUser;
+}

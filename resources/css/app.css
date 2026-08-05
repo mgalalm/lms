@@ -89,3 +89,39 @@ html {
         @apply bg-background text-foreground;
     }
 }
+
+.tiptap-content {
+    @apply text-sm leading-relaxed;
+}
+
+.tiptap-content p {
+    @apply mb-2 last:mb-0;
+}
+
+.tiptap-content ul {
+    @apply mb-2 list-disc pl-5;
+}
+
+.tiptap-content ol {
+    @apply mb-2 list-decimal pl-5;
+}
+
+.tiptap-content blockquote {
+    @apply mb-2 border-l-2 border-border pl-3 text-muted-foreground italic;
+}
+
+.tiptap-content pre {
+    @apply mb-2 overflow-x-auto rounded-md bg-muted p-2 font-mono text-xs;
+}
+
+.tiptap-content code {
+    @apply rounded bg-muted px-1 py-0.5 font-mono text-xs;
+}
+
+.tiptap-content pre code {
+    @apply bg-transparent p-0;
+}
+
+.tiptap-content:focus {
+    @apply outline-none;
+}

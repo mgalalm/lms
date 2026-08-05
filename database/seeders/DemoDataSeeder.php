@@ -2,8 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Enums\ChannelType;
+use App\Enums\MessageType;
 use App\Enums\SessionStatus;
 use App\Enums\SessionType;
+use App\Models\Channel;
 use App\Models\ClassSession;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -50,6 +53,47 @@ class DemoDataSeeder extends Seeder
         ClassSession::factory()->for($teacher, 'teacher')->for($student, 'student')->completed()->create([
             'type' => SessionType::Online,
             'zoom_meeting_id' => 'demo-meeting-3',
+        ]);
+
+        $this->seedCommunityChannels($teacher, $student);
+    }
+
+    /**
+     * Seed a direct channel and a group channel with a short conversation,
+     * so Community has something to show in local dev.
+     */
+    private function seedCommunityChannels(User $teacher, User $student): void
+    {
+        $direct = Channel::factory()->create(['type' => ChannelType::Direct]);
+        $direct->users()->attach([$teacher->id, $student->id]);
+
+        $direct->messages()->create([
+            'user_id' => $teacher->id,
+            'type' => MessageType::TaskCard,
+            'meta' => [
+                'title' => 'Reminder: for next time',
+                'accent_color' => '#2563eb',
+                'icon' => 'clipboard-list',
+            ],
+            'body' => '<p>Please review the <strong>Low Fidelity Wireframe</strong> lesson before our next session.</p>',
+        ]);
+
+        $direct->messages()->create([
+            'user_id' => $student->id,
+            'type' => MessageType::Text,
+            'body' => '<p>Got it, thank you!</p>',
+        ]);
+
+        $announcements = Channel::factory()->create([
+            'type' => ChannelType::Group,
+            'name' => 'Announcements',
+        ]);
+        $announcements->users()->attach([$teacher->id, $student->id]);
+
+        $announcements->messages()->create([
+            'user_id' => $teacher->id,
+            'type' => MessageType::Text,
+            'body' => '<p>Welcome to the new term! Looking forward to a great year.</p>',
         ]);
     }
 }
