@@ -1,0 +1,85 @@
+<script setup lang="ts">
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useCountdown } from '@/composables/useCountdown';
+import type { ClassSession } from '@/types';
+import { computed } from 'vue';
+
+const props = defineProps<{
+    session: ClassSession | null;
+    viewerRole: 'student' | 'teacher';
+}>();
+
+const { countdown } = useCountdown(() => props.session?.scheduled_at);
+
+const joinUrl = computed(() => (props.viewerRole === 'teacher' ? props.session?.start_url : props.session?.join_url));
+const joinLabel = computed(() => (props.viewerRole === 'teacher' ? 'Join Now' : 'Join'));
+const participant = computed(() => (props.viewerRole === 'teacher' ? props.session?.student : props.session?.teacher));
+const participantRoleLabel = computed(() => (props.viewerRole === 'teacher' ? 'Student' : 'Teacher'));
+
+const lessonPath = computed(() => {
+    const lesson = props.session?.lesson;
+
+    if (!lesson) {
+        return '';
+    }
+
+    return [lesson.module?.course?.title, lesson.module?.title, lesson.title].filter(Boolean).join(' / ');
+});
+
+const scheduledLabel = computed(() => {
+    if (!props.session) {
+        return '';
+    }
+
+    return new Date(props.session.scheduled_at).toLocaleString(undefined, {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+    });
+});
+</script>
+
+<template>
+    <Card>
+        <CardHeader>
+            <CardTitle>Next Session</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p v-if="!session" class="text-sm text-muted-foreground">Your sessions list is empty.</p>
+
+            <div v-else class="flex flex-col gap-4">
+                <div v-if="countdown" class="flex items-baseline gap-6">
+                    <div class="text-center">
+                        <div class="text-2xl font-semibold tabular-nums">{{ countdown.days }}</div>
+                        <div class="text-xs uppercase text-muted-foreground">Days</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-semibold tabular-nums">{{ countdown.hours }}</div>
+                        <div class="text-xs uppercase text-muted-foreground">Hrs</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-semibold tabular-nums">{{ countdown.minutes }}</div>
+                        <div class="text-xs uppercase text-muted-foreground">Mins</div>
+                    </div>
+                    <div class="text-sm text-muted-foreground">{{ scheduledLabel }}</div>
+                </div>
+
+                <div class="text-sm">
+                    <div class="font-medium">{{ lessonPath }}</div>
+                    <div v-if="participant" class="text-muted-foreground">
+                        {{ participantRoleLabel }}: {{ participant.name }}
+                        <span v-if="participant.code">({{ participant.code }})</span>
+                    </div>
+                </div>
+
+                <Button v-if="joinUrl" as="a" :href="joinUrl" target="_blank" rel="noopener noreferrer" class="w-fit">
+                    {{ joinLabel }}
+                </Button>
+                <Button v-else disabled class="w-fit">{{ joinLabel }}</Button>
+            </div>
+        </CardContent>
+    </Card>
+</template>

@@ -7,6 +7,7 @@ use App\Enums\SessionType;
 use App\Observers\ClassSessionObserver;
 use Database\Factories\ClassSessionFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -80,5 +81,34 @@ class ClassSession extends Model
     public function lesson(): BelongsTo
     {
         return $this->belongsTo(Lesson::class);
+    }
+
+    /**
+     * Scope sessions that are scheduled to happen from now on.
+     */
+    public function scopeUpcoming(Builder $query): Builder
+    {
+        return $query->where('scheduled_at', '>=', now())
+            ->where('status', '!=', SessionStatus::Cancelled)
+            ->orderBy('scheduled_at');
+    }
+
+    /**
+     * Scope sessions that have already happened (or been completed early).
+     */
+    public function scopePast(Builder $query): Builder
+    {
+        return $query->where(function (Builder $query) {
+            $query->where('scheduled_at', '<', now())
+                ->orWhere('status', SessionStatus::Completed);
+        })->orderByDesc('scheduled_at');
+    }
+
+    /**
+     * Scope sessions scheduled for today.
+     */
+    public function scopeToday(Builder $query): Builder
+    {
+        return $query->whereDate('scheduled_at', today());
     }
 }
