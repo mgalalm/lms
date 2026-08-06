@@ -6,6 +6,7 @@ use Database\Factories\TeacherProfileFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class TeacherProfile extends Model
 {
@@ -54,5 +55,27 @@ class TeacherProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get this teacher's course completion/certification records.
+     */
+    public function courseCompletions(): HasMany
+    {
+        return $this->hasMany(TeacherCourseCompletion::class);
+    }
+
+    /**
+     * Whether this teacher has completed the given course themselves,
+     * including passing its quiz — the certification gate for being
+     * assigned to teach it.
+     */
+    public function isCertifiedForCourse(Course $course): bool
+    {
+        return $this->courseCompletions()
+            ->where('course_id', $course->id)
+            ->whereNotNull('completed_at')
+            ->where('quiz_passed', true)
+            ->exists();
     }
 }

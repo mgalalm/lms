@@ -8,6 +8,7 @@ use App\Filament\Resources\ClassSessions\Pages\CreateClassSession;
 use App\Models\Channel;
 use App\Models\ClassSession;
 use App\Models\Lesson;
+use App\Models\TeacherCourseCompletion;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -31,6 +32,11 @@ class ClassSessionAdminTest extends TestCase
         $teacher = User::factory()->teacher()->create();
         $student = User::factory()->student()->create();
         $lesson = Lesson::factory()->create();
+
+        TeacherCourseCompletion::factory()->certified()->create([
+            'teacher_profile_id' => $teacher->teacherProfile->id,
+            'course_id' => $lesson->module->course_id,
+        ]);
 
         $this->actingAs($admin);
 

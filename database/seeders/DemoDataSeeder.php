@@ -9,6 +9,9 @@ use App\Enums\SessionType;
 use App\Enums\UserRole;
 use App\Models\Channel;
 use App\Models\ClassSession;
+use App\Models\Course;
+use App\Models\Lesson;
+use App\Models\TeacherCourseCompletion;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -46,18 +49,61 @@ class DemoDataSeeder extends Seeder
             'email' => 'admin@example.com',
         ])->assignRole(UserRole::Admin->value);
 
-        $this->seedSessions($teacher, $teacherTwo, $student, $studentTwo);
+        [$lessonOne, $lessonTwo] = $this->seedCurriculumAndCertifications($teacher, $teacherTwo);
+        $this->seedSessions($teacher, $teacherTwo, $student, $studentTwo, $lessonOne, $lessonTwo);
         $this->seedCommunityChannels($teacher, $teacherTwo, $student, $studentTwo);
+    }
+
+    /**
+     * Seed two courses (each with a module/lesson) and certify each demo
+     * teacher for the course they'll be scheduled to teach — this is what
+     * the certification gate in ClassSessionForm checks against.
+     *
+     * @return array{0: Lesson, 1: Lesson}
+     */
+    private function seedCurriculumAndCertifications(User $teacher, User $teacherTwo): array
+    {
+        $courseOne = Course::factory()->create([
+            'title' => 'M1: Intro to Scratch',
+            'grade_band' => 'Grade 3-4',
+        ]);
+        $moduleOne = $courseOne->modules()->create(['title' => 'Getting Started', 'order' => 1]);
+        $lessonOne = Lesson::factory()->for($moduleOne, 'module')->create([
+            'title' => 'L1: Sprites and the Stage',
+            'order' => 1,
+        ]);
+
+        $courseTwo = Course::factory()->create([
+            'title' => 'M2: Chatbot Development',
+            'grade_band' => 'Grade 5-6',
+        ]);
+        $moduleTwo = $courseTwo->modules()->create(['title' => 'Building a Bot', 'order' => 1]);
+        $lessonTwo = Lesson::factory()->for($moduleTwo, 'module')->create([
+            'title' => 'L1: Intents and Responses',
+            'order' => 1,
+        ]);
+
+        TeacherCourseCompletion::factory()->certified()->create([
+            'teacher_profile_id' => $teacher->teacherProfile->id,
+            'course_id' => $courseOne->id,
+        ]);
+
+        TeacherCourseCompletion::factory()->certified()->create([
+            'teacher_profile_id' => $teacherTwo->teacherProfile->id,
+            'course_id' => $courseTwo->id,
+        ]);
+
+        return [$lessonOne, $lessonTwo];
     }
 
     /**
      * Seed a spread of sessions across both teachers and both students, so
      * the Next Session widget and Sessions Schedule tabs all have data.
      */
-    private function seedSessions(User $teacher, User $teacherTwo, User $student, User $studentTwo): void
+    private function seedSessions(User $teacher, User $teacherTwo, User $student, User $studentTwo, Lesson $lessonOne, Lesson $lessonTwo): void
     {
         // Soonest upcoming session — this is what the Next Session widget shows.
-        ClassSession::factory()->for($teacher, 'teacher')->for($student, 'student')->create([
+        ClassSession::factory()->for($teacher, 'teacher')->for($student, 'student')->for($lessonOne, 'lesson')->create([
             'type' => SessionType::Online,
             'status' => SessionStatus::Scheduled,
             'scheduled_at' => now()->addHours(3),
@@ -67,7 +113,7 @@ class DemoDataSeeder extends Seeder
         ]);
 
         // Later this week, for the Upcoming tab.
-        ClassSession::factory()->for($teacher, 'teacher')->for($student, 'student')->create([
+        ClassSession::factory()->for($teacher, 'teacher')->for($student, 'student')->for($lessonOne, 'lesson')->create([
             'type' => SessionType::Online,
             'status' => SessionStatus::Scheduled,
             'scheduled_at' => now()->addDays(2),
@@ -77,13 +123,13 @@ class DemoDataSeeder extends Seeder
         ]);
 
         // Already happened, for the Past tab.
-        ClassSession::factory()->for($teacher, 'teacher')->for($student, 'student')->completed()->create([
+        ClassSession::factory()->for($teacher, 'teacher')->for($student, 'student')->for($lessonOne, 'lesson')->completed()->create([
             'type' => SessionType::Online,
             'zoom_meeting_id' => 'demo-meeting-3',
         ]);
 
         // A second student on the first teacher's schedule.
-        ClassSession::factory()->for($teacher, 'teacher')->for($studentTwo, 'student')->create([
+        ClassSession::factory()->for($teacher, 'teacher')->for($studentTwo, 'student')->for($lessonOne, 'lesson')->create([
             'type' => SessionType::Online,
             'status' => SessionStatus::Scheduled,
             'scheduled_at' => now()->addDay(),
@@ -93,7 +139,7 @@ class DemoDataSeeder extends Seeder
         ]);
 
         // A second teacher on the first student's schedule.
-        ClassSession::factory()->for($teacherTwo, 'teacher')->for($student, 'student')->create([
+        ClassSession::factory()->for($teacherTwo, 'teacher')->for($student, 'student')->for($lessonTwo, 'lesson')->create([
             'type' => SessionType::Online,
             'status' => SessionStatus::Scheduled,
             'scheduled_at' => now()->addHours(5),
@@ -103,7 +149,7 @@ class DemoDataSeeder extends Seeder
         ]);
 
         // Gives the second teacher a Past entry too.
-        ClassSession::factory()->for($teacherTwo, 'teacher')->for($studentTwo, 'student')->completed()->create([
+        ClassSession::factory()->for($teacherTwo, 'teacher')->for($studentTwo, 'student')->for($lessonTwo, 'lesson')->completed()->create([
             'type' => SessionType::Online,
             'zoom_meeting_id' => 'demo-meeting-6',
         ]);

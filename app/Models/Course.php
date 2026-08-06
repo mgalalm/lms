@@ -30,4 +30,12 @@ class Course extends Model
     {
         return $this->hasMany(Module::class);
     }
+
+    /**
+     * Get teacher certification/completion records for this course.
+     */
+    public function teacherCompletions(): HasMany
+    {
+        return $this->hasMany(TeacherCourseCompletion::class);
+    }
 }
