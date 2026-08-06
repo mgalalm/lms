@@ -3,7 +3,10 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\UserRole;
 use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,7 +15,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasRoles, Notifiable;
@@ -91,5 +94,13 @@ class User extends Authenticatable
         return $this->belongsToMany(Channel::class, 'channel_participants')
             ->withPivot('last_read_at')
             ->withTimestamps();
+    }
+
+    /**
+     * Only admins may access the Filament back-office panel.
+     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $this->hasRole(UserRole::Admin->value);
     }
 }
