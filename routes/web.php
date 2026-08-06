@@ -23,3 +23,4 @@ require __DIR__.'/webhooks.php';
 require __DIR__.'/community.php';
 require __DIR__.'/lms.php';
 require __DIR__.'/insights.php';
+require __DIR__.'/achievements.php';

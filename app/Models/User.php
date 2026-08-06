@@ -7,6 +7,7 @@ use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -94,6 +95,45 @@ class User extends Authenticatable implements FilamentUser
         return $this->belongsToMany(Channel::class, 'channel_participants')
             ->withPivot('last_read_at')
             ->withTimestamps();
+    }
+
+    /**
+     * Get the badges this user has earned.
+     */
+    public function badges(): BelongsToMany
+    {
+        return $this->belongsToMany(Badge::class)
+            ->using(BadgeUser::class)
+            ->withPivot('awarded_at')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get this user's points ledger entries (coins for students, points
+     * for teachers — same shared mechanism).
+     */
+    public function pointsLedger(): HasMany
+    {
+        return $this->hasMany(PointsLedgerEntry::class);
+    }
+
+    /**
+     * This user's total points/coins balance, summed from the ledger.
+     */
+    public function totalPoints(): int
+    {
+        return (int) $this->pointsLedger()->sum('points');
+    }
+
+    /**
+     * Scope to users of the given role, ranked by total points (highest
+     * first) — powers the student/teacher leaderboards.
+     */
+    public function scopeLeaderboard(Builder $query, string $role): Builder
+    {
+        return $query->role($role)
+            ->withSum('pointsLedger as total_points', 'points')
+            ->orderByDesc('total_points');
     }
 
     /**

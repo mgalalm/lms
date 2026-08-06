@@ -8,11 +8,13 @@ use App\Enums\MessageType;
 use App\Enums\SessionStatus;
 use App\Enums\SessionType;
 use App\Enums\UserRole;
+use App\Models\Badge;
 use App\Models\Channel;
 use App\Models\ClassSession;
 use App\Models\Course;
 use App\Models\InsightMetric;
 use App\Models\Lesson;
+use App\Models\PointsLedgerEntry;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
 use App\Models\SessionReview;
@@ -59,6 +61,7 @@ class DemoDataSeeder extends Seeder
         $this->seedSessions($teacher, $teacherTwo, $student, $studentTwo, $lessonOne, $lessonTwo);
         $this->seedCommunityChannels($teacher, $teacherTwo, $student, $studentTwo);
         $this->seedInsightsData($teacher, $teacherTwo, $student, $studentTwo, $lessonOne, $lessonTwo);
+        $this->seedGamification($teacher, $teacherTwo, $student, $studentTwo);
     }
 
     /**
@@ -341,5 +344,45 @@ class DemoDataSeeder extends Seeder
             'setup_score' => fake()->numberBetween(...$scoreRange),
             'notes' => $notes,
         ]);
+    }
+
+    /**
+     * Seed a small badge catalog, award a couple to each student, and log
+     * a spread of points-ledger entries so both the student Achievements
+     * page and the teacher/student leaderboards have real data.
+     */
+    private function seedGamification(User $teacher, User $teacherTwo, User $student, User $studentTwo): void
+    {
+        $quizQuester = Badge::factory()->create([
+            'name' => 'Quiz Quester',
+            'description' => 'Passed a course certification quiz on the first try.',
+            'icon' => 'trophy',
+        ]);
+
+        $pythonPioneer = Badge::factory()->create([
+            'name' => 'Python Chatbot Pioneer',
+            'description' => 'Completed the Chatbot Development module.',
+            'icon' => 'rocket',
+        ]);
+
+        $timeLegend = Badge::factory()->create([
+            'name' => 'Time Legend',
+            'description' => 'Joined 10 sessions on time in a row.',
+            'icon' => 'clock',
+        ]);
+
+        $student->badges()->attach([
+            $quizQuester->id => ['awarded_at' => now()->subDays(10)],
+            $timeLegend->id => ['awarded_at' => now()->subDays(2)],
+        ]);
+
+        $studentTwo->badges()->attach([
+            $pythonPioneer->id => ['awarded_at' => now()->subDays(5)],
+        ]);
+
+        PointsLedgerEntry::factory()->create(['user_id' => $student->id, 'points' => 2890, 'reason' => 'Weekly learning streak bonus']);
+        PointsLedgerEntry::factory()->create(['user_id' => $studentTwo->id, 'points' => 1650, 'reason' => 'Completed L1: Intents and Responses']);
+        PointsLedgerEntry::factory()->create(['user_id' => $teacher->id, 'points' => 17550, 'reason' => 'Monthly performance bonus']);
+        PointsLedgerEntry::factory()->create(['user_id' => $teacherTwo->id, 'points' => 9200, 'reason' => 'Monthly performance bonus']);
     }
 }

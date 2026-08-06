@@ -22,20 +22,7 @@ class StudentProfile extends Model
         'code',
         'grade_level',
         'language',
-        'points_balance',
     ];
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'points_balance' => 'integer',
-        ];
-    }
 
     /**
      * Get the user this student profile belongs to.

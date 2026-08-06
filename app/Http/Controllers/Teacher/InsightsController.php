@@ -75,6 +75,7 @@ class InsightsController extends Controller
             'profile' => [
                 'sessions_taught' => ClassSession::where('teacher_id', $user->id)->where('status', SessionStatus::Completed)->count(),
                 'certificates_earned' => $teacherProfile->courseCompletions()->where('quiz_passed', true)->whereNotNull('completed_at')->count(),
+                'points' => $user->totalPoints(),
             ],
             'metrics' => [
                 'objections' => $metrics->sum('objections'),

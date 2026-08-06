@@ -96,6 +96,10 @@ const totalFlags = props.flagsBreakdown.green + props.flagsBreakdown.yellow + pr
                         <p class="text-xs text-muted-foreground">Certificates</p>
                         <p class="text-lg font-semibold">{{ profile.certificates_earned }}</p>
                     </div>
+                    <div class="rounded-xl border border-sidebar-border/70 bg-card px-4 py-3 dark:border-sidebar-border">
+                        <p class="text-xs text-muted-foreground">Points</p>
+                        <p class="text-lg font-semibold">{{ profile.points }}</p>
+                    </div>
                 </div>
 
                 <div class="flex flex-wrap items-end gap-2">

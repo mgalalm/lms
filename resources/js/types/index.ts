@@ -210,6 +210,7 @@ export type FlagSeverity = 'green' | 'yellow' | 'red';
 export interface InsightsProfile {
     sessions_taught: number;
     certificates_earned: number;
+    points: number;
 }
 
 export interface InsightsMetrics {
@@ -248,4 +249,20 @@ export interface ReviewedSession {
     star_rating: number;
     total_score: number;
     notes: string | null;
+}
+
+export interface Badge {
+    id: number;
+    name: string;
+    description: string;
+    icon: string;
+    awarded_at: string | null;
+}
+
+export interface LeaderboardEntry {
+    rank: number;
+    id: number;
+    name: string;
+    points: number;
+    is_current_user: boolean;
 }
