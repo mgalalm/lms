@@ -13,12 +13,15 @@ use App\Models\Channel;
 use App\Models\ClassSession;
 use App\Models\Course;
 use App\Models\InsightMetric;
+use App\Models\LeaveCredit;
 use App\Models\Lesson;
+use App\Models\PayrollEntry;
 use App\Models\PointsLedgerEntry;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
 use App\Models\SessionReview;
 use App\Models\TeacherCourseCompletion;
+use App\Models\TeacherRequest;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -62,6 +65,7 @@ class DemoDataSeeder extends Seeder
         $this->seedCommunityChannels($teacher, $teacherTwo, $student, $studentTwo);
         $this->seedInsightsData($teacher, $teacherTwo, $student, $studentTwo, $lessonOne, $lessonTwo);
         $this->seedGamification($teacher, $teacherTwo, $student, $studentTwo);
+        $this->seedPayrollAndRequests($teacher, $teacherTwo);
     }
 
     /**
@@ -384,5 +388,75 @@ class DemoDataSeeder extends Seeder
         PointsLedgerEntry::factory()->create(['user_id' => $studentTwo->id, 'points' => 1650, 'reason' => 'Completed L1: Intents and Responses']);
         PointsLedgerEntry::factory()->create(['user_id' => $teacher->id, 'points' => 17550, 'reason' => 'Monthly performance bonus']);
         PointsLedgerEntry::factory()->create(['user_id' => $teacherTwo->id, 'points' => 9200, 'reason' => 'Monthly performance bonus']);
+    }
+
+    /**
+     * Seed two months of payroll (with bonus/deduction line items) and a
+     * spread of Requests (pending/approved/rejected) for each demo teacher,
+     * so the Payroll and Requests pages have real data to show.
+     */
+    private function seedPayrollAndRequests(User $teacher, User $teacherTwo): void
+    {
+        foreach ([$teacher, $teacherTwo] as $index => $demoTeacher) {
+            $basicSalary = 5000 + ($index * 1500);
+
+            $lastMonth = PayrollEntry::factory()->paid()->create([
+                'teacher_profile_id' => $demoTeacher->teacherProfile->id,
+                'month' => now()->subMonthNoOverflow()->startOfMonth(),
+                'sessions_count' => 42 + $index,
+                'basic_salary' => $basicSalary,
+            ]);
+            $lastMonth->adjustments()->create(['type' => 'bonus', 'amount' => 300, 'reason' => 'On-time attendance bonus']);
+            $lastMonth->adjustments()->create(['type' => 'deduction', 'amount' => 100, 'reason' => 'Late check-in']);
+
+            PayrollEntry::factory()->create([
+                'teacher_profile_id' => $demoTeacher->teacherProfile->id,
+                'month' => now()->startOfMonth(),
+                'sessions_count' => 18 + $index,
+                'basic_salary' => $basicSalary,
+            ]);
+
+            LeaveCredit::factory()->create([
+                'teacher_profile_id' => $demoTeacher->teacherProfile->id,
+                'monthly_used' => 1,
+                'annual_used' => 8,
+            ]);
+        }
+
+        TeacherRequest::factory()->create([
+            'teacher_profile_id' => $teacher->teacherProfile->id,
+            'type' => 'leave',
+            'payload' => [
+                'leave_type' => 'planned',
+                'sub_reason' => 'Vacation',
+                'start_date' => now()->addWeek()->toDateString(),
+                'end_date' => now()->addWeek()->addDay()->toDateString(),
+                'notes' => 'Family trip.',
+            ],
+            'status' => 'pending',
+        ]);
+
+        TeacherRequest::factory()->approved()->create([
+            'teacher_profile_id' => $teacher->teacherProfile->id,
+            'type' => 'leave',
+            'payload' => [
+                'leave_type' => 'sick',
+                'sub_reason' => 'Sick',
+                'start_date' => now()->subWeek()->toDateString(),
+                'end_date' => now()->subWeek()->toDateString(),
+                'notes' => 'Flu.',
+            ],
+            'reviewed_by' => null,
+        ]);
+
+        TeacherRequest::factory()->create([
+            'teacher_profile_id' => $teacherTwo->teacherProfile->id,
+            'type' => 'hr_request',
+            'payload' => [
+                'sub_reason' => 'Payslip question',
+                'notes' => 'My last payslip shows a deduction I do not recognize.',
+            ],
+            'status' => 'pending',
+        ]);
     }
 }

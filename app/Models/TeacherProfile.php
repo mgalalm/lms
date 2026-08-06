@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 
 class TeacherProfile extends Model
@@ -112,6 +113,30 @@ class TeacherProfile extends Model
     public function insightMetrics(): HasMany
     {
         return $this->hasMany(InsightMetric::class);
+    }
+
+    /**
+     * Get this teacher's monthly payroll entries.
+     */
+    public function payrollEntries(): HasMany
+    {
+        return $this->hasMany(PayrollEntry::class);
+    }
+
+    /**
+     * Get this teacher's leave credit balance, if configured.
+     */
+    public function leaveCredit(): HasOne
+    {
+        return $this->hasOne(LeaveCredit::class);
+    }
+
+    /**
+     * Get this teacher's submitted requests (Leave, Excused Time, HR, etc.).
+     */
+    public function requests(): HasMany
+    {
+        return $this->hasMany(TeacherRequest::class);
     }
 
     /**

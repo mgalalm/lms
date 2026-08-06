@@ -277,3 +277,57 @@ export interface LatestSessionReview {
     teacher_name: string | null;
     submitted_at: string;
 }
+
+export type PayrollAdjustmentType = 'bonus' | 'deduction';
+
+export interface PayrollAdjustment {
+    type: PayrollAdjustmentType;
+    amount: number;
+    reason: string;
+}
+
+export type PayrollStatus = 'pending' | 'paid';
+
+export interface PayrollEntry {
+    id: number;
+    month: string;
+    organization: string;
+    sessions_count: number;
+    basic_salary: number;
+    bonus_total: number;
+    deduction_total: number;
+    net_amount: number;
+    status: PayrollStatus;
+    completed_at: string | null;
+    adjustments: PayrollAdjustment[];
+}
+
+export type TeacherRequestType = 'leave' | 'excused_time' | 'hr_request' | 'support' | 'resignation';
+
+export type TeacherRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export interface TeacherRequestPayload {
+    leave_type?: 'planned' | 'emergency' | 'sick';
+    sub_reason?: string;
+    start_date?: string;
+    end_date?: string;
+    notes?: string;
+}
+
+export interface TeacherRequestHistoryItem {
+    id: number;
+    type: TeacherRequestType;
+    payload: TeacherRequestPayload;
+    has_attachment: boolean;
+    status: TeacherRequestStatus;
+    review_notes: string | null;
+    submitted_at: string;
+    reviewed_at: string | null;
+}
+
+export interface LeaveCreditBalance {
+    monthly_limit: number;
+    monthly_used: number;
+    annual_limit: number;
+    annual_used: number;
+}
