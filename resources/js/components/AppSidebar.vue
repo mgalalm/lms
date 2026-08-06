@@ -5,7 +5,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, CalendarClock, Folder, LayoutGrid, MessagesSquare } from 'lucide-vue-next';
+import { BookOpen, CalendarClock, Folder, GraduationCap, LayoutGrid, MessagesSquare } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
@@ -31,6 +31,11 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: 'Sessions Schedule',
             href: route('teaching.sessions-schedule'),
             icon: CalendarClock,
+        });
+        items.push({
+            title: 'LMS',
+            href: route('lms.index'),
+            icon: GraduationCap,
         });
     }
 

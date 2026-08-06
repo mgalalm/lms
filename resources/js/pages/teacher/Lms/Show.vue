@@ -1,0 +1,134 @@
+<script setup lang="ts">
+import { Button } from '@/components/ui/button';
+import AppLayout from '@/layouts/AppLayout.vue';
+import type { BreadcrumbItem, LmsCourseDetail, SharedData } from '@/types';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import { computed, reactive } from 'vue';
+
+const props = defineProps<{
+    course: LmsCourseDetail;
+}>();
+
+const breadcrumbs: BreadcrumbItem[] = [
+    { title: 'LMS', href: route('lms.index') },
+    { title: props.course.title, href: route('lms.show', props.course.id) },
+];
+
+const page = usePage<SharedData>();
+const quizResult = computed(() => page.props.flash.quizResult);
+
+const answers = reactive<Record<number, number>>({});
+
+const allQuestionsAnswered = computed(() => {
+    const questions = props.course.quiz?.questions ?? [];
+
+    return questions.length > 0 && questions.every((question) => answers[question.id] !== undefined);
+});
+
+function markLessonComplete(lessonId: number): void {
+    router.post(route('lms.lessons.complete', [props.course.id, lessonId]), {}, { preserveScroll: true });
+}
+
+function submitQuiz(): void {
+    router.post(
+        route('lms.quiz.submit', props.course.id),
+        { answers },
+        {
+            preserveScroll: true,
+            onSuccess: () => Object.keys(answers).forEach((key) => delete answers[Number(key)]),
+        },
+    );
+}
+</script>
+
+<template>
+    <Head :title="course.title" />
+
+    <AppLayout :breadcrumbs="breadcrumbs">
+        <div class="flex h-full flex-1 flex-col gap-6 p-4">
+            <div>
+                <div class="flex items-center justify-between gap-2">
+                    <h1 class="text-lg font-semibold">{{ course.title }}</h1>
+                    <span
+                        v-if="course.is_certified"
+                        class="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-950 dark:text-green-300"
+                    >
+                        Certified
+                    </span>
+                </div>
+                <p v-if="course.grade_band" class="text-sm text-muted-foreground">{{ course.grade_band }}</p>
+
+                <div class="mt-3 space-y-1">
+                    <div class="h-2 max-w-sm overflow-hidden rounded-full bg-muted">
+                        <div class="h-full rounded-full bg-primary" :style="{ width: `${course.progress_percentage}%` }" />
+                    </div>
+                    <p class="text-xs text-muted-foreground">{{ course.progress_percentage }}% Completed</p>
+                </div>
+            </div>
+
+            <div
+                v-if="quizResult"
+                class="rounded-xl border p-4 text-sm"
+                :class="
+                    quizResult.passed
+                        ? 'border-green-200 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-300'
+                        : 'border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-300'
+                "
+            >
+                <p v-if="quizResult.passed" class="font-medium">You passed with a score of {{ quizResult.score }}%. This course is now certified.</p>
+                <p v-else class="font-medium">You scored {{ quizResult.score }}% — try again once you've reviewed the lessons.</p>
+            </div>
+
+            <div v-for="module in course.modules" :key="module.id" class="space-y-3">
+                <h2 class="text-sm font-semibold text-muted-foreground">{{ module.title }}</h2>
+
+                <div
+                    class="divide-y divide-sidebar-border/70 rounded-xl border border-sidebar-border/70 bg-card dark:divide-sidebar-border dark:border-sidebar-border"
+                >
+                    <div v-for="lesson in module.lessons" :key="lesson.id" class="flex items-start justify-between gap-4 p-4">
+                        <div>
+                            <p class="font-medium">{{ lesson.title }}</p>
+                            <p v-if="lesson.reading_content" class="mt-1 whitespace-pre-line text-sm text-muted-foreground">
+                                {{ lesson.reading_content }}
+                            </p>
+                        </div>
+
+                        <Button v-if="lesson.completed" disabled size="sm" variant="secondary" class="shrink-0">Completed</Button>
+                        <Button v-else size="sm" class="shrink-0" @click="markLessonComplete(lesson.id)">Mark as complete</Button>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="course.quiz" class="space-y-3">
+                <h2 class="text-sm font-semibold text-muted-foreground">Certification Quiz</h2>
+
+                <p v-if="course.is_certified" class="text-sm text-muted-foreground">
+                    You're certified to teach this course — no need to retake the quiz.
+                </p>
+                <p v-else-if="!course.can_take_quiz" class="text-sm text-muted-foreground">
+                    Complete all lessons above to unlock the certification quiz.
+                </p>
+
+                <div v-else class="space-y-4 rounded-xl border border-sidebar-border/70 bg-card p-4 dark:border-sidebar-border">
+                    <p class="text-sm text-muted-foreground">Passing score: {{ course.quiz.passing_score }}%</p>
+
+                    <div v-for="(question, index) in course.quiz.questions" :key="question.id" class="space-y-2">
+                        <p class="text-sm font-medium">{{ index + 1 }}. {{ question.question }}</p>
+                        <label v-for="(option, optionIndex) in question.options" :key="optionIndex" class="flex items-center gap-2 text-sm">
+                            <input
+                                type="radio"
+                                :name="`question-${question.id}`"
+                                :value="optionIndex"
+                                :checked="answers[question.id] === optionIndex"
+                                @change="answers[question.id] = optionIndex"
+                            />
+                            {{ option }}
+                        </label>
+                    </div>
+
+                    <Button :disabled="!allQuestionsAnswered" @click="submitQuiz">Submit Quiz</Button>
+                </div>
+            </div>
+        </div>
+    </AppLayout>
+</template>

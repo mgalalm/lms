@@ -11,6 +11,8 @@ use App\Models\Channel;
 use App\Models\ClassSession;
 use App\Models\Course;
 use App\Models\Lesson;
+use App\Models\Quiz;
+use App\Models\QuizQuestion;
 use App\Models\TeacherCourseCompletion;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -55,9 +57,11 @@ class DemoDataSeeder extends Seeder
     }
 
     /**
-     * Seed two courses (each with a module/lesson) and certify each demo
-     * teacher for the course they'll be scheduled to teach — this is what
-     * the certification gate in ClassSessionForm checks against.
+     * Seed two courses (each with a module, a couple of lessons, and a
+     * certification quiz), give each demo teacher a mix of LMS progress —
+     * one fully certified course and one still in progress — and certify
+     * each for the course they'll be scheduled to teach. Certification is
+     * what the gate in ClassSessionForm checks against.
      *
      * @return array{0: Lesson, 1: Lesson}
      */
@@ -78,22 +82,59 @@ class DemoDataSeeder extends Seeder
             'grade_band' => 'Grade 5-6',
         ]);
         $moduleTwo = $courseTwo->modules()->create(['title' => 'Building a Bot', 'order' => 1]);
-        $lessonTwo = Lesson::factory()->for($moduleTwo, 'module')->create([
+        $lessonTwoA = Lesson::factory()->for($moduleTwo, 'module')->create([
             'title' => 'L1: Intents and Responses',
             'order' => 1,
         ]);
+        $lessonTwoB = Lesson::factory()->for($moduleTwo, 'module')->create([
+            'title' => 'L2: Training the Model',
+            'order' => 2,
+        ]);
+
+        $quizOne = Quiz::factory()->create(['course_id' => $courseOne->id]);
+        QuizQuestion::factory()->create([
+            'quiz_id' => $quizOne->id,
+            'question' => 'Which block category moves a sprite around the stage?',
+            'options' => ['Motion', 'Sound', 'Looks', 'Control'],
+            'correct_option' => 0,
+            'order' => 1,
+        ]);
+
+        $quizTwo = Quiz::factory()->create(['course_id' => $courseTwo->id]);
+        QuizQuestion::factory()->create([
+            'quiz_id' => $quizTwo->id,
+            'question' => 'What does an intent represent in a chatbot?',
+            'options' => ["The user's goal for a message", "The bot's reply text", 'The database schema', 'The hosting provider'],
+            'correct_option' => 0,
+            'order' => 1,
+        ]);
+        QuizQuestion::factory()->create([
+            'quiz_id' => $quizTwo->id,
+            'question' => 'What do you feed a chatbot to teach it to recognize an intent?',
+            'options' => ['Example phrases', 'CSS styles', 'Cron jobs', 'DNS records'],
+            'correct_option' => 0,
+            'order' => 2,
+        ]);
+
+        // Demo Teacher: certified for course one, still in progress on course two.
+        $teacher->teacherProfile->lessonCompletions()->create(['lesson_id' => $lessonOne->id, 'completed_at' => now()->subMonths(6)]);
+        $teacher->teacherProfile->lessonCompletions()->create(['lesson_id' => $lessonTwoA->id, 'completed_at' => now()->subDays(3)]);
 
         TeacherCourseCompletion::factory()->certified()->create([
             'teacher_profile_id' => $teacher->teacherProfile->id,
             'course_id' => $courseOne->id,
         ]);
 
+        // Demo Teacher Two: certified for course two, hasn't started course one.
+        $teacherTwo->teacherProfile->lessonCompletions()->create(['lesson_id' => $lessonTwoA->id, 'completed_at' => now()->subMonths(4)]);
+        $teacherTwo->teacherProfile->lessonCompletions()->create(['lesson_id' => $lessonTwoB->id, 'completed_at' => now()->subMonths(4)]);
+
         TeacherCourseCompletion::factory()->certified()->create([
             'teacher_profile_id' => $teacherTwo->teacherProfile->id,
             'course_id' => $courseTwo->id,
         ]);
 
-        return [$lessonOne, $lessonTwo];
+        return [$lessonOne, $lessonTwoA];
     }
 
     /**

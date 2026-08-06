@@ -46,6 +46,9 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user() ? new AuthUserResource($request->user()) : null,
             ],
+            'flash' => [
+                'quizResult' => $request->session()->get('quizResult'),
+            ],
         ]);
     }
 }

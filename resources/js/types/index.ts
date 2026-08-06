@@ -20,6 +20,9 @@ export interface SharedData {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
+    flash: {
+        quizResult: { score: number; passed: boolean } | null;
+    };
     ziggy: {
         location: string;
         url: string;
@@ -143,4 +146,61 @@ export interface Message {
     attachments: MessageAttachment[] | null;
     created_at: string;
     user: MessageUser;
+}
+
+export type CourseProgressStatus = 'not_started' | 'in_progress' | 'quiz_pending' | 'completed';
+
+export type LmsFilter = 'all' | 'not_started' | 'in_progress' | 'completed';
+
+export interface LmsCourseCard {
+    id: number;
+    title: string;
+    grade_band: string | null;
+    thumbnail_url: string | null;
+    lessons_count: number;
+    completed_lessons_count: number;
+    progress_percentage: number;
+    status: CourseProgressStatus;
+    status_label: string;
+}
+
+export interface LmsGradeBand {
+    grade_band: string;
+    courses: LmsCourseCard[];
+}
+
+export interface LmsLesson {
+    id: number;
+    title: string;
+    reading_content: string | null;
+    completed: boolean;
+}
+
+export interface LmsModule {
+    id: number;
+    title: string;
+    lessons: LmsLesson[];
+}
+
+export interface LmsQuizQuestion {
+    id: number;
+    question: string;
+    options: string[];
+}
+
+export interface LmsQuiz {
+    passing_score: number;
+    questions: LmsQuizQuestion[];
+}
+
+export interface LmsCourseDetail {
+    id: number;
+    title: string;
+    grade_band: string | null;
+    thumbnail_url: string | null;
+    progress_percentage: number;
+    is_certified: boolean;
+    can_take_quiz: boolean;
+    modules: LmsModule[];
+    quiz: LmsQuiz | null;
 }

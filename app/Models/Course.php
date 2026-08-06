@@ -6,6 +6,8 @@ use Database\Factories\CourseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Course extends Model
 {
@@ -37,5 +39,21 @@ class Course extends Model
     public function teacherCompletions(): HasMany
     {
         return $this->hasMany(TeacherCourseCompletion::class);
+    }
+
+    /**
+     * Get all lessons in this course, across all of its modules.
+     */
+    public function lessons(): HasManyThrough
+    {
+        return $this->hasManyThrough(Lesson::class, Module::class);
+    }
+
+    /**
+     * Get the certification quiz for this course, if configured.
+     */
+    public function quiz(): HasOne
+    {
+        return $this->hasOne(Quiz::class);
     }
 }
