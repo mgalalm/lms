@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\ChannelType;
+use App\Enums\FlagSeverity;
 use App\Enums\MessageType;
 use App\Enums\SessionStatus;
 use App\Enums\SessionType;
@@ -10,12 +11,15 @@ use App\Enums\UserRole;
 use App\Models\Channel;
 use App\Models\ClassSession;
 use App\Models\Course;
+use App\Models\InsightMetric;
 use App\Models\Lesson;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
+use App\Models\SessionReview;
 use App\Models\TeacherCourseCompletion;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
 
 class DemoDataSeeder extends Seeder
 {
@@ -54,6 +58,7 @@ class DemoDataSeeder extends Seeder
         [$lessonOne, $lessonTwo] = $this->seedCurriculumAndCertifications($teacher, $teacherTwo);
         $this->seedSessions($teacher, $teacherTwo, $student, $studentTwo, $lessonOne, $lessonTwo);
         $this->seedCommunityChannels($teacher, $teacherTwo, $student, $studentTwo);
+        $this->seedInsightsData($teacher, $teacherTwo, $student, $studentTwo, $lessonOne, $lessonTwo);
     }
 
     /**
@@ -264,5 +269,77 @@ class DemoDataSeeder extends Seeder
         $channel->users()->attach([$a->id, $b->id]);
 
         return $channel;
+    }
+
+    /**
+     * Seed a spread of reviewed, completed sessions (with varied flags,
+     * on-time/late joins, and performance scores) plus a monthly Insights
+     * rollup for each demo teacher, so the Insights page has real data.
+     */
+    private function seedInsightsData(User $teacher, User $teacherTwo, User $student, User $studentTwo, Lesson $lessonOne, Lesson $lessonTwo): void
+    {
+        $this->seedReviewedSession($teacher, $student, $lessonOne, now()->subDays(2), onTime: true, flag: FlagSeverity::Green, scoreRange: [90, 98]);
+        $this->seedReviewedSession($teacher, $studentTwo, $lessonOne, now()->subDays(5), onTime: true, flag: FlagSeverity::Green, scoreRange: [88, 95]);
+        $this->seedReviewedSession($teacher, $student, $lessonOne, now()->subDays(9), onTime: false, flag: FlagSeverity::Yellow, scoreRange: [70, 80]);
+        $this->seedReviewedSession($teacher, $studentTwo, $lessonOne, now()->subDays(14), onTime: true, flag: FlagSeverity::Green, scoreRange: [85, 92]);
+        $this->seedReviewedSession($teacher, $student, $lessonOne, now()->subDays(20), onTime: false, flag: FlagSeverity::Red, scoreRange: [45, 60], notes: 'Joined 20 minutes late; student had to wait.');
+
+        $this->seedReviewedSession($teacherTwo, $student, $lessonTwo, now()->subDays(3), onTime: true, flag: FlagSeverity::Green, scoreRange: [90, 97]);
+        $this->seedReviewedSession($teacherTwo, $studentTwo, $lessonTwo, now()->subDays(11), onTime: true, flag: FlagSeverity::Green, scoreRange: [86, 93]);
+        $this->seedReviewedSession($teacherTwo, $student, $lessonTwo, now()->subDays(18), onTime: false, flag: FlagSeverity::Yellow, scoreRange: [72, 82]);
+
+        InsightMetric::factory()->create([
+            'teacher_profile_id' => $teacher->teacherProfile->id,
+            'period_start' => now()->startOfMonth(),
+            'period_end' => now()->endOfMonth(),
+            'objections' => 1,
+            'excuses' => 2,
+            'study_level' => 7,
+        ]);
+
+        InsightMetric::factory()->create([
+            'teacher_profile_id' => $teacherTwo->teacherProfile->id,
+            'period_start' => now()->startOfMonth(),
+            'period_end' => now()->endOfMonth(),
+            'objections' => 0,
+            'excuses' => 1,
+            'study_level' => 8,
+        ]);
+    }
+
+    /**
+     * @param  array{0: int, 1: int}  $scoreRange
+     */
+    private function seedReviewedSession(
+        User $teacher,
+        User $student,
+        Lesson $lesson,
+        Carbon $scheduledAt,
+        bool $onTime,
+        FlagSeverity $flag,
+        array $scoreRange,
+        ?string $notes = null,
+    ): void {
+        $session = ClassSession::factory()
+            ->for($teacher, 'teacher')
+            ->for($student, 'student')
+            ->for($lesson, 'lesson')
+            ->completed()
+            ->create([
+                'scheduled_at' => $scheduledAt,
+                'teacher_joined_at' => $onTime ? $scheduledAt->copy()->addMinutes(2) : $scheduledAt->copy()->addMinutes(15),
+            ]);
+
+        SessionReview::factory()->create([
+            'class_session_id' => $session->id,
+            'flag_severity' => $flag,
+            'feedback_score' => fake()->numberBetween(...$scoreRange),
+            'attitude_score' => fake()->numberBetween(...$scoreRange),
+            'preparation_score' => fake()->numberBetween(...$scoreRange),
+            'curriculum_score' => fake()->numberBetween(...$scoreRange),
+            'teaching_score' => fake()->numberBetween(...$scoreRange),
+            'setup_score' => fake()->numberBetween(...$scoreRange),
+            'notes' => $notes,
+        ]);
     }
 }

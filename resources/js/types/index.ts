@@ -204,3 +204,48 @@ export interface LmsCourseDetail {
     modules: LmsModule[];
     quiz: LmsQuiz | null;
 }
+
+export type FlagSeverity = 'green' | 'yellow' | 'red';
+
+export interface InsightsProfile {
+    sessions_taught: number;
+    certificates_earned: number;
+}
+
+export interface InsightsMetrics {
+    objections: number;
+    excuses: number;
+    study_level: number;
+}
+
+export interface AttendanceBucket {
+    on_time: number;
+    late: number;
+}
+
+export interface InsightsAttendance {
+    check_in: AttendanceBucket;
+    join: AttendanceBucket;
+}
+
+export interface InsightsPerformance {
+    categories: Record<string, number>;
+    total_score: number;
+}
+
+export interface InsightsFlagsBreakdown {
+    green: number;
+    yellow: number;
+    red: number;
+}
+
+export interface ReviewedSession {
+    id: number;
+    lesson_title: string | null;
+    scheduled_at: string;
+    student: SessionParticipant | null;
+    flag_severity: FlagSeverity;
+    star_rating: number;
+    total_score: number;
+    notes: string | null;
+}

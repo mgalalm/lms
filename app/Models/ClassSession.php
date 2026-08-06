@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[ObservedBy(ClassSessionObserver::class)]
 class ClassSession extends Model
@@ -81,6 +82,14 @@ class ClassSession extends Model
     public function lesson(): BelongsTo
     {
         return $this->belongsTo(Lesson::class);
+    }
+
+    /**
+     * Get this session's quality review, if one has been submitted.
+     */
+    public function review(): HasOne
+    {
+        return $this->hasOne(SessionReview::class);
     }
 
     /**

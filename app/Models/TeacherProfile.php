@@ -106,6 +106,15 @@ class TeacherProfile extends Model
     }
 
     /**
+     * Get this teacher's per-period Insights rollups (Objections, Excuses,
+     * Study Level — the metrics that aren't derivable from other tables).
+     */
+    public function insightMetrics(): HasMany
+    {
+        return $this->hasMany(InsightMetric::class);
+    }
+
+    /**
      * Map of course_id => number of lessons this teacher has completed in
      * that course, computed in a single query so the LMS course library
      * index can render progress for every course without N+1 queries.
