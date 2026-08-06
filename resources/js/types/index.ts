@@ -22,6 +22,7 @@ export interface SharedData {
     auth: Auth;
     flash: {
         quizResult: { score: number; passed: boolean } | null;
+        success: string | null;
     };
     ziggy: {
         location: string;
@@ -265,4 +266,14 @@ export interface LeaderboardEntry {
     name: string;
     points: number;
     is_current_user: boolean;
+}
+
+export type SessionSentiment = 'negative' | 'neutral' | 'positive';
+
+export interface LatestSessionReview {
+    star_rating: number;
+    sentiment: SessionSentiment;
+    lesson_title: string | null;
+    teacher_name: string | null;
+    submitted_at: string;
 }

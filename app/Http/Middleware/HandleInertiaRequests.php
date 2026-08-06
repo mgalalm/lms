@@ -48,6 +48,7 @@ class HandleInertiaRequests extends Middleware
             ],
             'flash' => [
                 'quizResult' => $request->session()->get('quizResult'),
+                'success' => $request->session()->get('success'),
             ],
         ]);
     }

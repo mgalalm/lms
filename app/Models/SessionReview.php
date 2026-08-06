@@ -38,6 +38,7 @@ class SessionReview extends Model
         'reviewed_by',
         'star_rating',
         'sentiment',
+        'student_submitted_at',
         'flag_severity',
         'feedback_score',
         'attitude_score',
@@ -58,6 +59,7 @@ class SessionReview extends Model
         return [
             'flag_severity' => FlagSeverity::class,
             'star_rating' => 'integer',
+            'student_submitted_at' => 'datetime',
             'feedback_score' => 'integer',
             'attitude_score' => 'integer',
             'preparation_score' => 'integer',
@@ -65,6 +67,19 @@ class SessionReview extends Model
             'teaching_score' => 'integer',
             'setup_score' => 'integer',
         ];
+    }
+
+    /**
+     * The emoji sentiment a star rating reflects — the student never picks
+     * this directly, it's derived from the star they choose.
+     */
+    public static function sentimentForRating(int $rating): string
+    {
+        return match (true) {
+            $rating <= 2 => 'negative',
+            $rating === 3 => 'neutral',
+            default => 'positive',
+        };
     }
 
     /**
