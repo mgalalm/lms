@@ -71,4 +71,27 @@ class Channel extends Model
     {
         return $this->hasOne(Message::class)->latestOfMany();
     }
+
+    /**
+     * Get the direct channel between two users, creating it if it doesn't
+     * already exist. Used to keep a teacher/student pairing (however it's
+     * created — admin assignment, seeder, etc.) able to message each other.
+     */
+    public static function findOrCreateDirect(User $a, User $b): self
+    {
+        $channel = self::query()
+            ->where('type', ChannelType::Direct)
+            ->whereHas('users', fn ($query) => $query->whereKey($a->id))
+            ->whereHas('users', fn ($query) => $query->whereKey($b->id))
+            ->first();
+
+        if ($channel) {
+            return $channel;
+        }
+
+        $channel = self::create(['type' => ChannelType::Direct]);
+        $channel->users()->attach([$a->id, $b->id]);
+
+        return $channel;
+    }
 }
