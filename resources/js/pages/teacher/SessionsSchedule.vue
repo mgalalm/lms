@@ -4,13 +4,17 @@ import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem, ClassSession, Paginated } from '@/types';
 import { Head, Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 
 const props = defineProps<{
     sessions: Paginated<ClassSession>;
     filter: 'today' | 'upcoming' | 'past';
     timezone: string;
 }>();
+
+const now = ref(Date.now());
+const interval = setInterval(() => (now.value = Date.now()), 30_000);
+onBeforeUnmount(() => clearInterval(interval));
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
@@ -43,7 +47,7 @@ function isJoinable(session: ClassSession): boolean {
         return true;
     }
 
-    const minutesUntilStart = (new Date(session.scheduled_at).getTime() - Date.now()) / 60_000;
+    const minutesUntilStart = (new Date(session.scheduled_at).getTime() - now.value) / 60_000;
 
     return minutesUntilStart <= 15 && minutesUntilStart >= -60;
 }

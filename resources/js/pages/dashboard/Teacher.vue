@@ -10,6 +10,7 @@ defineProps<{
     nextSession: ClassSession | null;
     points: number;
     leaderboard: LeaderboardEntry[];
+    timezone: string;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/dashboard' }];
@@ -20,7 +21,7 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/dashboard' 
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 p-4">
-            <NextSessionCard :session="nextSession" viewer-role="teacher" />
+            <NextSessionCard :session="nextSession" viewer-role="teacher" :timezone="timezone" />
 
             <Button as-child variant="outline" class="w-fit">
                 <Link :href="route('teaching.sessions-schedule')">View Sessions Schedule</Link>

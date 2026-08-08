@@ -5,10 +5,14 @@ import { useCountdown } from '@/composables/useCountdown';
 import type { ClassSession } from '@/types';
 import { computed } from 'vue';
 
-const props = defineProps<{
-    session: ClassSession | null;
-    viewerRole: 'student' | 'teacher';
-}>();
+const props = withDefaults(
+    defineProps<{
+        session: ClassSession | null;
+        viewerRole: 'student' | 'teacher';
+        timezone?: string;
+    }>(),
+    { timezone: 'UTC' },
+);
 
 const { countdown } = useCountdown(() => props.session?.scheduled_at);
 
@@ -38,7 +42,7 @@ const scheduledLabel = computed(() => {
         day: 'numeric',
         hour: 'numeric',
         minute: '2-digit',
-        timeZone: 'UTC',
+        timeZone: props.timezone,
     });
 });
 </script>

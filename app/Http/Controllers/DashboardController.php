@@ -8,6 +8,7 @@ use App\Http\Resources\BadgeResource;
 use App\Http\Resources\ClassSessionResource;
 use App\Http\Resources\LeaderboardEntryResource;
 use App\Models\SessionReview;
+use App\Models\TeacherProfile;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -82,6 +83,7 @@ class DashboardController extends Controller
             'nextSession' => $nextSession ? new ClassSessionResource($nextSession) : null,
             'points' => $user->totalPoints(),
             'leaderboard' => $this->leaderboard(UserRole::Teacher->value, $user->id),
+            'timezone' => $user->teacherProfile?->resolvedTimezone() ?? TeacherProfile::DEFAULT_TIMEZONE,
         ]);
     }
 

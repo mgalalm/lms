@@ -26,7 +26,10 @@ class ClassSessionZoomIntegrationTest extends TestCase
 
         $this->seed(RoleSeeder::class);
 
-        config(['services.zoom.webhook_secret' => 'test-secret']);
+        config([
+            'services.zoom.webhook_secret' => 'test-secret',
+            'services.zoom.host_user_id' => 'host@example.com',
+        ]);
     }
 
     public function test_creating_an_online_session_dispatches_the_meeting_creation_job(): void
@@ -73,16 +76,38 @@ class ClassSessionZoomIntegrationTest extends TestCase
         $this->assertSame('abc123', $session->zoom_password);
     }
 
-    public function test_meeting_creation_job_skips_teachers_without_a_zoom_user_id(): void
+    public function test_meeting_creation_job_skips_when_no_zoom_host_is_configured(): void
     {
+        config(['services.zoom.host_user_id' => null]);
+
+        $session = ClassSession::factory()->create(['type' => SessionType::Online]);
+
+        $session->refresh();
+
+        $this->assertNull($session->zoom_meeting_id);
+    }
+
+    public function test_meeting_creation_job_hosts_every_teachers_meeting_under_the_configured_zoom_account(): void
+    {
+        Http::fake([
+            'zoom.us/oauth/token' => Http::response(['access_token' => 'fake-token', 'expires_in' => 3600]),
+            'api.zoom.us/v2/users/host@example.com/meetings' => Http::response([
+                'id' => 987654321,
+                'join_url' => 'https://zoom.us/j/987654321',
+                'start_url' => 'https://zoom.us/s/987654321?zak=abc',
+                'password' => 'abc123',
+            ]),
+        ]);
+
         $teacher = User::factory()->teacher()->create();
-        $teacher->teacherProfile->update(['zoom_user_id' => null]);
+        $teacher->teacherProfile->update(['zoom_user_id' => 'unrelated-placeholder@example.org']);
 
         $session = ClassSession::factory()->for($teacher, 'teacher')->create(['type' => SessionType::Online]);
 
         $session->refresh();
 
-        $this->assertNull($session->zoom_meeting_id);
+        $this->assertSame('987654321', $session->zoom_meeting_id);
+        Http::assertSent(fn ($request) => $request->url() === 'https://api.zoom.us/v2/users/host@example.com/meetings');
     }
 
     public function test_url_validation_handshake_is_answered_without_requiring_a_signature(): void
