@@ -4,6 +4,7 @@ namespace App\Filament\Resources\SessionReviews\Schemas;
 
 use App\Enums\FlagSeverity;
 use App\Models\ClassSession;
+use App\Models\TeacherProfile;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -17,9 +18,9 @@ class SessionReviewForm
             ->components([
                 Select::make('class_session_id')
                     ->label('Session')
-                    ->options(fn () => ClassSession::with(['teacher', 'student', 'lesson'])->get()
+                    ->options(fn () => ClassSession::with(['teacher.teacherProfile', 'student', 'lesson'])->get()
                         ->mapWithKeys(fn (ClassSession $session) => [
-                            $session->id => "{$session->teacher?->name} / {$session->student?->name} / {$session->lesson?->title} ({$session->scheduled_at->format('M j, Y')})",
+                            $session->id => "{$session->teacher?->name} / {$session->student?->name} / {$session->lesson?->title} ({$session->scheduled_at->copy()->setTimezone($session->teacher?->teacherProfile?->resolvedTimezone() ?? TeacherProfile::DEFAULT_TIMEZONE)->format('M j, Y')})",
                         ]))
                     ->searchable()
                     ->required()

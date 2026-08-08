@@ -9,6 +9,7 @@ import { computed } from 'vue';
 const props = defineProps<{
     sessions: Paginated<ClassSession>;
     filter: 'today' | 'upcoming' | 'past';
+    timezone: string;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -29,7 +30,7 @@ function scheduledLabel(session: ClassSession): string {
         day: 'numeric',
         hour: 'numeric',
         minute: '2-digit',
-        timeZone: 'UTC',
+        timeZone: props.timezone,
     });
 }
 

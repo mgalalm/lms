@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ClassSessions\Tables;
 
 use App\Enums\SessionStatus;
 use App\Enums\SessionType;
+use App\Models\TeacherProfile;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -37,7 +38,7 @@ class ClassSessionsTable
                         SessionStatus::Cancelled => 'danger',
                     }),
                 TextColumn::make('scheduled_at')
-                    ->dateTime()
+                    ->dateTime(timezone: fn ($record) => $record->teacher?->teacherProfile?->resolvedTimezone() ?? TeacherProfile::DEFAULT_TIMEZONE)
                     ->sortable(),
                 IconColumn::make('zoom_meeting_id')
                     ->label('Zoom Ready')

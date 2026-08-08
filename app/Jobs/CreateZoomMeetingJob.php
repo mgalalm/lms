@@ -27,10 +27,10 @@ class CreateZoomMeetingJob implements ShouldQueue
      */
     public function handle(ZoomClient $zoomClient): void
     {
-        $zoomUserId = $this->classSession->teacher->teacherProfile?->zoom_user_id;
+        $zoomUserId = config('services.zoom.host_user_id');
 
         if (! $zoomUserId) {
-            Log::warning('Skipped Zoom meeting creation: teacher has no zoom_user_id.', [
+            Log::warning('Skipped Zoom meeting creation: no Zoom host user configured.', [
                 'class_session_id' => $this->classSession->id,
                 'teacher_id' => $this->classSession->teacher_id,
             ]);

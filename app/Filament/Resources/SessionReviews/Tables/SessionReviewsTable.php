@@ -4,6 +4,7 @@ namespace App\Filament\Resources\SessionReviews\Tables;
 
 use App\Enums\FlagSeverity;
 use App\Models\SessionReview;
+use App\Models\TeacherProfile;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -28,7 +29,7 @@ class SessionReviewsTable
                     ->label('Lesson'),
                 TextColumn::make('classSession.scheduled_at')
                     ->label('Session date')
-                    ->dateTime()
+                    ->dateTime(timezone: fn ($record) => $record->classSession?->teacher?->teacherProfile?->resolvedTimezone() ?? TeacherProfile::DEFAULT_TIMEZONE)
                     ->sortable(),
                 TextColumn::make('flag_severity')
                     ->label('Flag')

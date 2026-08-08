@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Teacher;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ClassSessionResource;
+use App\Models\TeacherProfile;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,6 +30,7 @@ class SessionsScheduleController extends Controller
         return Inertia::render('teacher/SessionsSchedule', [
             'sessions' => ClassSessionResource::collection($sessions)->response()->getData(true),
             'filter' => $filter,
+            'timezone' => $request->user()->teacherProfile?->resolvedTimezone() ?? TeacherProfile::DEFAULT_TIMEZONE,
         ]);
     }
 }

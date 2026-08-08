@@ -36,7 +36,13 @@ class TeacherProfile extends Model
         'bank_name',
         'bank_account_number',
         'zoom_user_id',
+        'timezone',
     ];
+
+    /**
+     * Default timezone used wherever this teacher hasn't set one.
+     */
+    public const DEFAULT_TIMEZONE = 'Europe/Dublin';
 
     /**
      * Get the attributes that should be cast.
@@ -57,6 +63,14 @@ class TeacherProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * This teacher's timezone, falling back to the default when unset.
+     */
+    public function resolvedTimezone(): string
+    {
+        return $this->timezone ?: self::DEFAULT_TIMEZONE;
     }
 
     /**

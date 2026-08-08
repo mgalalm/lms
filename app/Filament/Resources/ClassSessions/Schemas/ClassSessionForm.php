@@ -6,6 +6,7 @@ use App\Enums\SessionStatus;
 use App\Enums\SessionType;
 use App\Enums\UserRole;
 use App\Models\Lesson;
+use App\Models\TeacherProfile;
 use App\Models\User;
 use Closure;
 use Filament\Forms\Components\DateTimePicker;
@@ -67,6 +68,7 @@ class ClassSessionForm
                     ->required(),
                 DateTimePicker::make('scheduled_at')
                     ->label('Scheduled at')
+                    ->timezone(fn (Get $get): string => User::find($get('teacher_id'))?->teacherProfile?->resolvedTimezone() ?? TeacherProfile::DEFAULT_TIMEZONE)
                     ->required(),
             ]);
     }
