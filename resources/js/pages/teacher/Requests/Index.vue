@@ -99,7 +99,9 @@ function historyDate(item: TeacherRequestHistoryItem): string {
                                 {{ historyLabel(item) }}
                                 <span v-if="historyDate(item)" class="font-normal text-muted-foreground">({{ historyDate(item) }})</span>
                             </p>
-                            <p class="text-xs text-muted-foreground">Submitted {{ new Date(item.submitted_at).toLocaleDateString() }}</p>
+                            <p class="text-xs text-muted-foreground">
+                                Submitted {{ new Date(item.submitted_at).toLocaleDateString(undefined, { timeZone: 'UTC' }) }}
+                            </p>
                         </div>
                         <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="statusPillClasses[item.status]">
                             {{ item.status }}

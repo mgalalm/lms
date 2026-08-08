@@ -22,7 +22,7 @@ const roleLabel = computed(() => {
 });
 
 const timeLabel = computed(() =>
-    new Date(props.message.created_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }),
+    new Date(props.message.created_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZone: 'UTC' }),
 );
 </script>
 
@@ -30,7 +30,9 @@ const timeLabel = computed(() =>
     <div class="flex flex-col gap-1" :class="isOwnMessage ? 'items-end' : 'items-start'">
         <div class="flex items-baseline gap-2 text-xs text-muted-foreground">
             <span class="font-medium text-foreground">{{ message.user.name }}</span>
-            <span>{{ roleLabel }}<span v-if="message.user.code"> &middot; {{ message.user.code }}</span></span>
+            <span
+                >{{ roleLabel }}<span v-if="message.user.code"> &middot; {{ message.user.code }}</span></span
+            >
             <span>{{ timeLabel }}</span>
         </div>
 

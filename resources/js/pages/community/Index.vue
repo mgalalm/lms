@@ -28,7 +28,7 @@ watch(
 );
 
 function dateHeading(value: string): string {
-    return new Date(value).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    return new Date(value).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 }
 
 const groupedMessages = computed(() => {
@@ -54,11 +54,7 @@ if (props.selectedChannel) {
     useEcho(`channel.${channelId}`, '.message.sent', (payload: { message: Message }) => {
         messages.value.push(payload.message);
 
-        router.patch(
-            route('community.read', channelId),
-            {},
-            { preserveState: true, preserveScroll: true, only: ['channels'], showProgress: false },
-        );
+        router.patch(route('community.read', channelId), {}, { preserveState: true, preserveScroll: true, only: ['channels'], showProgress: false });
     });
 }
 </script>

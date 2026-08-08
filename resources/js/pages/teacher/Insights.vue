@@ -75,7 +75,7 @@ function setPreset(days: number): void {
 }
 
 function scheduledLabel(value: string): string {
-    return new Date(value).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    return new Date(value).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'UTC' });
 }
 
 const totalFlags = props.flagsBreakdown.green + props.flagsBreakdown.yellow + props.flagsBreakdown.red;

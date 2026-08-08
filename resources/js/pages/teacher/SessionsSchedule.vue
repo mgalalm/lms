@@ -29,6 +29,7 @@ function scheduledLabel(session: ClassSession): string {
         day: 'numeric',
         hour: 'numeric',
         minute: '2-digit',
+        timeZone: 'UTC',
     });
 }
 
@@ -55,19 +56,17 @@ const hasSessions = computed(() => props.sessions.data.length > 0);
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 p-4">
             <div class="flex gap-2">
-                <Link
-                    v-for="tab in tabs"
-                    :key="tab.key"
-                    :href="route('teaching.sessions-schedule', { filter: tab.key })"
-                    preserve-state
-                >
+                <Link v-for="tab in tabs" :key="tab.key" :href="route('teaching.sessions-schedule', { filter: tab.key })" preserve-state>
                     <Button :variant="filter === tab.key ? 'default' : 'outline'" size="sm">{{ tab.label }}</Button>
                 </Link>
             </div>
 
             <p v-if="!hasSessions" class="text-sm text-muted-foreground">Your sessions list is empty.</p>
 
-            <div v-else class="divide-y divide-sidebar-border/70 rounded-xl border border-sidebar-border/70 bg-card dark:divide-sidebar-border dark:border-sidebar-border">
+            <div
+                v-else
+                class="divide-y divide-sidebar-border/70 rounded-xl border border-sidebar-border/70 bg-card dark:divide-sidebar-border dark:border-sidebar-border"
+            >
                 <div v-for="session in sessions.data" :key="session.id" class="flex items-center justify-between gap-4 p-4">
                     <div>
                         <div class="font-medium">{{ lessonPath(session) }}</div>
@@ -78,7 +77,14 @@ const hasSessions = computed(() => props.sessions.data.length > 0);
                         </div>
                     </div>
 
-                    <Button v-if="session.start_url && isJoinable(session)" as="a" :href="session.start_url" target="_blank" rel="noopener noreferrer" size="sm">
+                    <Button
+                        v-if="session.start_url && isJoinable(session)"
+                        as="a"
+                        :href="session.start_url"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        size="sm"
+                    >
                         Join
                     </Button>
                     <Button v-else disabled size="sm">Join</Button>

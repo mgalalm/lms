@@ -99,7 +99,7 @@ const statusPillClasses: Record<string, string> = {
                                 </span>
                             </td>
                             <td class="p-3 text-muted-foreground">
-                                {{ entry.completed_at ? new Date(entry.completed_at).toLocaleDateString() : '-' }}
+                                {{ entry.completed_at ? new Date(entry.completed_at).toLocaleDateString(undefined, { timeZone: 'UTC' }) : '-' }}
                             </td>
                             <td class="p-3">
                                 <Link :href="route('teaching.sessions-schedule', { filter: 'past' })" class="text-primary hover:underline">

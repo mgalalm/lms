@@ -38,6 +38,7 @@ const scheduledLabel = computed(() => {
         day: 'numeric',
         hour: 'numeric',
         minute: '2-digit',
+        timeZone: 'UTC',
     });
 });
 </script>
