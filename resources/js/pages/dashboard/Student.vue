@@ -16,6 +16,7 @@ defineProps<{
     points: number;
     recentBadges: Badge[];
     leaderboard: LeaderboardEntry[];
+    timezone: string;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/dashboard' }];
@@ -30,7 +31,7 @@ const sentimentIcon = { negative: Frown, neutral: Meh, positive: Smile } as cons
         <SessionFeedbackModal v-if="pendingFeedbackSession" :key="pendingFeedbackSession.id" :session="pendingFeedbackSession" />
 
         <div class="flex h-full flex-1 flex-col gap-4 p-4">
-            <NextSessionCard :session="nextSession" viewer-role="student" />
+            <NextSessionCard :session="nextSession" viewer-role="student" :timezone="timezone" />
 
             <div class="flex items-center justify-between gap-2 rounded-xl border border-sidebar-border/70 bg-card p-4 dark:border-sidebar-border">
                 <div>

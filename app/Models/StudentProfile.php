@@ -22,7 +22,13 @@ class StudentProfile extends Model
         'code',
         'grade_level',
         'language',
+        'timezone',
     ];
+
+    /**
+     * Default timezone used wherever this student hasn't set one.
+     */
+    public const DEFAULT_TIMEZONE = 'Europe/Dublin';
 
     /**
      * Get the user this student profile belongs to.
@@ -30,5 +36,13 @@ class StudentProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * This student's timezone, falling back to the default when unset.
+     */
+    public function resolvedTimezone(): string
+    {
+        return $this->timezone ?: self::DEFAULT_TIMEZONE;
     }
 }

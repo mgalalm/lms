@@ -8,6 +8,7 @@ use App\Http\Resources\BadgeResource;
 use App\Http\Resources\ClassSessionResource;
 use App\Http\Resources\LeaderboardEntryResource;
 use App\Models\SessionReview;
+use App\Models\StudentProfile;
 use App\Models\TeacherProfile;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -69,6 +70,7 @@ class DashboardController extends Controller
                 $user->badges()->orderByDesc('badge_user.awarded_at')->limit(3)->get()
             ),
             'leaderboard' => $this->leaderboard(UserRole::Student->value, $user->id),
+            'timezone' => $user->studentProfile?->resolvedTimezone() ?? StudentProfile::DEFAULT_TIMEZONE,
         ]);
     }
 
