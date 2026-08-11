@@ -2,9 +2,10 @@
 import Pagination from '@/components/Pagination.vue';
 import SupportTicketDialog from '@/components/teacher/SupportTicketDialog.vue';
 import { Button } from '@/components/ui/button';
+import { withDisplayName } from '@/composables/zoomJoinUrl';
 import AppLayout from '@/layouts/AppLayout.vue';
-import type { BreadcrumbItem, ClassSession, Paginated } from '@/types';
-import { Head, Link } from '@inertiajs/vue3';
+import type { BreadcrumbItem, ClassSession, Paginated, SharedData } from '@/types';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, ref } from 'vue';
 
 const props = defineProps<{
@@ -12,6 +13,8 @@ const props = defineProps<{
     filter: 'today' | 'upcoming' | 'past';
     timezone: string;
 }>();
+
+const page = usePage<SharedData>();
 
 const now = ref(Date.now());
 const interval = setInterval(() => (now.value = Date.now()), 30_000);
@@ -41,6 +44,10 @@ function scheduledLabel(session: ClassSession): string {
 
 function lessonPath(session: ClassSession): string {
     return [session.lesson.module?.course?.title, session.lesson.module?.title, session.lesson.title].filter(Boolean).join(' / ');
+}
+
+function joinUrl(session: ClassSession): string | undefined {
+    return session.start_url ? withDisplayName(session.start_url, page.props.auth.user.name) : undefined;
 }
 
 function isJoinable(session: ClassSession): boolean {
@@ -89,7 +96,7 @@ const supportDialogSessionId = ref<number | null>(null);
                         <Button
                             v-if="session.start_url && isJoinable(session)"
                             as="a"
-                            :href="session.start_url"
+                            :href="joinUrl(session)"
                             target="_blank"
                             rel="noopener noreferrer"
                             size="sm"

@@ -2,7 +2,9 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCountdown } from '@/composables/useCountdown';
-import type { ClassSession } from '@/types';
+import { withDisplayName } from '@/composables/zoomJoinUrl';
+import type { ClassSession, SharedData } from '@/types';
+import { usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
 const props = withDefaults(
@@ -14,9 +16,14 @@ const props = withDefaults(
     { timezone: 'UTC' },
 );
 
+const page = usePage<SharedData>();
 const { countdown } = useCountdown(() => props.session?.scheduled_at);
 
-const joinUrl = computed(() => (props.viewerRole === 'teacher' ? props.session?.start_url : props.session?.join_url));
+const joinUrl = computed(() => {
+    const url = props.viewerRole === 'teacher' ? props.session?.start_url : props.session?.join_url;
+
+    return url ? withDisplayName(url, page.props.auth.user.name) : undefined;
+});
 const joinLabel = computed(() => (props.viewerRole === 'teacher' ? 'Join Now' : 'Join'));
 const participant = computed(() => (props.viewerRole === 'teacher' ? props.session?.student : props.session?.teacher));
 const participantRoleLabel = computed(() => (props.viewerRole === 'teacher' ? 'Student' : 'Teacher'));
