@@ -59,6 +59,34 @@ class ClassSessionAdminTest extends TestCase
         ]);
     }
 
+    public function test_scheduling_a_session_in_the_past_is_rejected(): void
+    {
+        $admin = $this->admin();
+        $teacher = User::factory()->teacher()->create();
+        $student = User::factory()->student()->create();
+        $lesson = Lesson::factory()->create();
+
+        TeacherCourseCompletion::factory()->certified()->create([
+            'teacher_profile_id' => $teacher->teacherProfile->id,
+            'course_id' => $lesson->module->course_id,
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(CreateClassSession::class)
+            ->fillForm([
+                'teacher_id' => $teacher->id,
+                'student_id' => $student->id,
+                'lesson_id' => $lesson->id,
+                'type' => SessionType::Physical->value,
+                'scheduled_at' => now()->subHour(),
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['scheduled_at' => 'after']);
+
+        $this->assertDatabaseCount('class_sessions', 0);
+    }
+
     public function test_creating_a_session_creates_a_direct_channel_between_teacher_and_student(): void
     {
         $teacher = User::factory()->teacher()->create();
