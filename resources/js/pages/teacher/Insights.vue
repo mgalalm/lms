@@ -15,7 +15,7 @@ import type {
     ReviewedSession,
 } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 const props = defineProps<{
     range: { from: string; to: string };
@@ -72,12 +72,29 @@ const flagLabel: Record<FlagSeverity, string> = {
 };
 
 function applyRange(): void {
-    router.get(route('insights.index'), { from: from.value, to: to.value, flag: props.flag, search: search.value }, { preserveState: true });
+    router.get(
+        route('insights.index'),
+        { from: from.value, to: to.value, flag: props.flag, search: search.value },
+        { preserveState: true, preserveScroll: true },
+    );
 }
 
 function applySearch(): void {
-    router.get(route('insights.index'), { from: from.value, to: to.value, flag: props.flag, search: search.value }, { preserveState: true });
+    router.get(
+        route('insights.index'),
+        { from: from.value, to: to.value, flag: props.flag, search: search.value },
+        { preserveState: true, preserveScroll: true },
+    );
 }
+
+// The native search input's clear (X) button — and just backspacing to
+// empty — doesn't fire keyup.enter, so the stale filtered list would
+// otherwise stick around until the user explicitly searches again.
+watch(search, (value, previous) => {
+    if (value === '' && previous !== '') {
+        applySearch();
+    }
+});
 
 function setPreset(days: number): void {
     const end = new Date();
@@ -224,6 +241,7 @@ const totalFlags = props.flagsBreakdown.green + props.flagsBreakdown.yellow + pr
                                 :key="tab.key"
                                 :href="route('insights.index', { from, to, flag: tab.key, search })"
                                 preserve-state
+                                preserve-scroll
                             >
                                 <Button v-if="!tab.emoji" :variant="flag === tab.key ? 'default' : 'outline'" size="sm">All</Button>
                                 <Tooltip v-else>
