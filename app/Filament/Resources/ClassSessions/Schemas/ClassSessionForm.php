@@ -6,7 +6,6 @@ use App\Enums\SessionStatus;
 use App\Enums\SessionType;
 use App\Enums\UserRole;
 use App\Models\Lesson;
-use App\Models\TeacherProfile;
 use App\Models\User;
 use Closure;
 use Filament\Forms\Components\DateTimePicker;
@@ -46,6 +45,7 @@ class ClassSessionForm
                     ->label('Student')
                     ->options(fn () => User::role(UserRole::Student->value)->pluck('name', 'id'))
                     ->searchable()
+                    ->live()
                     ->required(),
                 Select::make('lesson_id')
                     ->label('Lesson')
@@ -67,9 +67,22 @@ class ClassSessionForm
                     ->default(SessionStatus::Scheduled)
                     ->required(),
                 DateTimePicker::make('scheduled_at')
-                    ->label('Scheduled at')
-                    ->timezone(fn (Get $get): string => User::find($get('teacher_id'))?->teacherProfile?->resolvedTimezone() ?? TeacherProfile::DEFAULT_TIMEZONE)
+                    ->label('Scheduled at (your local time, Europe/Dublin)')
+                    ->timezone(self::ADMIN_TIMEZONE)
+                    ->helperText('Enter this in Europe/Dublin time. It will be converted and shown in each teacher\'s and student\'s own timezone on their dashboards. Must be in the future, or the session won\'t appear there.')
+                    ->rules(['after:now'])
+                    ->validationMessages(['after' => 'The scheduled time must be in the future.'])
                     ->required(),
             ]);
     }
+
+    /**
+     * Fixed (non-reactive) timezone the admin enters scheduled_at in.
+     *
+     * Deliberately not tied to teacher_id/student_id via Get(): a reactive
+     * timezone previously caused Filament to silently reinterpret an
+     * already-typed value under a new offset when the teacher was picked
+     * after the time was entered, corrupting the stored instant.
+     */
+    private const ADMIN_TIMEZONE = 'Europe/Dublin';
 }
