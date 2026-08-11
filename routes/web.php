@@ -27,3 +27,4 @@ require __DIR__.'/achievements.php';
 require __DIR__.'/session-feedback.php';
 require __DIR__.'/payroll.php';
 require __DIR__.'/requests.php';
+require __DIR__.'/notifications.php';

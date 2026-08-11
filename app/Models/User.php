@@ -72,6 +72,17 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
+     * This user's timezone, resolved from whichever profile (teacher or
+     * student) they have, falling back to UTC for users with neither.
+     */
+    public function resolvedTimezone(): string
+    {
+        return $this->teacherProfile?->resolvedTimezone()
+            ?? $this->studentProfile?->resolvedTimezone()
+            ?? 'UTC';
+    }
+
+    /**
      * Get the sessions this user teaches.
      */
     public function sessionsAsTeacher(): HasMany

@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Http\Resources\AuthUserResource;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -50,6 +51,20 @@ class HandleInertiaRequests extends Middleware
                 'quizResult' => $request->session()->get('quizResult'),
                 'success' => $request->session()->get('success'),
             ],
+            'unreadNotificationsCount' => $request->user()?->unreadNotifications()->count() ?? 0,
+            'notifications' => Inertia::optional(fn () => $request->user()
+                ?->notifications()
+                ->latest()
+                ->limit(20)
+                ->get()
+                ->map(fn ($notification) => [
+                    'id' => $notification->id,
+                    'read_at' => $notification->read_at?->toIso8601String(),
+                    'created_at' => $notification->created_at->toIso8601String(),
+                    'title' => $notification->data['title'] ?? '',
+                    'message' => $notification->data['message'] ?? '',
+                    'url' => $notification->data['url'] ?? null,
+                ]) ?? []),
         ]);
     }
 }

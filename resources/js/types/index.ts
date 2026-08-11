@@ -31,6 +31,17 @@ export interface SharedData {
         defaults: Record<string, unknown>;
         routes: Record<string, string>;
     };
+    unreadNotificationsCount: number;
+    notifications?: AppNotification[];
+}
+
+export interface AppNotification {
+    id: string;
+    read_at: string | null;
+    created_at: string;
+    title: string;
+    message: string;
+    url: string | null;
 }
 
 export interface User {

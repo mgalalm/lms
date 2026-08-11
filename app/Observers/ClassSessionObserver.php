@@ -6,6 +6,7 @@ use App\Enums\SessionType;
 use App\Jobs\CreateZoomMeetingJob;
 use App\Models\Channel;
 use App\Models\ClassSession;
+use App\Notifications\ClassSessionScheduled;
 
 class ClassSessionObserver
 {
@@ -19,5 +20,8 @@ class ClassSessionObserver
         }
 
         Channel::findOrCreateDirect($classSession->teacher, $classSession->student);
+
+        $classSession->teacher->notify(new ClassSessionScheduled($classSession, 'teacher'));
+        $classSession->student->notify(new ClassSessionScheduled($classSession, 'student'));
     }
 }
