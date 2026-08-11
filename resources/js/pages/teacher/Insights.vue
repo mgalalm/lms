@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import Pagination from '@/components/Pagination.vue';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type {
     BreadcrumbItem,
@@ -43,17 +44,31 @@ const categoryLabels: Record<string, string> = {
     setup_score: 'Setup',
 };
 
-const flagTabs: { key: 'all' | FlagSeverity; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'green', label: '😊 Green Flags' },
-    { key: 'yellow', label: '😐 Yellow Flags' },
-    { key: 'red', label: '😟 Red Flags' },
+const flagTabs: { key: 'all' | FlagSeverity; emoji: string | null }[] = [
+    { key: 'all', emoji: null },
+    { key: 'green', emoji: '😊' },
+    { key: 'yellow', emoji: '😐' },
+    { key: 'red', emoji: '😟' },
 ];
 
 const flagEmoji: Record<FlagSeverity, string> = {
     green: '😊',
     yellow: '😐',
     red: '😟',
+};
+
+// Native emoji render as a fixed yellow glyph; hue-rotate shifts that
+// toward green/red so the faces themselves read as the flag color.
+const flagFilter: Record<FlagSeverity, string> = {
+    green: 'hue-rotate(80deg) saturate(1.6)',
+    yellow: 'none',
+    red: 'hue-rotate(-50deg) saturate(1.6)',
+};
+
+const flagLabel: Record<FlagSeverity, string> = {
+    green: 'Green Flag',
+    yellow: 'Yellow Flag',
+    red: 'Red Flag',
 };
 
 function applyRange(): void {
@@ -180,33 +195,50 @@ const totalFlags = props.flagsBreakdown.green + props.flagsBreakdown.yellow + pr
                 </div>
             </div>
 
-            <div class="grid grid-cols-3 gap-3">
-                <div class="rounded-xl border border-sidebar-border/70 bg-card p-4 text-center dark:border-sidebar-border">
-                    <p class="text-xs text-muted-foreground">😊 Green</p>
-                    <p class="text-xl font-semibold">{{ flagsBreakdown.green }}</p>
+            <TooltipProvider :delay-duration="0">
+                <div class="grid grid-cols-3 gap-3">
+                    <div
+                        v-for="severity in ['green', 'yellow', 'red'] as const"
+                        :key="severity"
+                        class="flex flex-col items-center gap-1 rounded-xl border border-sidebar-border/70 bg-card p-4 text-center dark:border-sidebar-border"
+                    >
+                        <Tooltip>
+                            <TooltipTrigger>
+                                <span class="text-4xl leading-none" :style="{ filter: flagFilter[severity] }">{{ flagEmoji[severity] }}</span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>{{ flagLabel[severity] }}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                        <p class="text-xl font-semibold">{{ flagsBreakdown[severity] }}</p>
+                    </div>
                 </div>
-                <div class="rounded-xl border border-sidebar-border/70 bg-card p-4 text-center dark:border-sidebar-border">
-                    <p class="text-xs text-muted-foreground">😐 Yellow</p>
-                    <p class="text-xl font-semibold">{{ flagsBreakdown.yellow }}</p>
-                </div>
-                <div class="rounded-xl border border-sidebar-border/70 bg-card p-4 text-center dark:border-sidebar-border">
-                    <p class="text-xs text-muted-foreground">😟 Red</p>
-                    <p class="text-xl font-semibold">{{ flagsBreakdown.red }}</p>
-                </div>
-            </div>
+            </TooltipProvider>
 
             <div class="space-y-3">
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                    <div class="flex gap-2">
-                        <Link
-                            v-for="tab in flagTabs"
-                            :key="tab.key"
-                            :href="route('insights.index', { from, to, flag: tab.key, search })"
-                            preserve-state
-                        >
-                            <Button :variant="flag === tab.key ? 'default' : 'outline'" size="sm">{{ tab.label }}</Button>
-                        </Link>
-                    </div>
+                    <TooltipProvider :delay-duration="0">
+                        <div class="flex items-center gap-2">
+                            <Link
+                                v-for="tab in flagTabs"
+                                :key="tab.key"
+                                :href="route('insights.index', { from, to, flag: tab.key, search })"
+                                preserve-state
+                            >
+                                <Button v-if="!tab.emoji" :variant="flag === tab.key ? 'default' : 'outline'" size="sm">All</Button>
+                                <Tooltip v-else>
+                                    <TooltipTrigger as-child>
+                                        <Button :variant="flag === tab.key ? 'default' : 'outline'" size="sm" class="text-lg">
+                                            <span :style="{ filter: flagFilter[tab.key as FlagSeverity] }">{{ tab.emoji }}</span>
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{{ flagLabel[tab.key as FlagSeverity] }}s</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </Link>
+                        </div>
+                    </TooltipProvider>
 
                     <input
                         v-model="search"
@@ -235,9 +267,18 @@ const totalFlags = props.flagsBreakdown.green + props.flagsBreakdown.yellow + pr
 
                         <div class="flex items-center gap-3">
                             <span class="text-sm text-muted-foreground">{{ session.total_score }}%</span>
-                            <span class="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
-                                {{ flagEmoji[session.flag_severity] }} {{ session.flag_severity }}
-                            </span>
+                            <TooltipProvider :delay-duration="0">
+                                <Tooltip>
+                                    <TooltipTrigger>
+                                        <span class="text-2xl leading-none" :style="{ filter: flagFilter[session.flag_severity] }">{{
+                                            flagEmoji[session.flag_severity]
+                                        }}</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>{{ flagLabel[session.flag_severity] }}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
                         </div>
                     </div>
                 </div>
