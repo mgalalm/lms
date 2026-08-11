@@ -1,22 +1,10 @@
 <script setup lang="ts">
-import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import {
-    BarChart3,
-    BookOpen,
-    CalendarClock,
-    ClipboardList,
-    Folder,
-    GraduationCap,
-    LayoutGrid,
-    MessagesSquare,
-    Trophy,
-    Wallet,
-} from 'lucide-vue-next';
+import { BarChart3, CalendarClock, ClipboardList, GraduationCap, LayoutGrid, LifeBuoy, MessagesSquare, Trophy, Wallet } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
@@ -76,18 +64,11 @@ const mainNavItems = computed<NavItem[]>(() => {
     return items;
 });
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Github Repo',
-        href: 'https://github.com/laravel/vue-starter-kit',
-        icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits',
-        icon: BookOpen,
-    },
-];
+const helpNavItem: NavItem = {
+    title: 'Help',
+    href: route('help.index'),
+    icon: LifeBuoy,
+};
 </script>
 
 <template>
@@ -109,7 +90,16 @@ const footerNavItems: NavItem[] = [
         </SidebarContent>
 
         <SidebarFooter>
-            <NavFooter :items="footerNavItems" />
+            <SidebarMenu class="group-data-[collapsible=icon]:p-0">
+                <SidebarMenuItem>
+                    <SidebarMenuButton class="text-neutral-600 hover:text-neutral-800 dark:text-neutral-300 dark:hover:text-neutral-100" as-child>
+                        <Link :href="helpNavItem.href">
+                            <component :is="helpNavItem.icon" />
+                            <span>{{ helpNavItem.title }}</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
             <NavUser />
         </SidebarFooter>
     </Sidebar>

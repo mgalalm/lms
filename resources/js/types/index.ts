@@ -355,3 +355,16 @@ export interface LeaveCreditBalance {
     annual_limit: number;
     annual_used: number;
 }
+
+export interface HelpArticleSummary {
+    slug: string;
+    title: string;
+    excerpt: string | null;
+}
+
+export interface HelpArticleDetail {
+    slug: string;
+    title: string;
+    category: string;
+    body_html: string;
+}
