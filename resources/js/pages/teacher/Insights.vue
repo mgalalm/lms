@@ -45,15 +45,15 @@ const categoryLabels: Record<string, string> = {
 
 const flagTabs: { key: 'all' | FlagSeverity; label: string }[] = [
     { key: 'all', label: 'All' },
-    { key: 'green', label: '🟢 Green Flags' },
-    { key: 'yellow', label: '🟡 Yellow Flags' },
-    { key: 'red', label: '🔴 Red Flags' },
+    { key: 'green', label: '😊 Green Flags' },
+    { key: 'yellow', label: '😐 Yellow Flags' },
+    { key: 'red', label: '😟 Red Flags' },
 ];
 
 const flagEmoji: Record<FlagSeverity, string> = {
-    green: '🟢',
-    yellow: '🟡',
-    red: '🔴',
+    green: '😊',
+    yellow: '😐',
+    red: '😟',
 };
 
 function applyRange(): void {
@@ -182,15 +182,15 @@ const totalFlags = props.flagsBreakdown.green + props.flagsBreakdown.yellow + pr
 
             <div class="grid grid-cols-3 gap-3">
                 <div class="rounded-xl border border-sidebar-border/70 bg-card p-4 text-center dark:border-sidebar-border">
-                    <p class="text-xs text-muted-foreground">🟢 Green</p>
+                    <p class="text-xs text-muted-foreground">😊 Green</p>
                     <p class="text-xl font-semibold">{{ flagsBreakdown.green }}</p>
                 </div>
                 <div class="rounded-xl border border-sidebar-border/70 bg-card p-4 text-center dark:border-sidebar-border">
-                    <p class="text-xs text-muted-foreground">🟡 Yellow</p>
+                    <p class="text-xs text-muted-foreground">😐 Yellow</p>
                     <p class="text-xl font-semibold">{{ flagsBreakdown.yellow }}</p>
                 </div>
                 <div class="rounded-xl border border-sidebar-border/70 bg-card p-4 text-center dark:border-sidebar-border">
-                    <p class="text-xs text-muted-foreground">🔴 Red</p>
+                    <p class="text-xs text-muted-foreground">😟 Red</p>
                     <p class="text-xl font-semibold">{{ flagsBreakdown.red }}</p>
                 </div>
             </div>
