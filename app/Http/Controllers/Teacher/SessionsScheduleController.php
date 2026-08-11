@@ -19,7 +19,7 @@ class SessionsScheduleController extends Controller
         $filter = $request->string('filter', 'upcoming')->value();
 
         $query = $request->user()->sessionsAsTeacher()
-            ->with(['lesson.module.course', 'student.studentProfile']);
+            ->with(['lesson.module.course', 'student.studentProfile', 'latestSupportTicket']);
 
         $sessions = (match ($filter) {
             'today' => $query->today()->orderBy('scheduled_at'),

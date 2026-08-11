@@ -6,4 +6,5 @@ enum ChannelType: string
 {
     case Direct = 'direct';
     case Group = 'group';
+    case Support = 'support';
 }

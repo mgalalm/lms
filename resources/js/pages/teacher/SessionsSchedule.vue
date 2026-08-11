@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Pagination from '@/components/Pagination.vue';
+import SupportTicketDialog from '@/components/teacher/SupportTicketDialog.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem, ClassSession, Paginated } from '@/types';
@@ -53,6 +54,8 @@ function isJoinable(session: ClassSession): boolean {
 }
 
 const hasSessions = computed(() => props.sessions.data.length > 0);
+
+const supportDialogSessionId = ref<number | null>(null);
 </script>
 
 <template>
@@ -82,21 +85,37 @@ const hasSessions = computed(() => props.sessions.data.length > 0);
                         </div>
                     </div>
 
-                    <Button
-                        v-if="session.start_url && isJoinable(session)"
-                        as="a"
-                        :href="session.start_url"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        size="sm"
-                    >
-                        Join
-                    </Button>
-                    <Button v-else disabled size="sm">Join</Button>
+                    <div class="flex items-center gap-2">
+                        <Button
+                            v-if="session.start_url && isJoinable(session)"
+                            as="a"
+                            :href="session.start_url"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            size="sm"
+                        >
+                            Join
+                        </Button>
+                        <Button v-else disabled size="sm">Join</Button>
+
+                        <Link v-if="session.latest_support_ticket" :href="route('teaching.support-tickets.show', session.latest_support_ticket.id)">
+                            <Button variant="outline" size="sm">
+                                {{ session.latest_support_ticket.status === 'resolved' ? 'Ticket Resolved' : 'View Ticket' }}
+                            </Button>
+                        </Link>
+                        <Button v-else variant="outline" size="sm" @click="supportDialogSessionId = session.id">Support</Button>
+                    </div>
                 </div>
             </div>
 
             <Pagination :links="sessions.meta.links" />
         </div>
+
+        <SupportTicketDialog
+            v-if="supportDialogSessionId"
+            :open="true"
+            :class-session-id="supportDialogSessionId"
+            @update:open="(value) => !value && (supportDialogSessionId = null)"
+        />
     </AppLayout>
 </template>

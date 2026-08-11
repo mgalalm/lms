@@ -96,6 +96,19 @@ export interface ClassSession {
     lesson: Lesson;
     teacher?: SessionParticipant;
     student?: SessionParticipant;
+    latest_support_ticket?: { id: number; status: 'open' | 'resolved' } | null;
+}
+
+export interface SupportTicket {
+    id: number;
+    code: string;
+    subject: string;
+    description: string;
+    status: 'open' | 'resolved';
+    channel_id: number;
+    created_at: string;
+    resolved_at: string | null;
+    class_session: { id: number; lesson_title: string | null } | null;
 }
 
 export interface PaginationLink {

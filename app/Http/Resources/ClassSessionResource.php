@@ -33,6 +33,10 @@ class ClassSessionResource extends JsonResource
                 'code' => $this->student->studentProfile?->code,
                 'language' => $this->student->studentProfile?->language,
             ]),
+            'latest_support_ticket' => $this->whenLoaded('latestSupportTicket', fn () => $this->latestSupportTicket ? [
+                'id' => $this->latestSupportTicket->id,
+                'status' => $this->latestSupportTicket->status->value,
+            ] : null),
         ];
     }
 }

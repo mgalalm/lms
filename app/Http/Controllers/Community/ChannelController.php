@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Community;
 
+use App\Enums\ChannelType;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ChannelResource;
 use App\Http\Resources\MessageResource;
@@ -76,6 +77,7 @@ class ChannelController extends Controller
     private function channelsFor(User $user): Collection
     {
         $channels = $user->channels()
+            ->where('type', '!=', ChannelType::Support)
             ->with(['users.teacherProfile', 'users.studentProfile', 'latestMessage'])
             ->get();
 

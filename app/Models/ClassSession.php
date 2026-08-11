@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[ObservedBy(ClassSessionObserver::class)]
@@ -90,6 +91,22 @@ class ClassSession extends Model
     public function review(): HasOne
     {
         return $this->hasOne(SessionReview::class);
+    }
+
+    /**
+     * Get this session's support tickets.
+     */
+    public function supportTickets(): HasMany
+    {
+        return $this->hasMany(SupportTicket::class);
+    }
+
+    /**
+     * Get the most recently opened support ticket for this session, if any.
+     */
+    public function latestSupportTicket(): HasOne
+    {
+        return $this->hasOne(SupportTicket::class)->latestOfMany();
     }
 
     /**
