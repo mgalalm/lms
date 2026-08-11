@@ -45,15 +45,15 @@ const categoryLabels: Record<string, string> = {
 
 const flagTabs: { key: 'all' | FlagSeverity; label: string }[] = [
     { key: 'all', label: 'All' },
-    { key: 'green', label: 'Green Flags' },
-    { key: 'yellow', label: 'Yellow Flags' },
-    { key: 'red', label: 'Red Flags' },
+    { key: 'green', label: '🟢 Green Flags' },
+    { key: 'yellow', label: '🟡 Yellow Flags' },
+    { key: 'red', label: '🔴 Red Flags' },
 ];
 
-const flagPillClasses: Record<FlagSeverity, string> = {
-    green: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300',
-    yellow: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
-    red: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
+const flagEmoji: Record<FlagSeverity, string> = {
+    green: '🟢',
+    yellow: '🟡',
+    red: '🔴',
 };
 
 function applyRange(): void {
@@ -182,16 +182,16 @@ const totalFlags = props.flagsBreakdown.green + props.flagsBreakdown.yellow + pr
 
             <div class="grid grid-cols-3 gap-3">
                 <div class="rounded-xl border border-sidebar-border/70 bg-card p-4 text-center dark:border-sidebar-border">
-                    <p class="text-xs text-muted-foreground">Green</p>
-                    <p class="text-xl font-semibold text-green-600 dark:text-green-400">{{ flagsBreakdown.green }}</p>
+                    <p class="text-xs text-muted-foreground">🟢 Green</p>
+                    <p class="text-xl font-semibold">{{ flagsBreakdown.green }}</p>
                 </div>
                 <div class="rounded-xl border border-sidebar-border/70 bg-card p-4 text-center dark:border-sidebar-border">
-                    <p class="text-xs text-muted-foreground">Yellow</p>
-                    <p class="text-xl font-semibold text-amber-600 dark:text-amber-400">{{ flagsBreakdown.yellow }}</p>
+                    <p class="text-xs text-muted-foreground">🟡 Yellow</p>
+                    <p class="text-xl font-semibold">{{ flagsBreakdown.yellow }}</p>
                 </div>
                 <div class="rounded-xl border border-sidebar-border/70 bg-card p-4 text-center dark:border-sidebar-border">
-                    <p class="text-xs text-muted-foreground">Red</p>
-                    <p class="text-xl font-semibold text-red-600 dark:text-red-400">{{ flagsBreakdown.red }}</p>
+                    <p class="text-xs text-muted-foreground">🔴 Red</p>
+                    <p class="text-xl font-semibold">{{ flagsBreakdown.red }}</p>
                 </div>
             </div>
 
@@ -235,8 +235,8 @@ const totalFlags = props.flagsBreakdown.green + props.flagsBreakdown.yellow + pr
 
                         <div class="flex items-center gap-3">
                             <span class="text-sm text-muted-foreground">{{ session.total_score }}%</span>
-                            <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="flagPillClasses[session.flag_severity]">
-                                {{ session.flag_severity }}
+                            <span class="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+                                {{ flagEmoji[session.flag_severity] }} {{ session.flag_severity }}
                             </span>
                         </div>
                     </div>
