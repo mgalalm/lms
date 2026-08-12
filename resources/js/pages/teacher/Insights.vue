@@ -15,6 +15,7 @@ import type {
     ReviewedSession,
 } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
+import { BookOpen, CircleCheckBig, Clock, Flag, Hourglass, MessageCircleQuestion, MessageSquareWarning, Video } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 
 const props = defineProps<{
@@ -111,6 +112,20 @@ function scheduledLabel(value: string): string {
 }
 
 const totalFlags = props.flagsBreakdown.green + props.flagsBreakdown.yellow + props.flagsBreakdown.red;
+
+const topMetrics = [
+    { name: 'Objections', stat: props.metrics.objections, icon: MessageSquareWarning },
+    { name: 'Flags', stat: totalFlags, icon: Flag },
+    { name: 'Excuses', stat: props.metrics.excuses, icon: MessageCircleQuestion },
+    { name: 'Study Level', stat: props.metrics.study_level, icon: BookOpen },
+];
+
+const attendanceStats = [
+    { name: 'Check-in on Time', stat: props.attendance.check_in.on_time, icon: CircleCheckBig },
+    { name: 'Check-in Late', stat: props.attendance.check_in.late, icon: Clock },
+    { name: 'Join Sessions on Time', stat: props.attendance.join.on_time, icon: Video },
+    { name: 'Join Sessions Late', stat: props.attendance.join.late, icon: Hourglass },
+];
 </script>
 
 <template>
@@ -151,43 +166,41 @@ const totalFlags = props.flagsBreakdown.green + props.flagsBreakdown.yellow + pr
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div class="rounded-xl border border-sidebar-border/70 bg-card p-4 dark:border-sidebar-border">
-                    <p class="text-xs text-muted-foreground">Objections</p>
-                    <p class="text-xl font-semibold">{{ metrics.objections }}</p>
+            <dl class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div
+                    v-for="item in topMetrics"
+                    :key="item.name"
+                    class="relative overflow-hidden rounded-xl border border-sidebar-border/70 bg-card px-4 pb-4 pt-5 dark:border-sidebar-border"
+                >
+                    <dt>
+                        <div class="absolute rounded-md bg-primary p-2">
+                            <component :is="item.icon" class="size-5 text-primary-foreground" aria-hidden="true" />
+                        </div>
+                        <p class="ml-12 truncate text-xs text-muted-foreground">{{ item.name }}</p>
+                    </dt>
+                    <dd class="ml-12">
+                        <p class="text-xl font-semibold">{{ item.stat }}</p>
+                    </dd>
                 </div>
-                <div class="rounded-xl border border-sidebar-border/70 bg-card p-4 dark:border-sidebar-border">
-                    <p class="text-xs text-muted-foreground">Flags</p>
-                    <p class="text-xl font-semibold">{{ totalFlags }}</p>
-                </div>
-                <div class="rounded-xl border border-sidebar-border/70 bg-card p-4 dark:border-sidebar-border">
-                    <p class="text-xs text-muted-foreground">Excuses</p>
-                    <p class="text-xl font-semibold">{{ metrics.excuses }}</p>
-                </div>
-                <div class="rounded-xl border border-sidebar-border/70 bg-card p-4 dark:border-sidebar-border">
-                    <p class="text-xs text-muted-foreground">Study Level</p>
-                    <p class="text-xl font-semibold">{{ metrics.study_level }}</p>
-                </div>
-            </div>
+            </dl>
 
-            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div class="rounded-xl border border-sidebar-border/70 bg-card p-4 dark:border-sidebar-border">
-                    <p class="text-xs text-muted-foreground">Check-in on Time</p>
-                    <p class="text-xl font-semibold">{{ attendance.check_in.on_time }}</p>
+            <dl class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div
+                    v-for="item in attendanceStats"
+                    :key="item.name"
+                    class="relative overflow-hidden rounded-xl border border-sidebar-border/70 bg-card px-4 pb-4 pt-5 dark:border-sidebar-border"
+                >
+                    <dt>
+                        <div class="absolute rounded-md bg-primary p-2">
+                            <component :is="item.icon" class="size-5 text-primary-foreground" aria-hidden="true" />
+                        </div>
+                        <p class="ml-12 truncate text-xs text-muted-foreground">{{ item.name }}</p>
+                    </dt>
+                    <dd class="ml-12">
+                        <p class="text-xl font-semibold">{{ item.stat }}</p>
+                    </dd>
                 </div>
-                <div class="rounded-xl border border-sidebar-border/70 bg-card p-4 dark:border-sidebar-border">
-                    <p class="text-xs text-muted-foreground">Check-in Late</p>
-                    <p class="text-xl font-semibold">{{ attendance.check_in.late }}</p>
-                </div>
-                <div class="rounded-xl border border-sidebar-border/70 bg-card p-4 dark:border-sidebar-border">
-                    <p class="text-xs text-muted-foreground">Join Sessions on Time</p>
-                    <p class="text-xl font-semibold">{{ attendance.join.on_time }}</p>
-                </div>
-                <div class="rounded-xl border border-sidebar-border/70 bg-card p-4 dark:border-sidebar-border">
-                    <p class="text-xs text-muted-foreground">Join Sessions Late</p>
-                    <p class="text-xl font-semibold">{{ attendance.join.late }}</p>
-                </div>
-            </div>
+            </dl>
 
             <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
                 <div class="space-y-3 rounded-xl border border-sidebar-border/70 bg-card p-4 dark:border-sidebar-border lg:col-span-2">
