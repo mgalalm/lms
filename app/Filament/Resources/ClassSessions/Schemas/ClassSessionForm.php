@@ -5,6 +5,7 @@ namespace App\Filament\Resources\ClassSessions\Schemas;
 use App\Enums\SessionStatus;
 use App\Enums\SessionType;
 use App\Enums\UserRole;
+use App\Models\ClassSession;
 use App\Models\Lesson;
 use App\Models\User;
 use Closure;
@@ -46,7 +47,28 @@ class ClassSessionForm
                     ->options(fn () => User::role(UserRole::Student->value)->pluck('name', 'id'))
                     ->searchable()
                     ->live()
-                    ->required(),
+                    ->required()
+                    ->rules([
+                        function (?ClassSession $record): Closure {
+                            return function (string $attribute, $value, Closure $fail) use ($record): void {
+                                $student = User::find($value);
+
+                                if (! $student) {
+                                    return;
+                                }
+
+                                // Editing an existing session for the same student doesn't
+                                // consume an additional credit, so don't re-gate it here.
+                                if ($record && (int) $record->student_id === (int) $value) {
+                                    return;
+                                }
+
+                                if ($student->sessionCreditsBalance() <= 0) {
+                                    $fail("{$student->name} has no session credits remaining. They need to purchase a session package before another session can be scheduled.");
+                                }
+                            };
+                        },
+                    ]),
                 Select::make('lesson_id')
                     ->label('Lesson')
                     ->options(fn () => Lesson::with('module.course')->get()

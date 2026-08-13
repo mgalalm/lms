@@ -368,3 +368,25 @@ export interface HelpArticleDetail {
     category: string;
     body_html: string;
 }
+
+export interface SessionPackage {
+    id: number;
+    name: string;
+    description: string | null;
+    session_count: number;
+    price: number;
+    currency: string;
+}
+
+export type SessionPackagePurchaseStatus = 'pending' | 'paid' | 'cancelled' | 'failed';
+
+export interface SessionPackagePurchase {
+    id: number;
+    package_name: string;
+    status: SessionPackagePurchaseStatus;
+    session_count: number;
+    price: number;
+    currency: string;
+    paid_at: string | null;
+    created_at: string;
+}

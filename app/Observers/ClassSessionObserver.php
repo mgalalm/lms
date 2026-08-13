@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Enums\SessionCreditReason;
 use App\Enums\SessionType;
 use App\Jobs\CreateZoomMeetingJob;
 use App\Models\Channel;
@@ -18,6 +19,12 @@ class ClassSessionObserver
         if ($classSession->type === SessionType::Online && ! $classSession->zoom_meeting_id) {
             CreateZoomMeetingJob::dispatch($classSession);
         }
+
+        $classSession->student->sessionCreditLedger()->create([
+            'credits' => -1,
+            'reason' => SessionCreditReason::SessionUsed,
+            'class_session_id' => $classSession->id,
+        ]);
 
         Channel::findOrCreateDirect($classSession->teacher, $classSession->student);
 

@@ -14,12 +14,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Cashier\Billable;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasRoles, Notifiable;
+    use Billable, HasFactory, HasRoles, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -134,6 +135,30 @@ class User extends Authenticatable implements FilamentUser
     public function totalPoints(): int
     {
         return (int) $this->pointsLedger()->sum('points');
+    }
+
+    /**
+     * Get this user's session package purchases.
+     */
+    public function sessionPackagePurchases(): HasMany
+    {
+        return $this->hasMany(SessionPackagePurchase::class);
+    }
+
+    /**
+     * Get this user's session credit ledger entries.
+     */
+    public function sessionCreditLedger(): HasMany
+    {
+        return $this->hasMany(SessionCreditLedgerEntry::class);
+    }
+
+    /**
+     * This user's current session credit balance, summed from the ledger.
+     */
+    public function sessionCreditsBalance(): int
+    {
+        return (int) $this->sessionCreditLedger()->sum('credits');
     }
 
     /**

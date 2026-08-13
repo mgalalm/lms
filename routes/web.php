@@ -2,11 +2,15 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Teacher\SessionsScheduleController;
+use App\Http\Resources\SessionPackageResource;
+use App\Models\SessionPackage;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return Inertia::render('Welcome');
+    return Inertia::render('Welcome', [
+        'packages' => SessionPackageResource::collection(SessionPackage::purchasable()->get()),
+    ]);
 })->name('home');
 
 Route::get('dashboard', DashboardController::class)
@@ -30,3 +34,4 @@ require __DIR__.'/requests.php';
 require __DIR__.'/notifications.php';
 require __DIR__.'/support-tickets.php';
 require __DIR__.'/help.php';
+require __DIR__.'/session-packages.php';

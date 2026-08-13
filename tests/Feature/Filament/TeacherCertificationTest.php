@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Filament;
 
+use App\Enums\SessionCreditReason;
 use App\Enums\SessionType;
 use App\Filament\Resources\ClassSessions\Pages\CreateClassSession;
 use App\Filament\Resources\Courses\Pages\EditCourse;
@@ -96,6 +97,7 @@ class TeacherCertificationTest extends TestCase
         $teacher = User::factory()->teacher()->create();
         $student = User::factory()->student()->create();
         $lesson = Lesson::factory()->create();
+        $student->sessionCreditLedger()->create(['credits' => 5, 'reason' => SessionCreditReason::Adjustment]);
 
         $this->actingAs($admin);
 
@@ -126,6 +128,7 @@ class TeacherCertificationTest extends TestCase
             'teacher_profile_id' => $teacher->teacherProfile->id,
             'course_id' => $lesson->module->course_id,
         ]);
+        $student->sessionCreditLedger()->create(['credits' => 5, 'reason' => SessionCreditReason::Adjustment]);
 
         $this->actingAs($admin);
 

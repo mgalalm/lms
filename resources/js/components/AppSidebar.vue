@@ -55,6 +55,11 @@ const mainNavItems = computed<NavItem[]>(() => {
 
     if (roles.value.includes('student')) {
         items.push({
+            title: 'Session Packages',
+            href: route('session-packages.index'),
+            icon: Wallet,
+        });
+        items.push({
             title: 'Achievements',
             href: route('achievements.index'),
             icon: Trophy,

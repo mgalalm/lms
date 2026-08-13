@@ -3,6 +3,7 @@
 namespace Tests\Feature\Filament;
 
 use App\Enums\ChannelType;
+use App\Enums\SessionCreditReason;
 use App\Enums\SessionType;
 use App\Filament\Resources\ClassSessions\Pages\CreateClassSession;
 use App\Models\Channel;
@@ -37,6 +38,7 @@ class ClassSessionAdminTest extends TestCase
             'teacher_profile_id' => $teacher->teacherProfile->id,
             'course_id' => $lesson->module->course_id,
         ]);
+        $student->sessionCreditLedger()->create(['credits' => 5, 'reason' => SessionCreditReason::Adjustment]);
 
         $this->actingAs($admin);
 
@@ -70,6 +72,7 @@ class ClassSessionAdminTest extends TestCase
             'teacher_profile_id' => $teacher->teacherProfile->id,
             'course_id' => $lesson->module->course_id,
         ]);
+        $student->sessionCreditLedger()->create(['credits' => 5, 'reason' => SessionCreditReason::Adjustment]);
 
         $this->actingAs($admin);
 
@@ -122,6 +125,48 @@ class ClassSessionAdminTest extends TestCase
             ->create(['type' => SessionType::Physical]);
 
         $this->assertDatabaseCount('channels', 1);
+    }
+
+    public function test_scheduling_a_session_for_a_student_with_no_credits_is_rejected(): void
+    {
+        $admin = $this->admin();
+        $teacher = User::factory()->teacher()->create();
+        $student = User::factory()->student()->create();
+        $lesson = Lesson::factory()->create();
+
+        TeacherCourseCompletion::factory()->certified()->create([
+            'teacher_profile_id' => $teacher->teacherProfile->id,
+            'course_id' => $lesson->module->course_id,
+        ]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(CreateClassSession::class)
+            ->fillForm([
+                'teacher_id' => $teacher->id,
+                'student_id' => $student->id,
+                'lesson_id' => $lesson->id,
+                'type' => SessionType::Physical->value,
+                'scheduled_at' => now()->addDay(),
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['student_id']);
+
+        $this->assertDatabaseCount('class_sessions', 0);
+    }
+
+    public function test_creating_a_session_debits_one_credit_from_the_student(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $student = User::factory()->student()->create();
+        $student->sessionCreditLedger()->create(['credits' => 3, 'reason' => SessionCreditReason::Adjustment]);
+
+        ClassSession::factory()
+            ->for($teacher, 'teacher')
+            ->for($student, 'student')
+            ->create(['type' => SessionType::Physical]);
+
+        $this->assertSame(2, $student->sessionCreditsBalance());
     }
 
     public function test_teacher_select_options_only_include_teachers(): void

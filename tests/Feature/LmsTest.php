@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\SessionCreditReason;
 use App\Filament\Resources\ClassSessions\Pages\CreateClassSession;
 use App\Models\Course;
 use App\Models\Lesson;
@@ -147,6 +148,7 @@ class LmsTest extends TestCase
     {
         [$teacher, $course, $lesson, $quiz] = $this->courseWithQuiz();
         $student = User::factory()->student()->create();
+        $student->sessionCreditLedger()->create(['credits' => 5, 'reason' => SessionCreditReason::Adjustment]);
 
         $teacher->teacherProfile->lessonCompletions()->create(['lesson_id' => $lesson->id, 'completed_at' => now()]);
         $question = $quiz->questions->first();

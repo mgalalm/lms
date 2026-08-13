@@ -2,7 +2,9 @@
 import { useAppearance } from '@/composables/useAppearance';
 import type { SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
+
+const props = withDefaults(defineProps<{ showPricing?: boolean }>(), { showPricing: false });
 
 const page = usePage<SharedData>();
 const { appearance, updateAppearance } = useAppearance();
@@ -13,11 +15,20 @@ function toggleTheme(): void {
     updateAppearance(appearance.value === 'dark' ? 'light' : 'dark');
 }
 
-const navLinks = [
-    { label: 'Home', href: '/' },
-    { label: 'Why Us', href: '#why-us' },
-    { label: 'Testimonials', href: '#testimonials' },
-];
+const navLinks = computed(() => {
+    const links = [
+        { label: 'Home', href: '/' },
+        { label: 'Why Us', href: '#why-us' },
+    ];
+
+    if (props.showPricing) {
+        links.push({ label: 'Pricing', href: '#pricing' });
+    }
+
+    links.push({ label: 'Testimonials', href: '#testimonials' });
+
+    return links;
+});
 </script>
 
 <template>

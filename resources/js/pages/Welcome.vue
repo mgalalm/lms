@@ -5,11 +5,17 @@ import FeaturesSection from '@/components/marketing/FeaturesSection.vue';
 import HeroSection from '@/components/marketing/HeroSection.vue';
 import MarketingFooter from '@/components/marketing/MarketingFooter.vue';
 import MarketingHeader from '@/components/marketing/MarketingHeader.vue';
+import PricingSection from '@/components/marketing/PricingSection.vue';
 import TestimonialsSection from '@/components/marketing/TestimonialsSection.vue';
+import type { SessionPackage } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import { onMounted } from 'vue';
+
+defineProps<{
+    packages: SessionPackage[];
+}>();
 
 onMounted(() => {
     AOS.init({ once: true, duration: 600, offset: 80 });
@@ -28,11 +34,12 @@ onMounted(() => {
     </Head>
 
     <div class="bg-whiteColor font-inter dark:bg-whiteColor-dark">
-        <MarketingHeader />
+        <MarketingHeader :show-pricing="packages.length > 0" />
         <main>
             <HeroSection />
             <AboutStatsSection />
             <FeaturesSection />
+            <PricingSection v-if="packages.length > 0" :packages="packages" />
             <CtaSection />
             <TestimonialsSection />
         </main>
