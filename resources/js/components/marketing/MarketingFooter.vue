@@ -8,7 +8,7 @@ import { Link } from '@inertiajs/vue3';
             <section>
                 <div class="gap-30px pb-50px pt-60px md:pb-30px md:pt-30px lg:pt-110px grid grid-cols-12 md:gap-y-5 lg:gap-y-0 lg:pb-20">
                     <div class="mr-30px col-span-12 col-start-1 md:col-span-6 lg:col-span-5" data-aos="fade-up">
-                        <h4 class="text-size-22 text-whiteColor mb-3 font-bold">Edurock</h4>
+                        <h4 class="text-size-22 text-whiteColor mb-3 font-bold">Gen<span class="text-primaryColor">Academy</span></h4>
                         <p class="mb-30px leading-1.8 text-darkgray 2xl:leading-1.8 text-base lg:text-sm 2xl:text-base">
                             A live-tutoring platform for teachers, students, and admins — Zoom sessions, certification, payroll, and HR requests in
                             one place.
@@ -60,14 +60,12 @@ import { Link } from '@inertiajs/vue3';
             <div>
                 <div class="lg:gap-30px grid grid-cols-1 items-center gap-5 pt-10 lg:grid-cols-12">
                     <div class="lg:col-span-3 lg:col-start-1">
-                        <Link href="/">
-                            <img src="/theme/edurock/images/logo/logo_2.png" alt="Edurock" />
-                        </Link>
+                        <Link href="/" class="text-whiteColor text-xl font-bold">Gen<span class="text-primaryColor">Academy</span></Link>
                     </div>
 
                     <div class="lg:col-span-6 lg:col-start-4">
                         <p class="text-whiteColor">
-                            Copyright &copy; <span class="text-primaryColor">{{ new Date().getFullYear() }}</span> Edurock. All Rights Reserved.
+                            Copyright &copy; <span class="text-primaryColor">{{ new Date().getFullYear() }}</span> GenAcademy. All Rights Reserved.
                         </p>
                     </div>
 

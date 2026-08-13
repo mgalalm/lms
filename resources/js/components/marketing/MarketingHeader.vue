@@ -26,9 +26,9 @@ const navLinks = [
         <div class="bg-blackColor2 dark:bg-lightGrey10-dark hidden lg:block">
             <div class="3xl:container2-lg 4xl:container py-5px text-size-12 text-whiteColor xl:py-9px container mx-auto xl:text-sm">
                 <div class="flex items-center justify-between">
-                    <p>Call Us: +1 800 123 456 789 &middot; Mail Us: hello@edurock.test</p>
+                    <p>Call Us: +1 800 123 456 789 &middot; Mail Us: hello@genacademy.test</p>
                     <div class="gap-37px flex items-center">
-                        <p><i class="icofont-location-pin mr-5px text-size-15 text-primaryColor"></i><span>iSchool, Online Tutoring</span></p>
+                        <p><i class="icofont-location-pin mr-5px text-size-15 text-primaryColor"></i><span>GenAcademy, Online Tutoring</span></p>
                         <ul class="gap-13px text-size-15 flex">
                             <li>
                                 <a class="hover:text-primaryColor" href="#"><i class="icofont-facebook"></i></a>
@@ -54,8 +54,8 @@ const navLinks = [
                 <div class="px-15px py-15px 3xl:container2-lg 4xl:container relative mx-auto lg:container lg:py-0">
                     <div class="gap-15px grid grid-cols-2 items-center lg:grid-cols-12">
                         <div class="lg:col-span-2 lg:col-start-1">
-                            <Link href="/" class="block">
-                                <img src="/theme/edurock/images/logo/logo_1.png" alt="Edurock" class="w-logo-sm py-2 lg:w-auto" />
+                            <Link href="/" class="text-blackColor dark:text-whiteColor block py-2 text-xl font-bold">
+                                Gen<span class="text-primaryColor">Academy</span>
                             </Link>
                         </div>
 

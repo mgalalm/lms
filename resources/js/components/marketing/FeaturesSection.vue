@@ -31,7 +31,9 @@ const features = [
         <div class="container">
             <div class="gap-x-30px pt-30px grid grid-cols-1 lg:grid-cols-2">
                 <div class="mb-30px md:pb-30px pb-0 lg:mb-0 xl:pb-0" data-aos="fade-up">
-                    <span class="bg-whitegrey3 py-5px text-primaryColor mb-5 inline-block rounded-full px-6 text-sm font-semibold">Why Edurock</span>
+                    <span class="bg-whitegrey3 py-5px text-primaryColor mb-5 inline-block rounded-full px-6 text-sm font-semibold"
+                        >Why GenAcademy</span
+                    >
                     <h3
                         class="pb-25px text-blackColor dark:text-blackColor-dark md:text-size-35 md:leading-45px 2xl:text-size-38 2xl:leading-50px 3xl:text-size-42 3xl:leading-2xl text-3xl font-bold leading-10"
                     >

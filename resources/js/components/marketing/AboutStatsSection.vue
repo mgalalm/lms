@@ -82,8 +82,8 @@ onMounted(() => {
                         Learning Center
                     </h3>
                     <p class="border-primaryColor text-contentColor dark:text-contentColor-dark mb-6 border-l-2 pl-3 text-sm leading-7 md:text-base">
-                        Every teacher on Edurock completes and passes the same certification quiz as students before they're allowed to teach a course
-                        — so you always know who's on the other side of the camera.
+                        Every teacher on GenAcademy completes and passes the same certification quiz as students before they're allowed to teach a
+                        course — so you always know who's on the other side of the camera.
                     </p>
                     <ul class="space-y-5">
                         <li

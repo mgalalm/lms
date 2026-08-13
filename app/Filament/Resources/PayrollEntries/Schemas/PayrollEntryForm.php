@@ -28,7 +28,7 @@ class PayrollEntryForm
                 DatePicker::make('month')
                     ->required(),
                 TextInput::make('organization')
-                    ->default('iSchool')
+                    ->default('GenAcademy')
                     ->required(),
                 TextInput::make('sessions_count')
                     ->numeric()

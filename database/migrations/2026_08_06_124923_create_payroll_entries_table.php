@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('teacher_profile_id')->constrained()->cascadeOnDelete();
             $table->date('month');
-            $table->string('organization')->default('iSchool');
+            $table->string('organization')->default('GenAcademy');
             $table->unsignedInteger('sessions_count')->default(0);
             $table->decimal('basic_salary', 10, 2);
             $table->string('status')->default('pending');

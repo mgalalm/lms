@@ -21,7 +21,7 @@ class PayrollEntryFactory extends Factory
         return [
             'teacher_profile_id' => TeacherProfile::factory(),
             'month' => now()->startOfMonth(),
-            'organization' => 'iSchool',
+            'organization' => 'GenAcademy',
             'sessions_count' => fake()->numberBetween(10, 60),
             'basic_salary' => fake()->numberBetween(3000, 8000),
             'status' => 'pending',

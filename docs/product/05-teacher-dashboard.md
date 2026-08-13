@@ -10,7 +10,7 @@
 - **Teacher profile** — name + teacher ID shown top-right (e.g. "Mohamed Mostafa — T-10865")
 
 ### Teacher Profile Dropdown
-- **Profile card** — shows teacher photo, ID (e.g. "#T-10865"), points/coins (e.g. "17550"), name, and organization + rank/level (e.g. "iSchool (R 3)")
+- **Profile card** — shows teacher photo, ID (e.g. "#T-10865"), points/coins (e.g. "17550"), name, and organization + rank/level (e.g. "GenAcademy (R 3)")
 - **Menu items**:
   - **Profile** — view/edit teacher profile
   - **Credentials** — linked third-party account logins (see below)
@@ -38,7 +38,7 @@
 ### Teacher Payroll Page
 - **Monthly payroll table** — one row per month, columns:
   - **Month** (e.g. "Aug 2026")
-  - **Organization** (e.g. "iSchool")
+  - **Organization** (e.g. "GenAcademy")
   - **Count** — likely number of sessions taught that month
   - **Basic Salary** — flat monthly base pay
   - **Bonus/Deduction** — separate positive (bonus) and negative (deduction) amounts, each with a "View Details" link

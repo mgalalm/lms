@@ -34,7 +34,7 @@ const testimonials = [
                         What They Say About Us
                     </h3>
                     <p class="text-contentColor dark:text-contentColor-dark 2xl:mb-45px mb-5 text-sm md:text-base">
-                        Real feedback from the parents, teachers, and admins who use Edurock every day.
+                        Real feedback from the parents, teachers, and admins who use GenAcademy every day.
                     </p>
                 </div>
 

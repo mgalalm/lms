@@ -1,6 +1,6 @@
 # LMS Project Docs
 
-Product documentation and rebuild plan for the LMS platform (iSchool-style tutoring LMS: Zoom-based live classes, separate Teacher/Student dashboards).
+Product documentation and rebuild plan for the LMS platform (GenAcademy: Zoom-based live classes, separate Teacher/Student dashboards).
 
 ## Product documentation
 1. [Overview](./product/01-overview.md)
