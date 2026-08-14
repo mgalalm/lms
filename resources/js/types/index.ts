@@ -302,6 +302,20 @@ export interface LatestSessionReview {
     submitted_at: string;
 }
 
+export interface CurrentLesson {
+    id: number;
+    title: string;
+    reading_content: string | null;
+    module_title: string | null;
+    course_title: string | null;
+}
+
+export interface LessonProgress {
+    module_title: string | null;
+    completed: number;
+    total: number;
+}
+
 export type PayrollAdjustmentType = 'bonus' | 'deduction';
 
 export interface PayrollAdjustment {

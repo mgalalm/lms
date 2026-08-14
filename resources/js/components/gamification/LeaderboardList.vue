@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import EmptyState from '@/components/EmptyState.vue';
 import type { LeaderboardEntry } from '@/types';
+import { Trophy } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 const props = defineProps<{
@@ -10,7 +12,7 @@ const hasEntries = computed(() => props.entries.length > 0);
 </script>
 
 <template>
-    <p v-if="!hasEntries" class="text-sm text-muted-foreground">No one has earned points yet.</p>
+    <EmptyState v-if="!hasEntries" :icon="Trophy" heading="No rankings yet" description="Once points are earned, the leaderboard will show up here." />
 
     <div
         v-else

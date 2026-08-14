@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import EmptyState from '@/components/EmptyState.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCountdown } from '@/composables/useCountdown';
 import { withDisplayName } from '@/composables/zoomJoinUrl';
 import type { ClassSession, SharedData } from '@/types';
 import { usePage } from '@inertiajs/vue3';
+import { CalendarClock } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 const props = withDefaults(
@@ -60,7 +62,18 @@ const scheduledLabel = computed(() => {
             <CardTitle>Next Session</CardTitle>
         </CardHeader>
         <CardContent>
-            <p v-if="!session" class="text-sm text-muted-foreground">Your sessions list is empty.</p>
+            <EmptyState
+                v-if="!session"
+                :icon="CalendarClock"
+                heading="No upcoming sessions"
+                :description="
+                    viewerRole === 'student'
+                        ? 'You have no sessions scheduled right now. Buy a session package to get started.'
+                        : 'You have no sessions scheduled right now.'
+                "
+                :cta-label="viewerRole === 'student' ? 'Buy a Session Package' : undefined"
+                :cta-href="viewerRole === 'student' ? route('session-packages.index') : undefined"
+            />
 
             <div v-else class="flex flex-col gap-4">
                 <div v-if="countdown" class="flex items-baseline gap-6">

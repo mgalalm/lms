@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EmptyState from '@/components/EmptyState.vue';
 import type { Badge } from '@/types';
 import { Award, Clock, Flame, GraduationCap, type LucideIcon, Medal, Rocket, Star, Target, Trophy, Zap } from 'lucide-vue-next';
 import { computed } from 'vue';
@@ -28,7 +29,14 @@ const hasBadges = computed(() => props.badges.length > 0);
 </script>
 
 <template>
-    <p v-if="!hasBadges" class="text-sm text-muted-foreground">No badges earned yet.</p>
+    <EmptyState
+        v-if="!hasBadges"
+        :icon="Trophy"
+        heading="No badges yet"
+        description="Complete sessions and hit milestones to start earning badges."
+        cta-label="See How to Earn"
+        :cta-href="route('achievements.index')"
+    />
 
     <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div

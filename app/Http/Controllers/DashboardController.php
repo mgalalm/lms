@@ -7,6 +7,8 @@ use App\Enums\UserRole;
 use App\Http\Resources\BadgeResource;
 use App\Http\Resources\ClassSessionResource;
 use App\Http\Resources\LeaderboardEntryResource;
+use App\Models\ClassSession;
+use App\Models\Lesson;
 use App\Models\SessionReview;
 use App\Models\StudentProfile;
 use App\Models\TeacherProfile;
@@ -55,6 +57,14 @@ class DashboardController extends Controller
             ->latest('student_submitted_at')
             ->first();
 
+        $currentLesson = $nextSession?->lesson
+            ?? $pendingFeedbackSession?->lesson
+            ?? $user->sessionsAsStudent()->latest('scheduled_at')->first()?->lesson;
+
+        if ($currentLesson) {
+            $currentLesson->loadMissing('module.course');
+        }
+
         return Inertia::render('dashboard/Student', [
             'nextSession' => $nextSession ? new ClassSessionResource($nextSession) : null,
             'pendingFeedbackSession' => $pendingFeedbackSession ? new ClassSessionResource($pendingFeedbackSession) : null,
@@ -65,6 +75,14 @@ class DashboardController extends Controller
                 'teacher_name' => $latestReview->classSession->teacher?->name,
                 'submitted_at' => $latestReview->student_submitted_at->toIso8601String(),
             ] : null,
+            'currentLesson' => $currentLesson ? [
+                'id' => $currentLesson->id,
+                'title' => $currentLesson->title,
+                'reading_content' => $currentLesson->reading_content,
+                'module_title' => $currentLesson->module?->title,
+                'course_title' => $currentLesson->module?->course?->title,
+            ] : null,
+            'progress' => $currentLesson ? $this->moduleProgress($user, $currentLesson) : null,
             'points' => $user->totalPoints(),
             'recentBadges' => BadgeResource::collection(
                 $user->badges()->orderByDesc('badge_user.awarded_at')->limit(3)->get()
@@ -72,6 +90,33 @@ class DashboardController extends Controller
             'leaderboard' => $this->leaderboard(UserRole::Student->value, $user->id),
             'timezone' => $user->studentProfile?->resolvedTimezone() ?? StudentProfile::DEFAULT_TIMEZONE,
         ]);
+    }
+
+    /**
+     * How many distinct lessons in the current lesson's module the student
+     * has completed a session for, out of the module's total lesson count.
+     *
+     * @return array{module_title: ?string, completed: int, total: int}
+     */
+    private function moduleProgress(User $user, Lesson $currentLesson): array
+    {
+        $module = $currentLesson->module;
+        $total = $module?->lessons()->count() ?? 0;
+
+        $completed = $module
+            ? ClassSession::query()
+                ->where('student_id', $user->id)
+                ->where('status', SessionStatus::Completed)
+                ->whereHas('lesson', fn ($query) => $query->where('module_id', $module->id))
+                ->distinct('lesson_id')
+                ->count('lesson_id')
+            : 0;
+
+        return [
+            'module_title' => $module?->title,
+            'completed' => $completed,
+            'total' => $total,
+        ];
     }
 
     private function teacher(User $user): Response
