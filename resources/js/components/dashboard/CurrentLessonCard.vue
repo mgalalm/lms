@@ -17,7 +17,7 @@ const lessonPath = computed(() => [props.lesson?.course_title, props.lesson?.mod
 <template>
     <Card>
         <CardHeader>
-            <CardTitle>Current Lesson</CardTitle>
+            <CardTitle class="text-base">Current Lesson</CardTitle>
             <CardDescription v-if="lesson">{{ lessonPath }}</CardDescription>
         </CardHeader>
         <CardContent>

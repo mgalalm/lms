@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Enums\SessionStatus;
 use App\Models\ClassSession;
+use App\Models\Lesson;
+use App\Models\Module;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,7 +29,41 @@ class RoleDashboardTest extends TestCase
 
         $this->actingAs($student)
             ->get('/dashboard')
-            ->assertInertia(fn (Assert $page) => $page->component('dashboard/Student')->where('nextSession', null));
+            ->assertInertia(fn (Assert $page) => $page->component('dashboard/Student')
+                ->where('nextSession', null)
+                ->where('currentLesson', null)
+                ->where('progress', null)
+            );
+    }
+
+    public function test_student_dashboard_exposes_the_current_lesson_and_module_progress(): void
+    {
+        $student = User::factory()->student()->create();
+        $module = Module::factory()->create(['title' => 'M1: Intro to Scratch']);
+        $completedLesson = Lesson::factory()->for($module)->create();
+        $upcomingLesson = Lesson::factory()->for($module)->create();
+
+        ClassSession::factory()
+            ->for($student, 'student')
+            ->for($completedLesson, 'lesson')
+            ->completed()
+            ->create(['zoom_meeting_id' => 'test-meeting-completed']);
+
+        $upcomingSession = ClassSession::factory()
+            ->for($student, 'student')
+            ->for($upcomingLesson, 'lesson')
+            ->create(['zoom_meeting_id' => 'test-meeting-upcoming']);
+
+        $this->actingAs($student)
+            ->get('/dashboard')
+            ->assertInertia(fn (Assert $page) => $page->component('dashboard/Student')
+                ->where('nextSession.id', $upcomingSession->id)
+                ->where('currentLesson.id', $upcomingLesson->id)
+                ->where('currentLesson.module_title', 'M1: Intro to Scratch')
+                ->where('progress.module_title', 'M1: Intro to Scratch')
+                ->where('progress.completed', 1)
+                ->where('progress.total', 2)
+            );
     }
 
     public function test_student_dashboard_exposes_the_join_url_but_not_the_start_url(): void

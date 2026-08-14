@@ -21,7 +21,7 @@ const percentage = computed(() => {
 <template>
     <Card>
         <CardHeader>
-            <CardTitle>My Progress</CardTitle>
+            <CardTitle class="text-base">My Progress</CardTitle>
         </CardHeader>
         <CardContent>
             <EmptyState

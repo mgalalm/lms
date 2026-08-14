@@ -59,7 +59,7 @@ const scheduledLabel = computed(() => {
 <template>
     <Card>
         <CardHeader>
-            <CardTitle>Next Session</CardTitle>
+            <CardTitle class="text-base">Next Session</CardTitle>
         </CardHeader>
         <CardContent>
             <EmptyState

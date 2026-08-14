@@ -47,7 +47,7 @@ const sentimentIcon = { negative: Frown, neutral: Meh, positive: Smile } as cons
                 <div class="flex flex-col gap-6">
                     <Card>
                         <CardHeader class="flex-row items-center justify-between">
-                            <CardTitle class="flex items-center gap-2">
+                            <CardTitle class="flex items-center gap-2 text-base">
                                 <Coins class="size-5 text-[#F59E0B]" />
                                 Coins
                             </CardTitle>
@@ -62,7 +62,7 @@ const sentimentIcon = { negative: Frown, neutral: Meh, positive: Smile } as cons
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Latest Session Review</CardTitle>
+                            <CardTitle class="text-base">Latest Session Review</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <div v-if="latestReview" class="flex items-center gap-3">
@@ -90,17 +90,17 @@ const sentimentIcon = { negative: Frown, neutral: Meh, positive: Smile } as cons
 
                     <Card>
                         <CardHeader class="flex-row items-center justify-between">
-                            <CardTitle>Badges</CardTitle>
+                            <CardTitle class="text-base">Badges</CardTitle>
                             <Link :href="route('achievements.index')" class="text-xs text-primary hover:underline">View All</Link>
                         </CardHeader>
                         <CardContent>
-                            <BadgeList :badges="recentBadges" />
+                            <BadgeList :badges="recentBadges" :columns="1" />
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader class="flex-row items-center justify-between">
-                            <CardTitle>Leaderboard</CardTitle>
+                            <CardTitle class="text-base">Leaderboard</CardTitle>
                             <Link :href="route('achievements.index')" class="text-xs text-primary hover:underline">View All</Link>
                         </CardHeader>
                         <CardContent>

@@ -4,9 +4,23 @@ import type { Badge } from '@/types';
 import { Award, Clock, Flame, GraduationCap, type LucideIcon, Medal, Rocket, Star, Target, Trophy, Zap } from 'lucide-vue-next';
 import { computed } from 'vue';
 
-const props = defineProps<{
-    badges: Badge[];
-}>();
+const props = withDefaults(
+    defineProps<{
+        badges: Badge[];
+        /** How many columns to lay badges out in on wide viewports — pass 1 when the list is rendered in a narrow container (e.g. a dashboard sidebar). */
+        columns?: 1 | 2 | 3;
+    }>(),
+    { columns: 3 },
+);
+
+const gridColsClass = computed(
+    () =>
+        ({
+            1: 'grid-cols-1',
+            2: 'grid-cols-1 sm:grid-cols-2',
+            3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+        })[props.columns],
+);
 
 const icons: Record<string, LucideIcon> = {
     trophy: Trophy,
@@ -38,7 +52,7 @@ const hasBadges = computed(() => props.badges.length > 0);
         :cta-href="route('achievements.index')"
     />
 
-    <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div v-else class="grid gap-3" :class="gridColsClass">
         <div
             v-for="badge in badges"
             :key="badge.id"
