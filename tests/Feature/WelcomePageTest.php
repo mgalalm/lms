@@ -15,7 +15,7 @@ class WelcomePageTest extends TestCase
     {
         $purchasable = SessionPackage::factory()->create(['name' => '10-Session Package']);
         SessionPackage::factory()->create(['active' => false, 'name' => 'Hidden Package']);
-        SessionPackage::factory()->create(['stripe_price_id' => null, 'name' => 'Unpriced Package']);
+        SessionPackage::factory()->create(['stripe_lookup_key' => null, 'name' => 'Unpriced Package']);
 
         $this->get(route('home'))
             ->assertInertia(fn (Assert $page) => $page

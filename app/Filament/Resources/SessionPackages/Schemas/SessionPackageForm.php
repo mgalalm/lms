@@ -35,9 +35,9 @@ class SessionPackageForm
                     ->required()
                     ->default('eur')
                     ->maxLength(3),
-                TextInput::make('stripe_price_id')
-                    ->label('Stripe Price ID')
-                    ->helperText('Create a Price for this package in the Stripe dashboard and paste its ID here. Packages without a Price ID are hidden from students.')
+                TextInput::make('stripe_lookup_key')
+                    ->label('Stripe Lookup Key')
+                    ->helperText('Set a lookup key on the Price in the Stripe dashboard and enter it here (e.g. "starter_pack"). Packages without one are hidden from students. The actual Price ID is resolved from Stripe at checkout time, so rotating the Price in Stripe under the same lookup key needs no change here.')
                     ->maxLength(255),
                 Toggle::make('active')
                     ->default(true),

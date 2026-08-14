@@ -21,7 +21,7 @@ class SessionPackageCheckoutController extends Controller
      */
     public function store(Request $request, SessionPackage $sessionPackage): Checkout
     {
-        abort_unless($sessionPackage->active && $sessionPackage->stripe_price_id, 404);
+        abort_unless($sessionPackage->active && $sessionPackage->stripe_lookup_key, 404);
 
         $purchase = $request->user()->sessionPackagePurchases()->create([
             'session_package_id' => $sessionPackage->id,
@@ -31,7 +31,7 @@ class SessionPackageCheckoutController extends Controller
             'currency' => $sessionPackage->currency,
         ]);
 
-        return $request->user()->checkout([$sessionPackage->stripe_price_id => 1], [
+        return $request->user()->checkout([$sessionPackage->resolveStripePriceId() => 1], [
             'success_url' => route('session-packages.checkout.success').'?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => route('session-packages.checkout.cancel', $purchase),
             'metadata' => ['session_package_purchase_id' => $purchase->id],

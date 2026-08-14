@@ -25,7 +25,7 @@ class SessionPackageFactory extends Factory
             'session_count' => $sessionCount,
             'price_cents' => $sessionCount * 3000,
             'currency' => 'eur',
-            'stripe_price_id' => 'price_'.fake()->unique()->bothify('??????????????'),
+            'stripe_lookup_key' => fake()->unique()->slug(2),
             'active' => true,
         ];
     }

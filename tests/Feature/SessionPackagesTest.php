@@ -36,7 +36,7 @@ class SessionPackagesTest extends TestCase
 
         $purchasable = SessionPackage::factory()->create(['name' => '10-Session Package']);
         SessionPackage::factory()->create(['active' => false, 'name' => 'Hidden Package']);
-        SessionPackage::factory()->create(['stripe_price_id' => null, 'name' => 'Unpriced Package']);
+        SessionPackage::factory()->create(['stripe_lookup_key' => null, 'name' => 'Unpriced Package']);
 
         SessionPackagePurchase::factory()->paid()->for($student)->for($purchasable, 'sessionPackage')->create();
 
@@ -56,7 +56,7 @@ class SessionPackagesTest extends TestCase
 
         $student = User::factory()->student()->create();
         $package = SessionPackage::factory()->create([
-            'stripe_price_id' => 'price_abc123',
+            'stripe_lookup_key' => 'starter_pack',
             'session_count' => 10,
             'price_cents' => 15000,
         ]);
@@ -74,10 +74,10 @@ class SessionPackagesTest extends TestCase
         ]);
     }
 
-    public function test_checkout_for_a_package_without_a_stripe_price_id_is_not_found(): void
+    public function test_checkout_for_a_package_without_a_stripe_lookup_key_is_not_found(): void
     {
         $student = User::factory()->student()->create();
-        $package = SessionPackage::factory()->create(['stripe_price_id' => null]);
+        $package = SessionPackage::factory()->create(['stripe_lookup_key' => null]);
 
         $this->actingAs($student)
             ->get(route('session-packages.checkout', $package))
@@ -207,6 +207,15 @@ class SessionPackagesTest extends TestCase
             {
                 if (str_contains($absUrl, '/v1/customers')) {
                     return [json_encode(['id' => 'cus_test_fake123', 'object' => 'customer']), 200, []];
+                }
+
+                if (str_contains($absUrl, '/v1/prices')) {
+                    return [json_encode([
+                        'object' => 'list',
+                        'data' => [
+                            ['id' => 'price_resolved_fake123', 'object' => 'price'],
+                        ],
+                    ]), 200, []];
                 }
 
                 if (str_contains($absUrl, '/v1/checkout/sessions')) {

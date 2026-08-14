@@ -25,8 +25,8 @@ class SessionPackagesTable
                     ->label('Price')
                     ->formatStateUsing(fn (int $state, $record) => number_format($state / 100, 2).' '.strtoupper($record->currency))
                     ->sortable(),
-                TextColumn::make('stripe_price_id')
-                    ->label('Stripe Price ID')
+                TextColumn::make('stripe_lookup_key')
+                    ->label('Stripe Lookup Key')
                     ->placeholder('Not set')
                     ->toggleable(),
                 IconColumn::make('active')
