@@ -4,9 +4,9 @@ import MessageBubble from '@/components/community/MessageBubble.vue';
 import MessageComposer from '@/components/community/MessageComposer.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem, Channel, Message, SharedData } from '@/types';
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { useEcho } from '@laravel/echo-vue';
-import { Users } from 'lucide-vue-next';
+import { ArrowLeft, Users } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
 const props = defineProps<{
@@ -64,13 +64,19 @@ if (props.selectedChannel) {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-            <div class="w-72 shrink-0 border-r border-sidebar-border/70 dark:border-sidebar-border">
+            <div
+                class="w-full shrink-0 border-sidebar-border/70 md:block md:w-72 md:border-r dark:border-sidebar-border"
+                :class="selectedChannel ? 'hidden' : 'block'"
+            >
                 <ChannelList :channels="channels" :selected-channel-id="selectedChannel?.id" />
             </div>
 
-            <div class="flex flex-1 flex-col overflow-hidden">
+            <div class="flex-1 flex-col overflow-hidden md:flex" :class="selectedChannel ? 'flex' : 'hidden'">
                 <template v-if="selectedChannel">
-                    <div class="flex items-center justify-between border-b border-sidebar-border/70 p-3 dark:border-sidebar-border">
+                    <div class="flex items-center gap-2 border-b border-sidebar-border/70 p-3 dark:border-sidebar-border">
+                        <Link :href="route('community.index')" class="text-muted-foreground hover:text-foreground md:hidden">
+                            <ArrowLeft class="size-4" />
+                        </Link>
                         <div>
                             <p class="text-sm font-semibold">
                                 {{ selectedChannel.name }}

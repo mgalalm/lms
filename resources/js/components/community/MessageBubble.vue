@@ -37,7 +37,7 @@ const timeLabel = computed(() =>
         </div>
 
         <TaskCard v-if="message.type === 'task_card'" :message="message" />
-        <div v-else-if="message.body" class="tiptap-content max-w-md rounded-lg bg-muted px-3 py-2" v-html="message.body" />
+        <div v-else-if="message.body" class="tiptap-content max-w-full rounded-lg bg-muted px-3 py-2 break-words md:max-w-md" v-html="message.body" />
 
         <div v-if="message.attachments?.length" class="flex flex-col gap-1">
             <a
