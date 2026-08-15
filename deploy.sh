@@ -30,4 +30,11 @@ sudo systemctl reload php8.3-fpm
 echo "Terminating Horizon so the process manager restarts it..."
 php "$ROOT_DIR/artisan" horizon:terminate
 
+echo "Verifying Horizon is running..."
+sleep 5
+if ! php "$ROOT_DIR/artisan" horizon:status | grep -q "Horizon is running"; then
+  echo "ERROR: Horizon is not running. Configure Supervisor/systemd to run: php $ROOT_DIR/artisan horizon"
+  exit 1
+fi
+
 echo "Done."
