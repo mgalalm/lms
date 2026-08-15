@@ -2,7 +2,7 @@
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem, HelpArticleDetail, HelpArticleSummary } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { LifeBuoy, Search } from 'lucide-vue-next';
+import { ArrowLeft, LifeBuoy, Search } from 'lucide-vue-next';
 import { ref, watch } from 'vue';
 
 const props = defineProps<{
@@ -38,7 +38,10 @@ function articleHref(slug: string): string {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
-            <div class="flex w-80 shrink-0 flex-col border-r border-sidebar-border/70 dark:border-sidebar-border">
+            <div
+                class="w-full shrink-0 flex-col border-sidebar-border/70 md:flex md:w-80 md:border-r dark:border-sidebar-border"
+                :class="selected ? 'hidden' : 'flex'"
+            >
                 <div class="border-b border-sidebar-border/70 p-3 dark:border-sidebar-border">
                     <div class="relative">
                         <Search class="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -72,11 +75,15 @@ function articleHref(slug: string): string {
                 </div>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-6">
+            <div class="flex-1 overflow-y-auto p-6" :class="selected ? 'block' : 'hidden md:block'">
                 <template v-if="selected">
+                    <Link :href="route('help.index')" class="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground md:hidden">
+                        <ArrowLeft class="size-4" />
+                        Back to topics
+                    </Link>
                     <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{{ selected.category }}</p>
                     <h1 class="mb-4 mt-1 text-2xl font-bold">{{ selected.title }}</h1>
-                    <div class="help-content max-w-2xl text-sm leading-relaxed" v-html="selected.body_html" />
+                    <div class="help-content max-w-2xl break-words text-sm leading-relaxed" v-html="selected.body_html" />
                 </template>
 
                 <div v-else class="flex h-full flex-col items-center justify-center gap-2 text-center text-muted-foreground">
