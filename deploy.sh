@@ -27,4 +27,7 @@ php "$ROOT_DIR/artisan" view:cache
 echo "Reloading php-fpm..."
 sudo systemctl reload php8.3-fpm
 
+echo "Terminating Horizon so the process manager restarts it..."
+php "$ROOT_DIR/artisan" horizon:terminate
+
 echo "Done."
