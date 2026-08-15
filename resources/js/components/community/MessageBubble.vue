@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import TaskCard from '@/components/community/TaskCard.vue';
 import type { Message } from '@/types';
-import { Paperclip } from 'lucide-vue-next';
+import { Clock, Paperclip, ShieldAlert } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 const props = defineProps<{
@@ -51,6 +51,15 @@ const timeLabel = computed(() =>
                 <Paperclip class="size-3" />
                 {{ attachment.filename }}
             </a>
+        </div>
+
+        <div v-if="isOwnMessage && message.moderation_status === 'pending'" class="flex items-center gap-1 text-xs text-muted-foreground">
+            <Clock class="size-3" />
+            Pending review — only visible to you for now
+        </div>
+        <div v-else-if="isOwnMessage && message.moderation_status === 'flagged'" class="flex items-center gap-1 text-xs text-destructive">
+            <ShieldAlert class="size-3" />
+            Flagged for review — hidden from other participants
         </div>
     </div>
 </template>

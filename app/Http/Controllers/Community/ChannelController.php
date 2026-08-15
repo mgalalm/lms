@@ -36,13 +36,20 @@ class ChannelController extends Controller
     {
         Gate::authorize('view', $channel);
 
-        $request->user()->channels()->updateExistingPivot($channel->id, [
+        $user = $request->user();
+
+        $user->channels()->updateExistingPivot($channel->id, [
             'last_read_at' => now(),
         ]);
 
-        $channel->load(['users.teacherProfile', 'users.studentProfile', 'latestMessage']);
+        $channel->load([
+            'users.teacherProfile',
+            'users.studentProfile',
+            'latestMessage' => fn ($query) => $query->visibleTo($user),
+        ]);
 
         $messages = $channel->messages()
+            ->visibleTo($user)
             ->with(['user.teacherProfile', 'user.studentProfile'])
             ->latest()
             ->limit(50)
@@ -51,7 +58,7 @@ class ChannelController extends Controller
             ->values();
 
         return Inertia::render('community/Index', [
-            'channels' => $this->channelsFor($request->user()),
+            'channels' => $this->channelsFor($user),
             'selectedChannel' => new ChannelResource($channel),
             'messages' => MessageResource::collection($messages),
         ]);
@@ -78,13 +85,18 @@ class ChannelController extends Controller
     {
         $channels = $user->channels()
             ->where('type', '!=', ChannelType::Support)
-            ->with(['users.teacherProfile', 'users.studentProfile', 'latestMessage'])
+            ->with([
+                'users.teacherProfile',
+                'users.studentProfile',
+                'latestMessage' => fn ($query) => $query->visibleTo($user),
+            ])
             ->get();
 
         $channels->each(function (Channel $channel) use ($user) {
             $lastReadAt = $channel->pivot->last_read_at;
 
             $channel->unread_count = $channel->messages()
+                ->approved()
                 ->where('user_id', '!=', $user->id)
                 ->when($lastReadAt, fn ($query) => $query->where('created_at', '>', $lastReadAt))
                 ->count();

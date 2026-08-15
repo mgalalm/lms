@@ -162,6 +162,8 @@ export interface MessageUser {
     code: string | null;
 }
 
+export type MessageModerationStatus = 'pending' | 'approved' | 'flagged';
+
 export interface Message {
     id: number;
     channel_id: number;
@@ -169,6 +171,7 @@ export interface Message {
     body: string | null;
     meta: MessageTaskMeta | null;
     attachments: MessageAttachment[] | null;
+    moderation_status: MessageModerationStatus;
     created_at: string;
     user: MessageUser;
 }

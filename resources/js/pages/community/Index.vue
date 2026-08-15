@@ -52,7 +52,17 @@ if (props.selectedChannel) {
     const channelId = props.selectedChannel.id;
 
     useEcho(`channel.${channelId}`, '.message.sent', (payload: { message: Message }) => {
-        messages.value.push(payload.message);
+        // A moderated message can reach this client twice — once from the
+        // initial page load (the sender always sees their own message) and
+        // again from the broadcast once it clears moderation. Replace the
+        // existing entry instead of duplicating it.
+        const existingIndex = messages.value.findIndex((message) => message.id === payload.message.id);
+
+        if (existingIndex === -1) {
+            messages.value.push(payload.message);
+        } else {
+            messages.value[existingIndex] = payload.message;
+        }
 
         router.patch(route('community.read', channelId), {}, { preserveState: true, preserveScroll: true, only: ['channels'], showProgress: false });
     });

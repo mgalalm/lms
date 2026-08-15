@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Community;
 
-use App\Events\MessageSent;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Community\StoreMessageRequest;
 use App\Models\Channel;
@@ -13,7 +12,10 @@ use Illuminate\Support\Facades\Storage;
 class MessageController extends Controller
 {
     /**
-     * Post a new message (or task/reminder card) to a channel.
+     * Post a new message (or task/reminder card) to a channel. The message
+     * is created hidden from other participants until it clears automated
+     * moderation (dispatched by MessageObserver) — see Message::
+     * approveModeration()/flagModeration() for what happens next.
      */
     public function store(StoreMessageRequest $request, Channel $channel): RedirectResponse
     {
@@ -31,17 +33,13 @@ class MessageController extends Controller
             ];
         })->all();
 
-        $message = $channel->messages()->create([
+        $channel->messages()->create([
             'user_id' => $request->user()->id,
             'type' => $validated['type'],
             'body' => RichText::sanitize($validated['body'] ?? null),
             'meta' => $validated['meta'] ?? null,
             'attachments' => $attachments ?: null,
         ]);
-
-        $message->load(['user.teacherProfile', 'user.studentProfile']);
-
-        broadcast(new MessageSent($message))->toOthers();
 
         return back();
     }
