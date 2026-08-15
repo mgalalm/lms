@@ -36,6 +36,21 @@ if ! sudo systemctl is-active --quiet horizon-lms; then
   sudo systemctl status horizon-lms --no-pager
   exit 1
 fi
-php "$ROOT_DIR/artisan" horizon:status
+
+for attempt in 1 2 3 4 5 6; do
+  if php "$ROOT_DIR/artisan" horizon:status 2>&1 | grep -q "Horizon is running"; then
+    php "$ROOT_DIR/artisan" horizon:status
+    break
+  fi
+
+  if [ "$attempt" -eq 6 ]; then
+    echo "ERROR: horizon-lms is active, but Horizon did not report as running."
+    sudo systemctl status horizon-lms --no-pager
+    php "$ROOT_DIR/artisan" horizon:status
+    exit 1
+  fi
+
+  sleep 5
+done
 
 echo "Done."
