@@ -27,14 +27,15 @@ php "$ROOT_DIR/artisan" view:cache
 echo "Reloading php-fpm..."
 sudo systemctl reload php8.3-fpm
 
-echo "Terminating Horizon so the process manager restarts it..."
-php "$ROOT_DIR/artisan" horizon:terminate
+echo "Restarting Horizon..."
+sudo systemctl restart horizon-lms
 
 echo "Verifying Horizon is running..."
-sleep 5
-if ! php "$ROOT_DIR/artisan" horizon:status | grep -q "Horizon is running"; then
-  echo "ERROR: Horizon is not running. Configure Supervisor/systemd to run: php $ROOT_DIR/artisan horizon"
+if ! sudo systemctl is-active --quiet horizon-lms; then
+  echo "ERROR: horizon-lms service is not running."
+  sudo systemctl status horizon-lms --no-pager
   exit 1
 fi
+php "$ROOT_DIR/artisan" horizon:status
 
 echo "Done."
