@@ -14,6 +14,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Laravel\Cashier\Billable;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -53,6 +56,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'gdpr_erased_at' => 'datetime',
         ];
     }
 
@@ -178,5 +182,55 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->hasRole(UserRole::Admin->value);
+    }
+
+    /**
+     * Irreversibly scrub this user's personally identifying information —
+     * name, email, login credentials, and parent/guardian contact details
+     * — and revoke their roles so they drop off active rosters/leaderboards
+     * and can no longer log in.
+     *
+     * Deliberately anonymizes rather than deletes: session history, chat
+     * messages, and payment records (session_package_purchases, the
+     * session credit ledger) all stay intact, just no longer identifiable
+     * to this person. GDPR's right to erasure doesn't require destroying
+     * records a business is legally obligated to retain (payment/tax
+     * records) or that belong to the shared history of another
+     * participant (a teacher's own session log, a channel's messages) —
+     * only the requester's own personal data needs to go.
+     *
+     * Idempotent — calling this on an already-erased user does nothing.
+     */
+    public function gdprErase(): void
+    {
+        if ($this->gdpr_erased_at) {
+            return;
+        }
+
+        DB::transaction(function () {
+            $this->forceFill([
+                'name' => 'Deleted User',
+                'email' => "deleted-user-{$this->id}@erased.invalid",
+                'password' => Hash::make(Str::random(40)),
+                'remember_token' => null,
+                'gdpr_erased_at' => now(),
+            ])->save();
+
+            $this->syncRoles([]);
+
+            $this->studentProfile?->update([
+                'parent_name' => null,
+                'parent_email' => null,
+                'parent_phone' => null,
+            ]);
+
+            $this->teacherProfile?->update([
+                'photo_path' => null,
+                'bank_name' => null,
+                'bank_account_number' => null,
+                'team_leader_name' => null,
+                'mentor_name' => null,
+            ]);
+        });
     }
 }
