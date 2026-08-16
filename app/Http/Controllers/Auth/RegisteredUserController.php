@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\StudentProfile;
 use App\Models\User;
+use App\Rules\Turnstile;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -39,6 +40,11 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'parent_email' => ['required', 'string', 'email', 'max:255'],
             'consent' => ['required', 'accepted'],
+            // Not marked 'required' — the Turnstile rule itself only
+            // enforces a token when TURNSTILE_SECRET_KEY is configured,
+            // so local/test environments without Cloudflare keys aren't
+            // blocked from registering.
+            'turnstile_token' => ['string', new Turnstile],
         ]);
 
         $user = User::create([

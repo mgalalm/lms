@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTurnstile } from '@/composables/useTurnstile';
 import AuthBase from '@/layouts/AuthLayout.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
@@ -17,6 +18,13 @@ const form = useForm({
     password_confirmation: '',
     parent_email: '',
     consent: false,
+    turnstile_token: '',
+});
+
+const { container: turnstileContainer, token: turnstileToken } = useTurnstile(import.meta.env.VITE_TURNSTILE_SITE_KEY);
+
+watch(turnstileToken, (token) => {
+    form.turnstile_token = token;
 });
 
 // Covers the common case (an adult registering on behalf of a younger
@@ -114,6 +122,9 @@ const submit = () => {
                     </Label>
                     <InputError :message="form.errors.consent" />
                 </div>
+
+                <div ref="turnstileContainer"></div>
+                <InputError :message="form.errors.turnstile_token" />
 
                 <Button type="submit" class="mt-2 w-full" tabindex="8" :disabled="form.processing">
                     <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin" />
