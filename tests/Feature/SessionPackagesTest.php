@@ -71,6 +71,7 @@ class SessionPackagesTest extends TestCase
             'status' => SessionPackagePurchaseStatus::Pending->value,
             'session_count' => 10,
             'price_cents' => 15000,
+            'stripe_checkout_session_id' => 'cs_test_fake123',
         ]);
     }
 

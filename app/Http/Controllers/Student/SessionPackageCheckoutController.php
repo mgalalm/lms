@@ -31,11 +31,17 @@ class SessionPackageCheckoutController extends Controller
             'currency' => $sessionPackage->currency,
         ]);
 
-        return $request->user()->checkout([$sessionPackage->resolveStripePriceId() => 1], [
+        $checkout = $request->user()->checkout([$sessionPackage->resolveStripePriceId() => 1], [
             'success_url' => route('session-packages.checkout.success').'?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => route('session-packages.checkout.cancel', $purchase),
             'metadata' => ['session_package_purchase_id' => $purchase->id],
         ]);
+
+        // Recorded up front (not just by the webhook) so a stuck/undelivered
+        // webhook still leaves admins something to verify against in Stripe.
+        $purchase->update(['stripe_checkout_session_id' => $checkout->asStripeCheckoutSession()->id]);
+
+        return $checkout;
     }
 
     /**

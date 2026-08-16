@@ -2,11 +2,8 @@
 
 namespace App\Listeners;
 
-use App\Enums\SessionCreditReason;
 use App\Enums\SessionPackagePurchaseStatus;
 use App\Models\SessionPackagePurchase;
-use App\Notifications\SessionPackagePurchased;
-use Illuminate\Support\Facades\DB;
 use Laravel\Cashier\Events\WebhookReceived;
 
 class CreditSessionPackagePurchase
@@ -39,20 +36,6 @@ class CreditSessionPackagePurchase
             return;
         }
 
-        DB::transaction(function () use ($purchase, $session) {
-            $purchase->update([
-                'status' => SessionPackagePurchaseStatus::Paid,
-                'stripe_checkout_session_id' => $session['id'],
-                'paid_at' => now(),
-            ]);
-
-            $purchase->user->sessionCreditLedger()->create([
-                'credits' => $purchase->session_count,
-                'reason' => SessionCreditReason::Purchase,
-                'session_package_purchase_id' => $purchase->id,
-            ]);
-        });
-
-        $purchase->user->notify(new SessionPackagePurchased($purchase));
+        $purchase->markAsPaid($session['id']);
     }
 }
