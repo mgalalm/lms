@@ -26,11 +26,21 @@ class StudentProfilesTable
                 TextColumn::make('timezone')
                     ->placeholder(StudentProfile::DEFAULT_TIMEZONE.' (default)')
                     ->sortable(),
-                TextColumn::make('parent_email')
-                    ->label('Parent Email')
+                TextColumn::make('parent_name')
+                    ->label('Parent/Guardian Name')
                     ->placeholder('Not set')
                     ->searchable()
                     ->toggleable(),
+                TextColumn::make('parent_email')
+                    ->label('Parent/Guardian Email')
+                    ->placeholder('Not set')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('parent_phone')
+                    ->label('Parent/Guardian Phone')
+                    ->placeholder('Not set')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 IconColumn::make('consent_given_at')
                     ->label('Consent')
                     ->boolean()

@@ -13,6 +13,7 @@ use App\Models\SessionReview;
 use App\Models\StudentProfile;
 use App\Models\TeacherProfile;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -22,9 +23,18 @@ class DashboardController extends Controller
     /**
      * Handle the incoming request.
      */
-    public function __invoke(Request $request): Response
+    public function __invoke(Request $request): RedirectResponse|Response
     {
         $user = $request->user();
+
+        // Admins live in the Filament back office, not the Inertia
+        // portals — send them straight there instead of a generic
+        // dashboard with nothing on it. Catches every path that lands
+        // here (login, email verification, direct navigation), not just
+        // the login form.
+        if ($user->hasRole(UserRole::Admin->value)) {
+            return redirect()->route('filament.admin.pages.dashboard');
+        }
 
         if ($user->hasRole(UserRole::Student->value)) {
             return $this->student($user);

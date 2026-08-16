@@ -115,6 +115,16 @@ class RoleDashboardTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->component('Dashboard'));
     }
 
+    public function test_admins_are_redirected_from_the_dashboard_to_the_admin_panel(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->get('/dashboard')
+            ->assertRedirect(route('filament.admin.pages.dashboard'));
+    }
+
     public function test_teacher_can_view_the_sessions_schedule(): void
     {
         $teacher = User::factory()->teacher()->create();
