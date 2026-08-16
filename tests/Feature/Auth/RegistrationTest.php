@@ -30,13 +30,7 @@ class RegistrationTest extends TestCase
 
     public function test_new_users_can_register()
     {
-        $response = $this->post('/register', [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
-            'consent' => true,
-        ]);
+        $response = $this->post('/register', $this->validPayload());
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
@@ -44,12 +38,7 @@ class RegistrationTest extends TestCase
 
     public function test_registration_requires_consent()
     {
-        $response = $this->post('/register', [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
-        ]);
+        $response = $this->post('/register', [...$this->validPayload(), 'consent' => null]);
 
         $response->assertInvalid(['consent']);
         $this->assertGuest();
@@ -58,27 +47,40 @@ class RegistrationTest extends TestCase
 
     public function test_registration_rejects_an_unchecked_consent_box()
     {
-        $response = $this->post('/register', [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
-            'consent' => false,
-        ]);
+        $response = $this->post('/register', [...$this->validPayload(), 'consent' => false]);
 
         $response->assertInvalid(['consent']);
         $this->assertGuest();
     }
 
+    public function test_registration_requires_a_parent_email()
+    {
+        $response = $this->post('/register', [...$this->validPayload(), 'parent_email' => null]);
+
+        $response->assertInvalid(['parent_email']);
+        $this->assertGuest();
+    }
+
+    public function test_registration_rejects_an_invalid_parent_email()
+    {
+        $response = $this->post('/register', [...$this->validPayload(), 'parent_email' => 'not-an-email']);
+
+        $response->assertInvalid(['parent_email']);
+        $this->assertGuest();
+    }
+
+    public function test_registering_stores_the_parent_email(): void
+    {
+        $this->post('/register', [...$this->validPayload(), 'parent_email' => 'parent@example.com']);
+
+        $studentProfile = User::where('email', 'test@example.com')->firstOrFail()->studentProfile;
+
+        $this->assertSame('parent@example.com', $studentProfile->parent_email);
+    }
+
     public function test_registering_records_when_consent_was_given()
     {
-        $this->post('/register', [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
-            'consent' => true,
-        ]);
+        $this->post('/register', $this->validPayload());
 
         $studentProfile = User::where('email', 'test@example.com')->firstOrFail()->studentProfile;
 
@@ -90,13 +92,7 @@ class RegistrationTest extends TestCase
     {
         Notification::fake();
 
-        $this->post('/register', [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
-            'consent' => true,
-        ]);
+        $this->post('/register', $this->validPayload());
 
         $user = User::where('email', 'test@example.com')->firstOrFail();
 
@@ -106,18 +102,27 @@ class RegistrationTest extends TestCase
 
     public function test_new_users_are_registered_as_students_with_a_profile(): void
     {
-        $this->post('/register', [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
-            'consent' => true,
-        ]);
+        $this->post('/register', $this->validPayload());
 
         $user = User::where('email', 'test@example.com')->firstOrFail();
 
         $this->assertTrue($user->hasRole(UserRole::Student->value));
         $this->assertNotNull($user->studentProfile);
         $this->assertNotNull($user->studentProfile->code);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validPayload(): array
+    {
+        return [
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'parent_email' => 'test@example.com',
+            'consent' => true,
+        ];
     }
 }
