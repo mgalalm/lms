@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCountdown } from '@/composables/useCountdown';
 import { withDisplayName } from '@/composables/zoomJoinUrl';
 import type { ClassSession, SharedData } from '@/types';
-import { usePage } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import { CalendarClock } from 'lucide-vue-next';
 import { computed } from 'vue';
 
@@ -39,6 +39,14 @@ const lessonPath = computed(() => {
 
     return [lesson.module?.course?.title, lesson.module?.title, lesson.title].filter(Boolean).join(' / ');
 });
+
+function pingParent(): void {
+    if (!props.session) {
+        return;
+    }
+
+    router.post(route('teaching.sessions.ping-parent', props.session.id), {}, { preserveScroll: true });
+}
 
 const scheduledLabel = computed(() => {
     if (!props.session) {
@@ -100,10 +108,14 @@ const scheduledLabel = computed(() => {
                     </div>
                 </div>
 
-                <Button v-if="joinUrl" as="a" :href="joinUrl" target="_blank" rel="noopener noreferrer" class="w-fit">
-                    {{ joinLabel }}
-                </Button>
-                <Button v-else disabled class="w-fit">{{ joinLabel }}</Button>
+                <div class="flex gap-2">
+                    <Button v-if="joinUrl" as="a" :href="joinUrl" target="_blank" rel="noopener noreferrer" class="w-fit">
+                        {{ joinLabel }}
+                    </Button>
+                    <Button v-else disabled class="w-fit">{{ joinLabel }}</Button>
+
+                    <Button v-if="viewerRole === 'teacher'" variant="outline" class="w-fit" @click="pingParent">Ping Parent</Button>
+                </div>
             </div>
         </CardContent>
     </Card>

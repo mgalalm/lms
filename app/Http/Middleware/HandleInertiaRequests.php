@@ -50,6 +50,7 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'quizResult' => $request->session()->get('quizResult'),
                 'success' => $request->session()->get('success'),
+                'error' => $request->session()->get('error'),
             ],
             'unreadNotificationsCount' => $request->user()?->unreadNotifications()->count() ?? 0,
             'notifications' => Inertia::optional(fn () => $request->user()

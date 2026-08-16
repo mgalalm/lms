@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Teacher\PingParentController;
 use App\Http\Controllers\Teacher\SessionsScheduleController;
 use App\Http\Resources\SessionPackageResource;
 use App\Models\SessionPackage;
@@ -19,6 +20,7 @@ Route::get('dashboard', DashboardController::class)
 
 Route::middleware(['auth', 'verified', 'role:teacher'])->prefix('teaching')->name('teaching.')->group(function () {
     Route::get('sessions-schedule', SessionsScheduleController::class)->name('sessions-schedule');
+    Route::post('sessions/{classSession}/ping-parent', PingParentController::class)->name('sessions.ping-parent');
 });
 
 require __DIR__.'/settings.php';

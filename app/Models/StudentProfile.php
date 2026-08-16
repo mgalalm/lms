@@ -23,12 +23,28 @@ class StudentProfile extends Model
         'grade_level',
         'language',
         'timezone',
+        'parent_name',
+        'parent_email',
+        'parent_phone',
+        'consent_given_at',
     ];
 
     /**
      * Default timezone used wherever this student hasn't set one.
      */
     public const DEFAULT_TIMEZONE = 'Europe/Dublin';
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'consent_given_at' => 'datetime',
+        ];
+    }
 
     /**
      * Get the user this student profile belongs to.

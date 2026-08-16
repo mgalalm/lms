@@ -23,6 +23,7 @@ export interface SharedData {
     flash: {
         quizResult: { score: number; passed: boolean } | null;
         success: string | null;
+        error: string | null;
     };
     ziggy: {
         location: string;

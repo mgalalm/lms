@@ -2,6 +2,7 @@
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthBase from '@/layouts/AuthLayout.vue';
@@ -13,6 +14,7 @@ const form = useForm({
     email: '',
     password: '',
     password_confirmation: '',
+    consent: false,
 });
 
 const submit = () => {
@@ -68,7 +70,15 @@ const submit = () => {
                     <InputError :message="form.errors.password_confirmation" />
                 </div>
 
-                <Button type="submit" class="mt-2 w-full" tabindex="5" :disabled="form.processing">
+                <div class="grid gap-2">
+                    <Label for="consent" class="flex items-start gap-3 font-normal">
+                        <Checkbox id="consent" v-model:checked="form.consent" tabindex="5" class="mt-0.5" />
+                        <span>I am the parent/guardian and consent to my child's data being processed.</span>
+                    </Label>
+                    <InputError :message="form.errors.consent" />
+                </div>
+
+                <Button type="submit" class="mt-2 w-full" tabindex="6" :disabled="form.processing">
                     <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin" />
                     Create account
                 </Button>
@@ -76,7 +86,7 @@ const submit = () => {
 
             <div class="text-center text-sm text-muted-foreground">
                 Already have an account?
-                <TextLink :href="route('login')" class="underline underline-offset-4" tabindex="6">Log in</TextLink>
+                <TextLink :href="route('login')" class="underline underline-offset-4" tabindex="7">Log in</TextLink>
             </div>
         </form>
     </AuthBase>

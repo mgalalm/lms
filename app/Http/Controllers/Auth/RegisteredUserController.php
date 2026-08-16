@@ -37,6 +37,7 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'consent' => ['required', 'accepted'],
         ]);
 
         $user = User::create([
@@ -51,6 +52,7 @@ class RegisteredUserController extends Controller
         StudentProfile::create([
             'user_id' => $user->id,
             'code' => 'S-'.str_pad((string) $user->id, 6, '0', STR_PAD_LEFT),
+            'consent_given_at' => now(),
         ]);
 
         event(new Registered($user));
