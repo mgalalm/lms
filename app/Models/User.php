@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\UserRole;
+use App\Notifications\QueuedVerifyEmail;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -182,6 +183,16 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->hasRole(UserRole::Admin->value);
+    }
+
+    /**
+     * Send the queued variant of the verification email (see
+     * QueuedVerifyEmail) so a mail-provider failure can't crash the
+     * request that triggered it — e.g. registration.
+     */
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new QueuedVerifyEmail);
     }
 
     /**

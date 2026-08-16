@@ -4,8 +4,8 @@ namespace Tests\Feature\Auth;
 
 use App\Enums\UserRole;
 use App\Models\User;
+use App\Notifications\QueuedVerifyEmail;
 use Database\Seeders\RoleSeeder;
-use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -97,7 +97,7 @@ class RegistrationTest extends TestCase
         $user = User::where('email', 'test@example.com')->firstOrFail();
 
         $this->assertFalse($user->hasVerifiedEmail());
-        Notification::assertSentTo($user, VerifyEmail::class);
+        Notification::assertSentTo($user, QueuedVerifyEmail::class);
     }
 
     public function test_new_users_are_registered_as_students_with_a_profile(): void
