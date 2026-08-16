@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\SessionPackagePurchases\Tables;
 
+use App\Enums\SessionPackagePurchaseStatus;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -31,12 +32,11 @@ class SessionPackagePurchasesTable
                     ->sortable(),
                 TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state) => match ($state) {
-                        'paid' => 'success',
-                        'pending' => 'warning',
-                        'cancelled' => 'gray',
-                        'failed' => 'danger',
-                        default => 'gray',
+                    ->color(fn (SessionPackagePurchaseStatus $state) => match ($state) {
+                        SessionPackagePurchaseStatus::Paid => 'success',
+                        SessionPackagePurchaseStatus::Pending => 'warning',
+                        SessionPackagePurchaseStatus::Cancelled => 'gray',
+                        SessionPackagePurchaseStatus::Failed => 'danger',
                     }),
                 TextColumn::make('created_at')
                     ->label('Date')
