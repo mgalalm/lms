@@ -25,6 +25,10 @@ class SupportTicketResource extends Resource
 
     protected static ?string $navigationLabel = 'Support Tickets';
 
+    protected static ?int $navigationSort = 80;
+
+    protected static ?string $recordTitleAttribute = 'subject';
+
     public static function infolist(Schema $schema): Schema
     {
         return SupportTicketInfolist::configure($schema);

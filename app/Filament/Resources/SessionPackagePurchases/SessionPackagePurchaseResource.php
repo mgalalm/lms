@@ -24,6 +24,8 @@ class SessionPackagePurchaseResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Payments';
 
+    protected static ?int $navigationSort = 41;
+
     /**
      * Purchases are created only via the student checkout flow and paid
      * only via the Stripe webhook — no manual creation from the admin panel.
@@ -31,6 +33,14 @@ class SessionPackagePurchaseResource extends Resource
     public static function canCreate(): bool
     {
         return false;
+    }
+
+    /**
+     * @return array<string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['user.name', 'sessionPackage.name'];
     }
 
     public static function infolist(Schema $schema): Schema

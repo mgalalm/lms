@@ -24,6 +24,10 @@ class ModuleResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Curriculum';
 
+    protected static ?int $navigationSort = 31;
+
+    protected static ?string $recordTitleAttribute = 'title';
+
     public static function form(Schema $schema): Schema
     {
         return ModuleForm::configure($schema);

@@ -25,9 +25,19 @@ class SessionCreditLedgerEntryResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Payments';
 
+    protected static ?int $navigationSort = 42;
+
     public static function form(Schema $schema): Schema
     {
         return SessionCreditLedgerEntryForm::configure($schema);
+    }
+
+    /**
+     * @return array<string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['user.name', 'reason'];
     }
 
     public static function table(Table $table): Table

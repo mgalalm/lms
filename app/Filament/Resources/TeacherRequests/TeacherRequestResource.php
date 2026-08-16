@@ -24,9 +24,19 @@ class TeacherRequestResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Payroll & Requests';
 
+    protected static ?int $navigationSort = 52;
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->with(['teacherProfile.user', 'reviewer']);
+    }
+
+    /**
+     * @return array<string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['teacherProfile.user.name', 'type'];
     }
 
     public static function form(Schema $schema): Schema

@@ -6,12 +6,11 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets\AccountWidget;
-use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -31,6 +30,23 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
+            // Explicit order = operational priority. Safety sits right under
+            // the dashboard on purpose — flagged content review must never
+            // be buried behind day-to-day admin.
+            ->navigationGroups([
+                NavigationGroup::make('Safety')
+                    ->extraSidebarAttributes(['title' => 'Messages automatically hidden pending moderation review.']),
+                NavigationGroup::make('Sessions')
+                    ->extraSidebarAttributes(['title' => 'The session schedule, plus student and teacher profiles.']),
+                NavigationGroup::make('Curriculum'),
+                NavigationGroup::make('Payments')
+                    ->extraSidebarAttributes(['title' => 'Session Packages = products for sale. Purchases = individual transactions. Session Credits Ledger = each student\'s running balance.']),
+                NavigationGroup::make('Payroll & Requests')
+                    ->extraSidebarAttributes(['title' => 'Teacher pay, leave balances, and HR-style requests.']),
+                NavigationGroup::make('Insights'),
+                NavigationGroup::make('Gamification'),
+                NavigationGroup::make('Support'),
+            ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
@@ -38,8 +54,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
-                AccountWidget::class,
-                FilamentInfoWidget::class,
+                //
             ])
             ->middleware([
                 EncryptCookies::class,

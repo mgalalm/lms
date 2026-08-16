@@ -23,7 +23,11 @@ class ClassSessionResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Sessions';
 
-    protected static ?string $navigationLabel = 'Class Sessions';
+    // "Schedule" rather than "Class Sessions" — avoids the redundant
+    // "Sessions > Class Sessions" nesting in the sidebar.
+    protected static ?string $navigationLabel = 'Schedule';
+
+    protected static ?int $navigationSort = 20;
 
     public static function form(Schema $schema): Schema
     {
@@ -33,6 +37,14 @@ class ClassSessionResource extends Resource
     public static function table(Table $table): Table
     {
         return ClassSessionsTable::configure($table);
+    }
+
+    /**
+     * @return array<string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['teacher.name', 'student.name', 'lesson.title'];
     }
 
     public static function getRelations(): array

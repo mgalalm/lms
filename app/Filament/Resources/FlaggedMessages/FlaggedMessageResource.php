@@ -30,6 +30,16 @@ class FlaggedMessageResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Safety';
 
+    protected static ?int $navigationSort = 10;
+
+    /**
+     * @return array<string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['user.name', 'body'];
+    }
+
     /**
      * A focused review queue, not a general message browser — only
      * messages still awaiting or failing moderation ever need admin eyes.

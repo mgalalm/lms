@@ -25,6 +25,8 @@ class TeacherProfileResource extends Resource
 
     protected static ?string $navigationLabel = 'Teacher Profiles';
 
+    protected static ?int $navigationSort = 22;
+
     public static function form(Schema $schema): Schema
     {
         return TeacherProfileForm::configure($schema);
@@ -33,6 +35,14 @@ class TeacherProfileResource extends Resource
     public static function table(Table $table): Table
     {
         return TeacherProfilesTable::configure($table);
+    }
+
+    /**
+     * @return array<string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['user.name', 'code'];
     }
 
     public static function getRelations(): array

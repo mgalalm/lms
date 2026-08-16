@@ -24,6 +24,10 @@ class BadgeResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Gamification';
 
+    protected static ?int $navigationSort = 70;
+
+    protected static ?string $recordTitleAttribute = 'name';
+
     public static function form(Schema $schema): Schema
     {
         return BadgeForm::configure($schema);

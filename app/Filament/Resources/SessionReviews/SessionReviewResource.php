@@ -24,9 +24,19 @@ class SessionReviewResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Insights';
 
+    protected static ?int $navigationSort = 61;
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->with(['classSession.teacher', 'classSession.student', 'classSession.lesson']);
+    }
+
+    /**
+     * @return array<string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['classSession.student.name', 'classSession.teacher.name'];
     }
 
     public static function form(Schema $schema): Schema

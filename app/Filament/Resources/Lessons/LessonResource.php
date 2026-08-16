@@ -23,6 +23,10 @@ class LessonResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Curriculum';
 
+    protected static ?int $navigationSort = 32;
+
+    protected static ?string $recordTitleAttribute = 'title';
+
     public static function form(Schema $schema): Schema
     {
         return LessonForm::configure($schema);

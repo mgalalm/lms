@@ -24,9 +24,19 @@ class PayrollEntryResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Payroll & Requests';
 
+    protected static ?int $navigationSort = 51;
+
     public static function form(Schema $schema): Schema
     {
         return PayrollEntryForm::configure($schema);
+    }
+
+    /**
+     * @return array<string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['teacherProfile.user.name', 'organization'];
     }
 
     public static function table(Table $table): Table

@@ -23,6 +23,10 @@ class SessionPackageResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Payments';
 
+    protected static ?int $navigationSort = 40;
+
+    protected static ?string $recordTitleAttribute = 'name';
+
     public static function form(Schema $schema): Schema
     {
         return SessionPackageForm::configure($schema);

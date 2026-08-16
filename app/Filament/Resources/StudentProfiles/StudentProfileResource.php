@@ -25,6 +25,8 @@ class StudentProfileResource extends Resource
 
     protected static ?string $navigationLabel = 'Student Profiles';
 
+    protected static ?int $navigationSort = 21;
+
     public static function form(Schema $schema): Schema
     {
         return StudentProfileForm::configure($schema);
@@ -33,6 +35,14 @@ class StudentProfileResource extends Resource
     public static function table(Table $table): Table
     {
         return StudentProfilesTable::configure($table);
+    }
+
+    /**
+     * @return array<string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['user.name', 'code', 'parent_email'];
     }
 
     public static function getRelations(): array

@@ -25,9 +25,19 @@ class PointsLedgerEntryResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Gamification';
 
+    protected static ?int $navigationSort = 71;
+
     public static function form(Schema $schema): Schema
     {
         return PointsLedgerEntryForm::configure($schema);
+    }
+
+    /**
+     * @return array<string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['user.name', 'reason'];
     }
 
     public static function table(Table $table): Table

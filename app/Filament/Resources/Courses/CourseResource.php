@@ -25,6 +25,10 @@ class CourseResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Curriculum';
 
+    protected static ?int $navigationSort = 30;
+
+    protected static ?string $recordTitleAttribute = 'title';
+
     public static function form(Schema $schema): Schema
     {
         return CourseForm::configure($schema);

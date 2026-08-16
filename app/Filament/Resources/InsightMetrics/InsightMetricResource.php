@@ -23,9 +23,19 @@ class InsightMetricResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Insights';
 
+    protected static ?int $navigationSort = 60;
+
     public static function form(Schema $schema): Schema
     {
         return InsightMetricForm::configure($schema);
+    }
+
+    /**
+     * @return array<string>
+     */
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['teacherProfile.user.name'];
     }
 
     public static function table(Table $table): Table
