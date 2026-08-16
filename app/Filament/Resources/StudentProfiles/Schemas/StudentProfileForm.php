@@ -21,6 +21,10 @@ class StudentProfileForm
                     ->label('Student')
                     ->disabled()
                     ->dehydrated(false),
+                TextInput::make('user.email')
+                    ->label('Student Email')
+                    ->disabled()
+                    ->dehydrated(false),
                 TextInput::make('code')
                     ->disabled()
                     ->dehydrated(false),

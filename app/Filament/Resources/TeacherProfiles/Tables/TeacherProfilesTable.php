@@ -17,6 +17,10 @@ class TeacherProfilesTable
                     ->label('Teacher')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('user.email')
+                    ->label('Teacher Email')
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('code')
                     ->searchable()
                     ->sortable(),

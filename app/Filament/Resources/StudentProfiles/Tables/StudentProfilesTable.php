@@ -20,6 +20,10 @@ class StudentProfilesTable
                     ->label('Student')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('user.email')
+                    ->label('Student Email')
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('code')
                     ->searchable()
                     ->sortable(),

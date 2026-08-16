@@ -42,7 +42,7 @@ class StudentProfileResource extends Resource
      */
     public static function getGloballySearchableAttributes(): array
     {
-        return ['user.name', 'code', 'parent_email'];
+        return ['user.name', 'user.email', 'code', 'parent_email'];
     }
 
     public static function getRelations(): array

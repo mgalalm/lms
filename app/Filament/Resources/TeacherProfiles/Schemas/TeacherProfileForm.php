@@ -19,6 +19,10 @@ class TeacherProfileForm
                     ->label('Teacher')
                     ->disabled()
                     ->dehydrated(false),
+                TextInput::make('user.email')
+                    ->label('Teacher Email')
+                    ->disabled()
+                    ->dehydrated(false),
                 TextInput::make('code')
                     ->disabled()
                     ->dehydrated(false),
