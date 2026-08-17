@@ -37,7 +37,7 @@ const navLinks = computed(() => {
         <div class="bg-blackColor2 dark:bg-lightGrey10-dark hidden lg:block">
             <div class="3xl:container2-lg 4xl:container py-5px text-size-12 text-whiteColor xl:py-9px container mx-auto xl:text-sm">
                 <div class="flex items-center justify-between">
-                    <p>Call Us: +1 800 123 456 789 &middot; Mail Us: hello@genacademy.test</p>
+                    <p>Email Us: support@genacademy.eu</p>
                     <div class="gap-37px flex items-center">
                         <p><i class="icofont-location-pin mr-5px text-size-15 text-primaryColor"></i><span>GenAcademy, Online Tutoring</span></p>
                         <ul class="gap-13px text-size-15 flex">
