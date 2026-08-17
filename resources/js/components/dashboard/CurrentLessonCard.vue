@@ -47,7 +47,18 @@ const lessonPath = computed(() => [props.lesson?.course_title, props.lesson?.mod
                             </div>
                             <p class="text-xs text-muted-foreground">Session recap video</p>
                         </div>
-                        <Button class="mt-3 w-fit" size="sm">Watch Recap</Button>
+                        <Button
+                            v-if="lesson.recap"
+                            as="a"
+                            :href="route('sessions.recap', lesson.recap.class_session_id)"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="mt-3 w-fit"
+                            size="sm"
+                        >
+                            Watch Recap
+                        </Button>
+                        <Button v-else disabled class="mt-3 w-fit" size="sm">Recap not available yet</Button>
                     </TabsContent>
 
                     <TabsContent value="reading">

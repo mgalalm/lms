@@ -14,6 +14,21 @@ class ViewFlaggedMessage extends ViewRecord
 {
     protected static string $resource = FlaggedMessageResource::class;
 
+    /**
+     * Part of the child-safety audit trail: every time this review page is
+     * opened, not just when a moderation decision is made.
+     */
+    public function mount(int|string $record): void
+    {
+        parent::mount($record);
+
+        activity()
+            ->causedBy(auth()->user())
+            ->performedOn($this->getRecord())
+            ->withProperties(['ip' => request()->ip()])
+            ->log('Reviewed flagged message');
+    }
+
     protected function getHeaderActions(): array
     {
         return [

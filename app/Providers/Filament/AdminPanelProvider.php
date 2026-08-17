@@ -36,7 +36,7 @@ class AdminPanelProvider extends PanelProvider
             // be buried behind day-to-day admin.
             ->navigationGroups([
                 NavigationGroup::make('Safety')
-                    ->extraSidebarAttributes(['title' => 'Messages automatically hidden pending moderation review.']),
+                    ->extraSidebarAttributes(['title' => 'Messages automatically hidden pending moderation review. Audit Log tracks every access to child-safety-sensitive data.']),
                 NavigationGroup::make('Sessions')
                     ->extraSidebarAttributes(['title' => 'The session schedule, plus student and teacher profiles.']),
                 NavigationGroup::make('Curriculum'),

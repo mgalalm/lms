@@ -67,9 +67,11 @@ class DashboardController extends Controller
             ->latest('student_submitted_at')
             ->first();
 
-        $currentLesson = $nextSession?->lesson
-            ?? $pendingFeedbackSession?->lesson
-            ?? $user->sessionsAsStudent()->latest('scheduled_at')->first()?->lesson;
+        $currentSession = $nextSession
+            ?? $pendingFeedbackSession
+            ?? $user->sessionsAsStudent()->latest('scheduled_at')->first();
+
+        $currentLesson = $currentSession?->lesson;
 
         if ($currentLesson) {
             $currentLesson->loadMissing('module.course');
@@ -91,6 +93,7 @@ class DashboardController extends Controller
                 'reading_content' => $currentLesson->reading_content,
                 'module_title' => $currentLesson->module?->title,
                 'course_title' => $currentLesson->module?->course?->title,
+                'recap' => $currentSession?->recap_path ? ['class_session_id' => $currentSession->id] : null,
             ] : null,
             'progress' => $currentLesson ? $this->moduleProgress($user, $currentLesson) : null,
             'points' => $user->totalPoints(),

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Community;
 
 use App\Enums\ChannelType;
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ChannelResource;
 use App\Http\Resources\MessageResource;
@@ -48,6 +49,8 @@ class ChannelController extends Controller
             'latestMessage' => fn ($query) => $query->visibleTo($user),
         ]);
 
+        $this->logStudentChatAccessIfApplicable($request, $channel, $user);
+
         $messages = $channel->messages()
             ->visibleTo($user)
             ->with(['user.teacherProfile', 'user.studentProfile'])
@@ -76,6 +79,34 @@ class ChannelController extends Controller
         ]);
 
         return back();
+    }
+
+    /**
+     * Part of the child-safety audit trail: record it whenever a teacher
+     * or admin opens a channel that includes a student — not when the
+     * student opens their own conversation, which isn't a safeguarding
+     * concern and would just be noise.
+     */
+    private function logStudentChatAccessIfApplicable(Request $request, Channel $channel, User $viewer): void
+    {
+        if ($viewer->hasRole(UserRole::Student->value)) {
+            return;
+        }
+
+        $studentParticipants = $channel->users->filter(fn (User $participant) => $participant->studentProfile !== null);
+
+        if ($studentParticipants->isEmpty()) {
+            return;
+        }
+
+        activity()
+            ->causedBy($viewer)
+            ->performedOn($channel)
+            ->withProperties([
+                'ip' => $request->ip(),
+                'student_ids' => $studentParticipants->pluck('id')->values()->all(),
+            ])
+            ->log('Viewed student chat history');
     }
 
     /**

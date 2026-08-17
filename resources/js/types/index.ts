@@ -312,6 +312,7 @@ export interface CurrentLesson {
     reading_content: string | null;
     module_title: string | null;
     course_title: string | null;
+    recap: { class_session_id: number } | null;
 }
 
 export interface LessonProgress {
