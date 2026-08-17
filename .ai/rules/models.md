@@ -24,3 +24,10 @@ Admin review lives at `App\Filament\Resources\FlaggedMessages` (scoped to Pendin
 Always update through a loaded model instance instead: `$model->relationName->update([...])` (no parens — triggers/uses the lazy-loaded model) or `$model->relationName()->first()->update([...])`.
 
 Caught via 3 test call sites (`PingParentTest`, `StudentProfileGdprTest`) using the relation-builder form — fixed by dropping the parens. No production code path was affected, but check for this pattern before adding any new `encrypted`/custom cast to an existing column.
+
+## Raw DB::table() reads also bypass casts, not just relation ->update()
+Extends the ->relation()->update() note above: casts (encrypted, custom, etc.) only apply when going through a hydrated Eloquent model. A raw `DB::table('badge_user')->join('users', ...)->get(['users.name as ...'])` returns the literal column value — for `User::name` (encrypted since 2026-08-16) that's ciphertext, rendered straight into the UI.
+
+Found live in `RecentActivityWidget::badgesAwarded()` (2026-08-17) — it joined `users` directly to grab `users.name` for the "X earned badge Y" feed, so the admin dashboard displayed raw base64 ciphertext instead of the student's name. Fixed by dropping the `users` join, selecting only non-encrypted columns (`user_id`, badge name, timestamp) from the raw query, then resolving names via one batched `User::whereIn('id', ...)->get()->keyBy('id')` lookup — avoids N+1 while still decrypting correctly.
+
+Rule of thumb: before writing a raw `DB::table()`/query-builder join or select that touches a column with a cast, ask whether it needs to be an Eloquent read instead (or a batched follow-up query) — no test unless you specifically assert on the resolved value would catch this, since the query itself doesn't error.

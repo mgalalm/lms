@@ -8,6 +8,7 @@ use App\Filament\Resources\FlaggedMessages\FlaggedMessageResource;
 use App\Models\ClassSession;
 use App\Models\Message;
 use App\Models\StudentProfile;
+use App\Models\User;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -86,19 +87,25 @@ class RecentActivityWidget extends Widget
      */
     private function badgesAwarded(): Collection
     {
-        return DB::table('badge_user')
-            ->join('users', 'users.id', '=', 'badge_user.user_id')
+        // Only join badge_user/badges here — users.name is encrypted, so
+        // a raw query-builder select would return ciphertext instead of
+        // the decrypted name (casts only apply through the Eloquent
+        // model). Resolve names via a single batched User lookup instead.
+        $rows = DB::table('badge_user')
             ->join('badges', 'badges.id', '=', 'badge_user.badge_id')
             ->whereNotNull('badge_user.awarded_at')
             ->orderByDesc('badge_user.awarded_at')
             ->limit(self::PER_TYPE_LIMIT)
-            ->get(['users.name as user_name', 'badges.name as badge_name', 'badge_user.awarded_at'])
-            ->map(fn ($row) => [
-                'type' => 'badge_awarded',
-                'description' => $row->user_name.' earned the "'.$row->badge_name.'" badge',
-                'timestamp' => Carbon::parse($row->awarded_at),
-                'url' => null,
-            ]);
+            ->get(['badge_user.user_id', 'badges.name as badge_name', 'badge_user.awarded_at']);
+
+        $users = User::whereIn('id', $rows->pluck('user_id')->unique())->get()->keyBy('id');
+
+        return $rows->map(fn ($row) => [
+            'type' => 'badge_awarded',
+            'description' => ($users->get($row->user_id)?->name ?? 'A user').' earned the "'.$row->badge_name.'" badge',
+            'timestamp' => Carbon::parse($row->awarded_at),
+            'url' => null,
+        ]);
     }
 
     /**

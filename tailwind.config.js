@@ -2,7 +2,8 @@ import defaultTheme from 'tailwindcss/defaultTheme';
 
 /** @type {import('tailwindcss').Config} */
 export default {
-    darkMode: ['class'],
+    // darkMode is no longer a config option in v4 — the class-based
+    // strategy is now set via @custom-variant in resources/css/app.css.
     content: [
         './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
         './storage/framework/views/*.php',

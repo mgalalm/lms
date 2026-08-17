@@ -8,6 +8,7 @@ use App\Filament\Widgets\OperationalStatsWidget;
 use App\Filament\Widgets\RecentActivityWidget;
 use App\Filament\Widgets\RevenueStatsWidget;
 use App\Filament\Widgets\SafetyAlertWidget;
+use App\Models\Badge;
 use App\Models\ClassSession;
 use App\Models\Message;
 use App\Models\SessionPackagePurchase;
@@ -162,6 +163,23 @@ class AdminDashboardWidgetsTest extends TestCase
         $timestamps = $activity->pluck('timestamp')->all();
         $sorted = collect($timestamps)->sortByDesc(fn ($t) => $t)->values()->all();
         $this->assertEquals($sorted, $timestamps);
+    }
+
+    public function test_recent_activity_widget_shows_the_students_decrypted_name_for_badge_awards(): void
+    {
+        // badgesAwarded() reads users.name via a raw DB::table() join —
+        // User.name is encrypted, so this proves the widget resolves the
+        // name through the User model (decrypted) rather than returning
+        // the raw ciphertext straight off the join.
+        $student = User::factory()->student()->create(['name' => 'Jamie Student']);
+        $badge = Badge::factory()->create(['name' => 'Time Legend']);
+        $student->badges()->attach($badge->id, ['awarded_at' => now()]);
+
+        $activity = (new RecentActivityWidget)->getActivity();
+        $badgeEvent = $activity->firstWhere('type', 'badge_awarded');
+
+        $this->assertNotNull($badgeEvent);
+        $this->assertSame('Jamie Student earned the "Time Legend" badge', $badgeEvent['description']);
     }
 
     public function test_recent_activity_widget_includes_flags_linking_to_the_review_page(): void

@@ -1,6 +1,10 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@config '../../tailwind.config.js';
+
+/* Tailwind v4 defaults `dark:` to prefers-color-scheme; this app toggles a
+   `.dark` class on <html> (see useAppearance.ts) for user-controlled
+   light/dark/system switching, so restore the v3 class-based strategy. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 body,
 html {
