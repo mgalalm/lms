@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { withDisplayName } from '@/composables/zoomJoinUrl';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem, ClassSession, Paginated, SharedData } from '@/types';
-import { Head, Link, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, ref } from 'vue';
 
 const props = defineProps<{
@@ -62,6 +62,10 @@ function isJoinable(session: ClassSession): boolean {
 
 const hasSessions = computed(() => props.sessions.data.length > 0);
 
+function pingParent(session: ClassSession): void {
+    router.post(route('teaching.sessions.ping-parent', session.id), {}, { preserveScroll: true });
+}
+
 const supportDialogSessionId = ref<number | null>(null);
 </script>
 
@@ -111,6 +115,8 @@ const supportDialogSessionId = ref<number | null>(null);
                             </Button>
                         </Link>
                         <Button v-else variant="outline" size="sm" @click="supportDialogSessionId = session.id">Support</Button>
+
+                        <Button variant="outline" size="sm" @click="pingParent(session)">Ping Parent</Button>
                     </div>
                 </div>
             </div>
