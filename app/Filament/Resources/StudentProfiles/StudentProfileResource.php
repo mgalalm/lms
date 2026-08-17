@@ -42,7 +42,11 @@ class StudentProfileResource extends Resource
      */
     public static function getGloballySearchableAttributes(): array
     {
-        return ['user.name', 'user.email', 'code', 'parent_email'];
+        // parent_email is intentionally excluded — it's encrypted at rest,
+        // so a database-level search can't match against its ciphertext.
+        // user.name is excluded for the same reason (User.name is
+        // encrypted too); user.email stays plaintext and still works.
+        return ['user.email', 'code'];
     }
 
     public static function getRelations(): array

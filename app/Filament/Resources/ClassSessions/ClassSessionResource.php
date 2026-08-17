@@ -44,7 +44,10 @@ class ClassSessionResource extends Resource
      */
     public static function getGloballySearchableAttributes(): array
     {
-        return ['teacher.name', 'student.name', 'lesson.title'];
+        // teacher.name/student.name are excluded — User.name is encrypted
+        // at rest, so a database-level search can't match its ciphertext.
+        // email stays plaintext and still identifies the record.
+        return ['teacher.email', 'student.email', 'lesson.title'];
     }
 
     public static function getRelations(): array

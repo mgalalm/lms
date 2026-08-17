@@ -17,10 +17,10 @@ class PayrollEntriesTable
     {
         return $table
             ->columns([
+                // Not ->searchable()/->sortable(): User.name is encrypted
+                // at rest.
                 TextColumn::make('teacherProfile.user.name')
-                    ->label('Teacher')
-                    ->searchable()
-                    ->sortable(),
+                    ->label('Teacher'),
                 TextColumn::make('month')
                     ->date('M Y')
                     ->sortable(),

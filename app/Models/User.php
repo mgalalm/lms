@@ -58,6 +58,10 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'gdpr_erased_at' => 'datetime',
+            // Encrypted at rest. email stays plaintext deliberately — it's
+            // the login lookup key (WHERE email = ?), which an encrypted
+            // column (random IV per write) can never match.
+            'name' => 'encrypted',
         ];
     }
 

@@ -14,10 +14,10 @@ class PointsLedgerEntriesTable
     {
         return $table
             ->columns([
+                // Not ->searchable()/->sortable(): User.name is encrypted
+                // at rest.
                 TextColumn::make('user.name')
-                    ->label('User')
-                    ->searchable()
-                    ->sortable(),
+                    ->label('User'),
                 TextColumn::make('points')
                     ->sortable()
                     ->color(fn (int $state) => $state >= 0 ? 'success' : 'danger'),

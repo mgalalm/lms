@@ -18,13 +18,12 @@ class SessionReviewsTable
     {
         return $table
             ->columns([
+                // Not ->searchable()/->sortable(): User.name is encrypted
+                // at rest.
                 TextColumn::make('classSession.teacher.name')
-                    ->label('Teacher')
-                    ->searchable()
-                    ->sortable(),
+                    ->label('Teacher'),
                 TextColumn::make('classSession.student.name')
-                    ->label('Student')
-                    ->searchable(),
+                    ->label('Student'),
                 TextColumn::make('classSession.lesson.title')
                     ->label('Lesson'),
                 TextColumn::make('classSession.scheduled_at')

@@ -36,7 +36,8 @@ class PayrollEntryResource extends Resource
      */
     public static function getGloballySearchableAttributes(): array
     {
-        return ['teacherProfile.user.name', 'organization'];
+        // teacherProfile.user.name excluded — User.name is encrypted at rest.
+        return ['teacherProfile.user.email', 'organization'];
     }
 
     public static function table(Table $table): Table

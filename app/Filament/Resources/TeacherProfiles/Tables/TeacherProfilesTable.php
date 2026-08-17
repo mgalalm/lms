@@ -13,10 +13,10 @@ class TeacherProfilesTable
     {
         return $table
             ->columns([
+                // Not ->searchable()/->sortable(): User.name is encrypted
+                // at rest — search/sort via the user.email column instead.
                 TextColumn::make('user.name')
-                    ->label('Teacher')
-                    ->searchable()
-                    ->sortable(),
+                    ->label('Teacher'),
                 TextColumn::make('user.email')
                     ->label('Teacher Email')
                     ->searchable()

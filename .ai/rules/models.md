@@ -17,3 +17,10 @@ Every Message goes through OpenAI moderation via MessageObserver (created hook) 
 A message only becomes visible to *other* channel participants once `Message::approveModeration()` runs (which is what fires the `MessageSent` broadcast) — the sender always sees their own message regardless of status. Any query surfacing messages to a viewer MUST use `Message::scopeVisibleTo($viewer)` (or `scopeApproved()` for viewer-agnostic contexts like unread counts) — querying `channel->messages()` directly leaks flagged/pending content to other participants. See ChannelController for the pattern (message list, `latestMessage` eager-load constraint, unread count).
 
 Admin review lives at `App\Filament\Resources\FlaggedMessages` (scoped to Pending+Flagged only, not a general message browser) — approving there calls the same `Message::approveModeration()` used by the job, via the shared `FlaggedMessageActions` class.
+
+## Relation-builder ->update() bypasses casts (encryption, etc.)
+`$model->relationName()->update([...])` calls `update()` on the relation's *query builder*, not a hydrated model — it issues a raw mass-UPDATE and never runs through `setAttribute()`, so casts (`encrypted`, custom casts, mutators) are silently skipped. For `StudentProfile::parent_name/parent_email/parent_phone` (encrypted since 2026-08-16), this writes plaintext to a column that's supposed to hold ciphertext, and the next read throws `DecryptException: The payload is invalid.`
+
+Always update through a loaded model instance instead: `$model->relationName->update([...])` (no parens — triggers/uses the lazy-loaded model) or `$model->relationName()->first()->update([...])`.
+
+Caught via 3 test call sites (`PingParentTest`, `StudentProfileGdprTest`) using the relation-builder form — fixed by dropping the parens. No production code path was affected, but check for this pattern before adding any new `encrypted`/custom cast to an existing column.

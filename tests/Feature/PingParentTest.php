@@ -29,7 +29,7 @@ class PingParentTest extends TestCase
 
         $teacher = User::factory()->teacher()->create();
         $student = User::factory()->student()->create();
-        $student->studentProfile()->update(['parent_email' => 'parent@example.com', 'parent_name' => 'Pat Guardian']);
+        $student->studentProfile->update(['parent_email' => 'parent@example.com', 'parent_name' => 'Pat Guardian']);
 
         $session = ClassSession::factory()
             ->for($teacher, 'teacher')
@@ -73,7 +73,7 @@ class PingParentTest extends TestCase
         $teacher = User::factory()->teacher()->create();
         $otherTeacher = User::factory()->teacher()->create();
         $student = User::factory()->student()->create();
-        $student->studentProfile()->update(['parent_email' => 'parent@example.com']);
+        $student->studentProfile->update(['parent_email' => 'parent@example.com']);
 
         $session = ClassSession::factory()
             ->for($otherTeacher, 'teacher')

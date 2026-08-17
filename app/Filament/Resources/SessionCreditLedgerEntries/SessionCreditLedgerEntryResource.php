@@ -37,7 +37,8 @@ class SessionCreditLedgerEntryResource extends Resource
      */
     public static function getGloballySearchableAttributes(): array
     {
-        return ['user.name', 'reason'];
+        // user.name excluded — User.name is encrypted at rest.
+        return ['user.email', 'reason'];
     }
 
     public static function table(Table $table): Table

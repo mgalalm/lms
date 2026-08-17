@@ -43,6 +43,13 @@ class StudentProfile extends Model
     {
         return [
             'consent_given_at' => 'datetime',
+            // Parent/guardian contact details are safeguarding data —
+            // encrypted at rest. This makes them unsearchable/unsortable
+            // at the database level (ciphertext, random IV per write);
+            // see StudentProfilesTable and StudentProfileResource.
+            'parent_name' => 'encrypted',
+            'parent_email' => 'encrypted',
+            'parent_phone' => 'encrypted',
         ];
     }
 

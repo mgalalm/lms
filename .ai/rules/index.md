@@ -4,6 +4,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 
 | Applies to | Rule file |
 | --- | --- |
+| app/Filament/Resources/** | .ai/rules/filament-resources.md |
 | app/Filament/** | .ai/rules/filament.md |
 | .env* | .ai/rules/general.md |
 | database/migrations/** | .ai/rules/migrations.md |

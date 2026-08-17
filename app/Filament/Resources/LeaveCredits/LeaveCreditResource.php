@@ -35,7 +35,8 @@ class LeaveCreditResource extends Resource
      */
     public static function getGloballySearchableAttributes(): array
     {
-        return ['teacherProfile.user.name'];
+        // teacherProfile.user.name excluded — User.name is encrypted at rest.
+        return ['teacherProfile.user.email'];
     }
 
     public static function table(Table $table): Table

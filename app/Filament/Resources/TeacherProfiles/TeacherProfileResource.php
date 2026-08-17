@@ -42,7 +42,8 @@ class TeacherProfileResource extends Resource
      */
     public static function getGloballySearchableAttributes(): array
     {
-        return ['user.name', 'user.email', 'code'];
+        // user.name excluded — User.name is encrypted at rest.
+        return ['user.email', 'code'];
     }
 
     public static function getRelations(): array

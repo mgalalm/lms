@@ -28,8 +28,8 @@ class UsersRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('name')
             ->columns([
-                TextColumn::make('name')
-                    ->searchable(),
+                // Not ->searchable(): User.name is encrypted at rest.
+                TextColumn::make('name'),
                 TextColumn::make('pivot.awarded_at')
                     ->label('Awarded at')
                     ->dateTime(),
@@ -39,6 +39,11 @@ class UsersRelationManager extends RelationManager
             ])
             ->headerActions([
                 AttachAction::make()
+                    // The attach modal's picker searches by
+                    // recordTitleAttribute() by default — 'name' is
+                    // encrypted, so redirect the search to the
+                    // still-plaintext 'email' column instead.
+                    ->recordSelectSearchColumns(['email'])
                     ->schema(fn (AttachAction $action): array => [
                         $action->getRecordSelect(),
                         DateTimePicker::make('awarded_at')

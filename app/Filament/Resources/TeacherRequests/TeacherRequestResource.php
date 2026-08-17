@@ -36,7 +36,8 @@ class TeacherRequestResource extends Resource
      */
     public static function getGloballySearchableAttributes(): array
     {
-        return ['teacherProfile.user.name', 'type'];
+        // teacherProfile.user.name excluded — User.name is encrypted at rest.
+        return ['teacherProfile.user.email', 'type'];
     }
 
     public static function form(Schema $schema): Schema

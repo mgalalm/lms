@@ -36,7 +36,8 @@ class SessionReviewResource extends Resource
      */
     public static function getGloballySearchableAttributes(): array
     {
-        return ['classSession.student.name', 'classSession.teacher.name'];
+        // .name paths excluded — User.name is encrypted at rest.
+        return ['classSession.student.email', 'classSession.teacher.email'];
     }
 
     public static function form(Schema $schema): Schema

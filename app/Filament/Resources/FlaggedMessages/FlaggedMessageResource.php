@@ -37,7 +37,8 @@ class FlaggedMessageResource extends Resource
      */
     public static function getGloballySearchableAttributes(): array
     {
-        return ['user.name', 'body'];
+        // user.name excluded — User.name is encrypted at rest.
+        return ['user.email', 'body'];
     }
 
     /**

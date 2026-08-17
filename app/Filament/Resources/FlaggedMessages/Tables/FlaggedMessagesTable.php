@@ -22,10 +22,10 @@ class FlaggedMessagesTable
             ->modifyQueryUsing(fn ($query) => $query->with(['user', 'channel']))
             ->defaultSort('created_at', 'desc')
             ->columns([
+                // Not ->searchable()/->sortable(): User.name is encrypted
+                // at rest.
                 TextColumn::make('user.name')
-                    ->label('Sender')
-                    ->searchable()
-                    ->sortable(),
+                    ->label('Sender'),
                 TextColumn::make('channel.name')
                     ->label('Channel')
                     ->placeholder('Direct message')

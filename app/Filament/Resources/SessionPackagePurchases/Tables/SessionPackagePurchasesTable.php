@@ -21,10 +21,10 @@ class SessionPackagePurchasesTable
             ->modifyQueryUsing(fn ($query) => $query->with(['user', 'sessionPackage']))
             ->defaultSort('created_at', 'desc')
             ->columns([
+                // Not ->searchable()/->sortable(): User.name is encrypted
+                // at rest.
                 TextColumn::make('user.name')
-                    ->label('Student')
-                    ->searchable()
-                    ->sortable(),
+                    ->label('Student'),
                 TextColumn::make('sessionPackage.name')
                     ->label('Package')
                     ->searchable()

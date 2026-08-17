@@ -19,12 +19,10 @@ class ClassSessionsTable
     {
         return $table
             ->columns([
-                TextColumn::make('teacher.name')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('student.name')
-                    ->searchable()
-                    ->sortable(),
+                // Not ->searchable()/->sortable(): User.name is encrypted
+                // at rest.
+                TextColumn::make('teacher.name'),
+                TextColumn::make('student.name'),
                 TextColumn::make('lesson.title')
                     ->searchable(),
                 TextColumn::make('type')

@@ -16,10 +16,10 @@ class StudentProfilesTable
         return $table
             ->modifyQueryUsing(fn ($query) => $query->with('user'))
             ->columns([
+                // Not ->searchable()/->sortable(): User.name is encrypted
+                // at rest — search/sort via the user.email column instead.
                 TextColumn::make('user.name')
-                    ->label('Student')
-                    ->searchable()
-                    ->sortable(),
+                    ->label('Student'),
                 TextColumn::make('user.email')
                     ->label('Student Email')
                     ->searchable()
@@ -30,20 +30,19 @@ class StudentProfilesTable
                 TextColumn::make('timezone')
                     ->placeholder(StudentProfile::DEFAULT_TIMEZONE.' (default)')
                     ->sortable(),
+                // Not ->searchable(): these are encrypted at rest, so the
+                // database can't LIKE-match against ciphertext.
                 TextColumn::make('parent_name')
                     ->label('Parent/Guardian Name')
                     ->placeholder('Not set')
-                    ->searchable()
                     ->toggleable(),
                 TextColumn::make('parent_email')
                     ->label('Parent/Guardian Email')
                     ->placeholder('Not set')
-                    ->searchable()
                     ->toggleable(),
                 TextColumn::make('parent_phone')
                     ->label('Parent/Guardian Phone')
                     ->placeholder('Not set')
-                    ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 IconColumn::make('consent_given_at')
                     ->label('Consent')

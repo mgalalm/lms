@@ -15,10 +15,10 @@ class SessionCreditLedgerEntriesTable
         return $table
             ->modifyQueryUsing(fn ($query) => $query->with('user'))
             ->columns([
+                // Not ->searchable()/->sortable(): User.name is encrypted
+                // at rest.
                 TextColumn::make('user.name')
-                    ->label('Student')
-                    ->searchable()
-                    ->sortable(),
+                    ->label('Student'),
                 TextColumn::make('credits')
                     ->sortable()
                     ->color(fn (int $state) => $state >= 0 ? 'success' : 'danger'),

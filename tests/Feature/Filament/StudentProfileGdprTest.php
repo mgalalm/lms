@@ -33,7 +33,7 @@ class StudentProfileGdprTest extends TestCase
             'name' => 'Jamie Student',
             'email' => 'jamie@example.com',
         ]);
-        $student->studentProfile()->update([
+        $student->studentProfile->update([
             'parent_name' => 'Pat Guardian',
             'parent_email' => 'parent@example.com',
             'parent_phone' => '+353123456789',

@@ -40,7 +40,8 @@ class SessionPackagePurchaseResource extends Resource
      */
     public static function getGloballySearchableAttributes(): array
     {
-        return ['user.name', 'sessionPackage.name'];
+        // user.name excluded — User.name is encrypted at rest.
+        return ['user.email', 'sessionPackage.name'];
     }
 
     public static function infolist(Schema $schema): Schema

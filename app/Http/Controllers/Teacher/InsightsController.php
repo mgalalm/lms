@@ -10,6 +10,7 @@ use App\Http\Resources\ReviewedClassSessionResource;
 use App\Models\ClassSession;
 use App\Models\SessionReview;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Inertia\Inertia;
@@ -58,15 +59,34 @@ class InsightsController extends Controller
             $reviewedSessionsQuery->whereHas('review', fn ($query) => $query->where('flag_severity', $flagFilter));
         }
 
-        if ($search !== '') {
-            $reviewedSessionsQuery->where(function ($query) use ($search) {
-                $query->whereHas('student', fn ($q) => $q->where('name', 'like', "%{$search}%"))
-                    ->orWhereHas('student.studentProfile', fn ($q) => $q->where('code', 'like', "%{$search}%"))
-                    ->orWhereHas('lesson', fn ($q) => $q->where('title', 'like', "%{$search}%"));
-            });
-        }
+        if ($search === '') {
+            $reviewedSessions = $reviewedSessionsQuery->orderByDesc('scheduled_at')->paginate(15)->withQueryString();
+        } else {
+            // student.name is encrypted, so it can't be matched with a SQL
+            // LIKE. This query is already scoped to one teacher's own
+            // sessions within the selected date range — a small, bounded
+            // set — so filtering the fetched results in PHP (after
+            // decryption) is safe and keeps name search working.
+            $needle = mb_strtolower($search);
 
-        $reviewedSessions = $reviewedSessionsQuery->orderByDesc('scheduled_at')->paginate(15)->withQueryString();
+            $matches = $reviewedSessionsQuery->get()
+                ->filter(fn (ClassSession $session) => str_contains(mb_strtolower($session->student->name), $needle)
+                    || str_contains(mb_strtolower($session->student->studentProfile?->code ?? ''), $needle)
+                    || str_contains(mb_strtolower($session->lesson?->title ?? ''), $needle))
+                ->sortByDesc('scheduled_at')
+                ->values();
+
+            $page = LengthAwarePaginator::resolveCurrentPage();
+            $perPage = 15;
+
+            $reviewedSessions = new LengthAwarePaginator(
+                $matches->forPage($page, $perPage)->values(),
+                $matches->count(),
+                $perPage,
+                $page,
+                ['path' => $request->url(), 'query' => $request->query()],
+            );
+        }
 
         return Inertia::render('teacher/Insights', [
             'range' => ['from' => $from->toDateString(), 'to' => $to->toDateString()],
