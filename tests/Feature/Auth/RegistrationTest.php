@@ -5,6 +5,7 @@ namespace Tests\Feature\Auth;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Notifications\QueuedVerifyEmail;
+use App\Notifications\StudentRegistered;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -109,6 +110,22 @@ class RegistrationTest extends TestCase
         $this->assertTrue($user->hasRole(UserRole::Student->value));
         $this->assertNotNull($user->studentProfile);
         $this->assertNotNull($user->studentProfile->code);
+    }
+
+    public function test_registering_notifies_every_admin(): void
+    {
+        Notification::fake();
+
+        $admin = User::factory()->create();
+        $admin->assignRole(UserRole::Admin->value);
+        $otherAdmin = User::factory()->create();
+        $otherAdmin->assignRole(UserRole::Admin->value);
+        $teacher = User::factory()->teacher()->create();
+
+        $this->post('/register', $this->validPayload());
+
+        Notification::assertSentTo([$admin, $otherAdmin], StudentRegistered::class);
+        Notification::assertNotSentTo($teacher, StudentRegistered::class);
     }
 
     /**

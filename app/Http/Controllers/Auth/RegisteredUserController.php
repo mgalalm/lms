@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Models\StudentProfile;
 use App\Models\User;
+use App\Notifications\StudentRegistered;
 use App\Rules\Turnstile;
 use App\Services\Referrals\ReferralRedemptionService;
 use Illuminate\Auth\Events\Registered;
@@ -13,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -71,6 +73,8 @@ class RegisteredUserController extends Controller
         if ($request->filled('referral_code')) {
             $referrals->redeem($user, strtoupper($request->string('referral_code')->value()));
         }
+
+        Notification::send(User::role('admin')->get(), new StudentRegistered($user));
 
         event(new Registered($user));
 
