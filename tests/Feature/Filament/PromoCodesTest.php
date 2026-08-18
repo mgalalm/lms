@@ -60,7 +60,7 @@ class PromoCodesTest extends TestCase
         $this->assertSame(10, $captured['coupon']['percent_off']);
         $this->assertSame(['prod_test123'], $captured['coupon']['applies_to']['products']);
         $this->assertSame('WELCOME10', $captured['promotion_code']['code']);
-        $this->assertSame('coupon_test123', $captured['promotion_code']['coupon']);
+        $this->assertSame('coupon_test123', $captured['promotion_code']['promotion']['coupon']);
         $this->assertSame(50, $captured['promotion_code']['max_redemptions']);
     }
 
@@ -136,12 +136,15 @@ class PromoCodesTest extends TestCase
                         'max_redemptions' => 10,
                         'expires_at' => null,
                         'created' => 1700000000,
-                        'coupon' => [
-                            'id' => 'coupon_test123',
-                            'object' => 'coupon',
-                            'percent_off' => 25,
-                            'amount_off' => null,
-                            'currency' => null,
+                        'promotion' => [
+                            'type' => 'coupon',
+                            'coupon' => [
+                                'id' => 'coupon_test123',
+                                'object' => 'coupon',
+                                'percent_off' => 25,
+                                'amount_off' => null,
+                                'currency' => null,
+                            ],
                         ],
                     ]), 200, []];
                 }
@@ -158,12 +161,15 @@ class PromoCodesTest extends TestCase
                         'max_redemptions' => $params['max_redemptions'] ?? null,
                         'expires_at' => $params['expires_at'] ?? null,
                         'created' => 1700000000,
-                        'coupon' => [
-                            'id' => 'coupon_test123',
-                            'object' => 'coupon',
-                            'percent_off' => 10,
-                            'amount_off' => null,
-                            'currency' => null,
+                        'promotion' => [
+                            'type' => 'coupon',
+                            'coupon' => [
+                                'id' => 'coupon_test123',
+                                'object' => 'coupon',
+                                'percent_off' => 10,
+                                'amount_off' => null,
+                                'currency' => null,
+                            ],
                         ],
                     ]), 200, []];
                 }
@@ -180,12 +186,15 @@ class PromoCodesTest extends TestCase
                             'max_redemptions' => 10,
                             'expires_at' => null,
                             'created' => 1700000000,
-                            'coupon' => [
-                                'id' => 'coupon_test123',
-                                'object' => 'coupon',
-                                'percent_off' => 25,
-                                'amount_off' => null,
-                                'currency' => null,
+                            'promotion' => [
+                                'type' => 'coupon',
+                                'coupon' => [
+                                    'id' => 'coupon_test123',
+                                    'object' => 'coupon',
+                                    'percent_off' => 25,
+                                    'amount_off' => null,
+                                    'currency' => null,
+                                ],
                             ],
                         ]],
                     ]), 200, []];
