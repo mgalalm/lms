@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\StudentProfile;
 use App\Models\User;
 use App\Rules\Turnstile;
+use App\Services\Referrals\ReferralRedemptionService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -32,7 +33,7 @@ class RegisteredUserController extends Controller
      *
      * @throws ValidationException
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, ReferralRedemptionService $referrals): RedirectResponse
     {
         $request->validate([
             'name' => 'required|string|max:255',
@@ -40,6 +41,10 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'parent_email' => ['required', 'string', 'email', 'max:255'],
             'consent' => ['required', 'accepted'],
+            // Optional — an invalid/expired/self-referred code is simply
+            // ignored rather than blocking registration (see
+            // ReferralRedemptionService::redeem()).
+            'referral_code' => ['nullable', 'string', 'max:255'],
             // Not marked 'required' — the Turnstile rule itself only
             // enforces a token when TURNSTILE_SECRET_KEY is configured,
             // so local/test environments without Cloudflare keys aren't
@@ -62,6 +67,10 @@ class RegisteredUserController extends Controller
             'parent_email' => $request->parent_email,
             'consent_given_at' => now(),
         ]);
+
+        if ($request->filled('referral_code')) {
+            $referrals->redeem($user, strtoupper($request->string('referral_code')->value()));
+        }
 
         event(new Registered($user));
 

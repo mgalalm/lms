@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\SessionCreditReason;
 use App\Enums\SessionPackagePurchaseStatus;
 use App\Notifications\SessionPackagePurchased;
+use App\Services\Referrals\ReferralRedemptionService;
 use Database\Factories\SessionPackagePurchaseFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -30,6 +31,7 @@ class SessionPackagePurchase extends Model
         'price_cents',
         'currency',
         'stripe_checkout_session_id',
+        'referral_code',
         'paid_at',
     ];
 
@@ -99,6 +101,14 @@ class SessionPackagePurchase extends Model
                 'reason' => SessionCreditReason::Purchase,
                 'session_package_purchase_id' => $this->id,
             ]);
+
+            // Redeemed here rather than at checkout time, since a code is
+            // only actually earned once payment succeeds. redeem() itself
+            // is a no-op if the user has already redeemed one before
+            // (whether at signup or an earlier purchase).
+            if ($this->referral_code) {
+                app(ReferralRedemptionService::class)->redeem($this->user, $this->referral_code);
+            }
         });
 
         $this->user->notify(new SessionPackagePurchased($this));

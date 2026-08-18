@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Enums\SessionCreditReason;
 use App\Enums\SessionPackagePurchaseStatus;
+use App\Models\ReferralCode;
 use App\Models\SessionCreditLedgerEntry;
 use App\Models\SessionPackage;
 use App\Models\SessionPackagePurchase;
@@ -72,6 +74,36 @@ class SessionPackagesTest extends TestCase
             'session_count' => 10,
             'price_cents' => 15000,
             'stripe_checkout_session_id' => 'cs_test_fake123',
+        ]);
+    }
+
+    public function test_checkout_allows_stripe_promotion_codes(): void
+    {
+        $capturedParams = null;
+        $this->fakeStripeHttpClient($capturedParams);
+
+        $student = User::factory()->student()->create();
+        $package = SessionPackage::factory()->create(['stripe_lookup_key' => 'starter_pack']);
+
+        $this->actingAs($student)->get(route('session-packages.checkout', $package));
+
+        $this->assertNotNull($capturedParams);
+        $this->assertSame('true', $capturedParams['allow_promotion_codes'] ?? null);
+    }
+
+    public function test_checkout_stores_the_submitted_referral_code_on_the_pending_purchase(): void
+    {
+        $this->fakeStripeHttpClient();
+
+        $student = User::factory()->student()->create();
+        $package = SessionPackage::factory()->create(['stripe_lookup_key' => 'starter_pack']);
+
+        $this->actingAs($student)
+            ->get(route('session-packages.checkout', ['sessionPackage' => $package, 'referral_code' => 'abc123']));
+
+        $this->assertDatabaseHas('session_package_purchases', [
+            'user_id' => $student->id,
+            'referral_code' => 'ABC123',
         ]);
     }
 
@@ -185,6 +217,43 @@ class SessionPackagesTest extends TestCase
         $this->assertSame(1, SessionCreditLedgerEntry::count());
     }
 
+    public function test_webhook_redeems_a_referral_code_submitted_at_checkout_and_credits_both_parties(): void
+    {
+        $referrer = User::factory()->student()->create();
+        $referralCode = ReferralCode::factory()->for($referrer, 'referrer')->create([
+            'reward_sessions_referrer' => 2,
+            'reward_sessions_referee' => 3,
+        ]);
+
+        $student = User::factory()->student()->create();
+        $package = SessionPackage::factory()->create(['session_count' => 10]);
+        $purchase = SessionPackagePurchase::factory()->for($student)->for($package, 'sessionPackage')->create([
+            'status' => SessionPackagePurchaseStatus::Pending,
+            'session_count' => 10,
+            'referral_code' => $referralCode->code,
+        ]);
+
+        Event::dispatch(new WebhookReceived($this->checkoutCompletedPayload($purchase->id)));
+
+        $this->assertSame(13, $student->sessionCreditsBalance());
+        $this->assertSame(2, $referrer->sessionCreditsBalance());
+        $this->assertNull($referralCode->fresh()->uses_remaining);
+
+        $this->assertDatabaseHas('session_credit_ledger_entries', [
+            'user_id' => $student->id,
+            'credits' => 3,
+            'reason' => SessionCreditReason::Referral->value,
+            'referral_code_id' => $referralCode->id,
+        ]);
+
+        $this->assertDatabaseHas('session_credit_ledger_entries', [
+            'user_id' => $referrer->id,
+            'credits' => 2,
+            'reason' => SessionCreditReason::Referral->value,
+            'referral_code_id' => $referralCode->id,
+        ]);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -200,10 +269,12 @@ class SessionPackagesTest extends TestCase
         ];
     }
 
-    private function fakeStripeHttpClient(): void
+    private function fakeStripeHttpClient(?array &$capturedCheckoutSessionParams = null): void
     {
-        $client = new class implements ClientInterface
+        $client = new class($capturedCheckoutSessionParams) implements ClientInterface
         {
+            public function __construct(private mixed &$capturedCheckoutSessionParams) {}
+
             public function request($method, $absUrl, $headers, $params, $hasFile, $apiMode = 'v1', $maxNetworkRetries = null)
             {
                 if (str_contains($absUrl, '/v1/customers')) {
@@ -220,6 +291,8 @@ class SessionPackagesTest extends TestCase
                 }
 
                 if (str_contains($absUrl, '/v1/checkout/sessions')) {
+                    $this->capturedCheckoutSessionParams = $params;
+
                     return [json_encode([
                         'id' => 'cs_test_fake123',
                         'object' => 'checkout.session',

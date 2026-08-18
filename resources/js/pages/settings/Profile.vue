@@ -11,14 +11,20 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import SettingsLayout from '@/layouts/settings/Layout.vue';
 import { type BreadcrumbItem, type SharedData, type User } from '@/types';
+import { Copy } from 'lucide-vue-next';
 
 interface Props {
     mustVerifyEmail: boolean;
     status?: string;
     className?: string;
+    referralCode: string;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
+
+function copyReferralCode(): void {
+    navigator.clipboard.writeText(props.referralCode);
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -103,6 +109,21 @@ const submit = () => {
                         </TransitionRoot>
                     </div>
                 </form>
+            </div>
+
+            <div class="flex flex-col space-y-6">
+                <HeadingSmall
+                    title="Your referral code"
+                    description="Share this code — you and the friend you refer both get bonus sessions once they sign up."
+                />
+
+                <div class="flex items-center gap-4">
+                    <p class="rounded-md border border-input bg-muted px-3 py-2 font-mono text-sm">{{ referralCode }}</p>
+                    <Button variant="outline" size="sm" @click="copyReferralCode">
+                        <Copy class="size-3.5" />
+                        Copy
+                    </Button>
+                </div>
             </div>
 
             <DeleteUser />

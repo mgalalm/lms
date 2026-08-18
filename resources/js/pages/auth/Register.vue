@@ -18,8 +18,51 @@ const form = useForm({
     password_confirmation: '',
     parent_email: '',
     consent: false,
+    referral_code: '',
     turnstile_token: '',
 });
+
+// Live feedback as the code is typed — purely a UX nicety, the server
+// re-validates independently (and silently ignores an invalid code)
+// when the form is actually submitted.
+const referralCodeStatus = ref<'idle' | 'checking' | 'valid' | 'invalid'>('idle');
+let referralCodeCheckTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function getCookie(name: string): string {
+    return decodeURIComponent(document.cookie.match(`(?:^|; )${name}=([^;]*)`)?.[1] ?? '');
+}
+
+watch(
+    () => form.referral_code,
+    (code) => {
+        if (referralCodeCheckTimeout) {
+            clearTimeout(referralCodeCheckTimeout);
+        }
+
+        if (!code) {
+            referralCodeStatus.value = 'idle';
+
+            return;
+        }
+
+        referralCodeStatus.value = 'checking';
+
+        referralCodeCheckTimeout = setTimeout(async () => {
+            const response = await fetch(route('referral-codes.validate'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Accept: 'application/json',
+                    'X-XSRF-TOKEN': getCookie('XSRF-TOKEN'),
+                },
+                body: JSON.stringify({ code }),
+            });
+
+            const data = await response.json();
+            referralCodeStatus.value = data.valid ? 'valid' : 'invalid';
+        }, 500);
+    },
+);
 
 const { container: turnstileContainer, token: turnstileToken } = useTurnstile(import.meta.env.VITE_TURNSTILE_SITE_KEY);
 
@@ -123,10 +166,27 @@ const submit = () => {
                     <InputError :message="form.errors.consent" />
                 </div>
 
+                <div class="grid gap-2">
+                    <Label for="referral_code">Referral Code (optional)</Label>
+                    <Input
+                        id="referral_code"
+                        type="text"
+                        tabindex="8"
+                        autocomplete="off"
+                        v-model="form.referral_code"
+                        placeholder="e.g. ABC12345"
+                    />
+                    <p v-if="referralCodeStatus === 'valid'" class="text-xs text-green-600 dark:text-green-400">
+                        Valid code — you'll both get bonus sessions!
+                    </p>
+                    <p v-else-if="referralCodeStatus === 'invalid'" class="text-xs text-destructive">Invalid or expired code.</p>
+                    <InputError :message="form.errors.referral_code" />
+                </div>
+
                 <div ref="turnstileContainer"></div>
                 <InputError :message="form.errors.turnstile_token" />
 
-                <Button type="submit" class="mt-2 w-full" tabindex="8" :disabled="form.processing">
+                <Button type="submit" class="mt-2 w-full" tabindex="9" :disabled="form.processing">
                     <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin" />
                     Create account
                 </Button>
@@ -134,7 +194,7 @@ const submit = () => {
 
             <div class="text-center text-sm text-muted-foreground">
                 Already have an account?
-                <TextLink :href="route('login')" class="underline underline-offset-4" tabindex="9">Log in</TextLink>
+                <TextLink :href="route('login')" class="underline underline-offset-4" tabindex="10">Log in</TextLink>
             </div>
         </form>
     </AuthBase>

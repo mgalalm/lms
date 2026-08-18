@@ -1,15 +1,22 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem, SessionPackage, SessionPackagePurchase, SessionPackagePurchaseStatus } from '@/types';
 import { Head } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
 defineProps<{
     balance: number;
     packages: SessionPackage[];
     purchases: SessionPackagePurchase[];
 }>();
+
+// One code applies to whichever package the student ends up buying, so
+// it lives at the page level rather than per-card.
+const referralCode = ref('');
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Session Packages', href: route('session-packages.index') }];
 
@@ -38,6 +45,12 @@ function formatPrice(price: number, currency: string): string {
 
             <div class="space-y-3">
                 <h2 class="text-sm font-semibold text-muted-foreground">Packages</h2>
+
+                <div class="max-w-xs space-y-1">
+                    <Label for="referral_code">Referral code (optional)</Label>
+                    <Input id="referral_code" type="text" v-model="referralCode" placeholder="e.g. ABC12345" />
+                </div>
+
                 <p v-if="packages.length === 0" class="text-sm text-muted-foreground">No packages are available for purchase right now.</p>
                 <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <Card v-for="pkg in packages" :key="pkg.id">
@@ -48,7 +61,13 @@ function formatPrice(price: number, currency: string): string {
                             <p v-if="pkg.description" class="text-sm text-muted-foreground">{{ pkg.description }}</p>
                             <p class="text-lg font-semibold">{{ formatPrice(pkg.price, pkg.currency) }}</p>
                             <p class="text-sm text-muted-foreground">{{ pkg.session_count }} sessions</p>
-                            <Button as="a" :href="route('session-packages.checkout', pkg.id)" class="w-fit">Buy</Button>
+                            <Button
+                                as="a"
+                                :href="route('session-packages.checkout', { sessionPackage: pkg.id, referral_code: referralCode || undefined })"
+                                class="w-fit"
+                            >
+                                Buy
+                            </Button>
                         </CardContent>
                     </Card>
                 </div>

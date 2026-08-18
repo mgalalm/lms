@@ -26,6 +26,7 @@ class SessionCreditLedgerEntry extends Model
         'reason',
         'session_package_purchase_id',
         'class_session_id',
+        'referral_code_id',
         'created_by',
     ];
 
@@ -64,6 +65,14 @@ class SessionCreditLedgerEntry extends Model
     public function classSession(): BelongsTo
     {
         return $this->belongsTo(ClassSession::class);
+    }
+
+    /**
+     * Get the referral code that generated this entry, if it's a referral bonus.
+     */
+    public function referralCode(): BelongsTo
+    {
+        return $this->belongsTo(ReferralCode::class);
     }
 
     /**

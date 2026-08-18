@@ -10,6 +10,7 @@ enum SessionCreditReason: string implements HasLabel
     case SessionUsed = 'session_used';
     case Refund = 'refund';
     case Adjustment = 'adjustment';
+    case Referral = 'referral';
 
     public function getLabel(): string
     {
@@ -18,6 +19,7 @@ enum SessionCreditReason: string implements HasLabel
             self::SessionUsed => 'Session Scheduled',
             self::Refund => 'Refund',
             self::Adjustment => 'Manual Adjustment',
+            self::Referral => 'Referral Bonus',
         };
     }
 }
