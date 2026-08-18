@@ -21,7 +21,7 @@ class PromotionCodeClient
     {
         $codes = Cashier::stripe()->promotionCodes->all([
             'limit' => 100,
-            'expand' => ['data.coupon'],
+            'expand' => ['data.promotion.coupon'],
         ]);
 
         return collect($codes->data)
@@ -52,7 +52,7 @@ class PromotionCodeClient
         ], fn ($value) => $value !== null));
 
         Cashier::stripe()->promotionCodes->create(array_filter([
-            'coupon' => $coupon->id,
+            'promotion' => ['coupon' => $coupon->id, 'type' => 'coupon'],
             'code' => $data['code'],
             'expires_at' => $data['expires_at']?->timestamp,
             'max_redemptions' => $data['max_redemptions'],
@@ -76,7 +76,7 @@ class PromotionCodeClient
             'id' => $code->id,
             'code' => $code->code,
             'active' => $code->active,
-            'discount' => $this->describeDiscount($code->coupon),
+            'discount' => $this->describeDiscount($code->promotion->coupon),
             'times_redeemed' => $code->times_redeemed,
             'max_redemptions' => $code->max_redemptions,
             'expires_at' => $code->expires_at ? Carbon::createFromTimestamp($code->expires_at) : null,
