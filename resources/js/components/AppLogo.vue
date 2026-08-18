@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import AppLogoIcon from '@/components/AppLogoIcon.vue';
+import wordmark from '@/assets/branding/gen-academy-primary.svg';
+import wordmarkDark from '@/assets/branding/gen-academy-primary-dark.svg';
 import type { SharedData } from '@/types';
 import { usePage } from '@inertiajs/vue3';
 
@@ -7,16 +9,17 @@ interface Props {
     class?: string;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
 
 const page = usePage<SharedData>();
 </script>
 
 <template>
-    <div class="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-        <AppLogoIcon class="size-5 fill-current text-white dark:text-black" />
-    </div>
-    <div class="ml-1 grid flex-1 text-left text-sm">
-        <span class="mb-0.5 truncate font-semibold leading-none">{{ page.props.name }}</span>
+    <div class="flex items-center" :class="props.class">
+        <AppLogoIcon class="hidden size-8 shrink-0 group-data-[collapsible=icon]:block" />
+        <div class="flex flex-1 items-center overflow-hidden group-data-[collapsible=icon]:hidden">
+            <img :src="wordmark" :alt="page.props.name" class="h-6 w-auto max-w-none dark:hidden" />
+            <img :src="wordmarkDark" :alt="page.props.name" class="hidden h-6 w-auto max-w-none dark:block" />
+        </div>
     </div>
 </template>

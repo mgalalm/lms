@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Gen Academy icon</title>
+  <desc id="desc">Gen Academy app icon mark.</desc>
+  <defs>
+    <linearGradient id="iconFill" x1="72" y1="64" x2="456" y2="448" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#35C8F6"/>
+      <stop offset="0.55" stop-color="#23B8C9"/>
+      <stop offset="1" stop-color="#72E36F"/>
+    </linearGradient>
+  </defs>
+  <rect x="48" y="48" width="416" height="416" rx="108" fill="url(#iconFill)"/>
+  <circle cx="358" cy="147" r="33" fill="#FFE51E"/>
+  <circle cx="151" cy="360" r="31" fill="#FF5528"/>
+  <path d="M145 264c0-72 52-129 124-129 48 0 87 20 110 54l-66 43c-12-17-30-26-52-26-35 0-61 26-61 61s26 61 63 61c26 0 46-10 58-28h-67v-58h146v41c0 70-56 124-138 124-71 0-117-51-117-143z" fill="#071021"/>
+  <path d="M287 158l90 237h-67l-15-44h-91l-15 44h-64l90-237h72zm-65 140h55l-27-81-28 81z" fill="#FFFFFF"/>
+  <path d="M388 98l31 31 55-61" fill="none" stroke="#FFFFFF" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

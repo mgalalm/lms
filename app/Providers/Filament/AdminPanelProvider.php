@@ -28,6 +28,10 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->login()
+            ->brandLogo(asset('images/branding/gen-academy-primary.svg'))
+            ->darkModeBrandLogo(asset('images/branding/gen-academy-primary-dark.svg'))
+            ->brandLogoHeight('2rem')
+            ->favicon(asset('favicon.svg'))
             ->colors([
                 'primary' => Color::Amber,
             ])

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import wordmark from '@/assets/branding/gen-academy-primary.svg';
+import wordmarkDark from '@/assets/branding/gen-academy-primary-dark.svg';
 import { useAppearance } from '@/composables/useAppearance';
 import type { SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
@@ -42,7 +44,7 @@ const navLinks = computed(() => {
                         <p><i class="icofont-location-pin mr-5px text-size-15 text-primaryColor"></i><span>GenAcademy, Online Tutoring</span></p>
                         <ul class="gap-13px text-size-15 flex">
                             <li>
-                                <a class="hover:text-primaryColor" href="#"><i class="icofont-facebook"></i></a>
+                                <a class="hover:text-primaryColor" href="https://www.facebook.com/GenAcademyEU" target="_blank" rel="noopener noreferrer"><i class="icofont-facebook"></i></a>
                             </li>
                             <li>
                                 <a class="hover:text-primaryColor" href="#"><i class="icofont-twitter"></i></a>
@@ -65,8 +67,9 @@ const navLinks = computed(() => {
                 <div class="px-15px py-15px 3xl:container2-lg 4xl:container relative mx-auto lg:container lg:py-0">
                     <div class="gap-15px grid grid-cols-2 items-center lg:grid-cols-12">
                         <div class="lg:col-span-2 lg:col-start-1">
-                            <Link href="/" class="text-blackColor dark:text-whiteColor block py-2 text-xl font-bold">
-                                Gen<span class="text-primaryColor">Academy</span>
+                            <Link href="/" class="block py-2">
+                                <img :src="wordmark" alt="Gen Academy" class="h-14 w-auto max-w-none dark:hidden" />
+                                <img :src="wordmarkDark" alt="Gen Academy" class="hidden h-14 w-auto max-w-none dark:block" />
                             </Link>
                         </div>
 

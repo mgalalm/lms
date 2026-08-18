@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Gen Academy">
+  <defs>
+    <linearGradient id="g" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#35C8F6"/>
+      <stop offset="1" stop-color="#72E36F"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="15" fill="url(#g)"/>
+  <path d="M16 33c0-10 7-18 18-18 7 0 12 3 16 8l-9 6c-2-2-4-4-8-4-5 0-8 4-8 8s4 8 9 8c4 0 7-1 8-4h-9v-8h20v6c0 10-8 17-20 17-10 0-17-7-17-19z" fill="#071021"/>
+  <path d="M36 18l12 31h-9l-2-6H25l-2 6h-9l12-31h10zm-8 18h7l-3-10-4 10z" fill="#FFFFFF"/>
+</svg>

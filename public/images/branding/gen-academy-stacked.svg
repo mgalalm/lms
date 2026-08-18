@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="520" viewBox="0 0 720 520" role="img" aria-labelledby="title desc">
+  <title id="title">Gen Academy stacked logo</title>
+  <desc id="desc">Stacked Gen Academy logo for footers, social previews, and larger brand placements.</desc>
+  <defs>
+    <linearGradient id="iconFill" x1="184" y1="50" x2="340" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#35C8F6"/>
+      <stop offset="0.55" stop-color="#23B8C9"/>
+      <stop offset="1" stop-color="#72E36F"/>
+    </linearGradient>
+  </defs>
+  <rect x="244" y="42" width="232" height="232" rx="58" fill="url(#iconFill)"/>
+  <circle cx="418" cy="101" r="18" fill="#FFE51E"/>
+  <circle cx="303" cy="215" r="17" fill="#FF5528"/>
+  <path d="M314 166c0-39 28-70 67-70 26 0 47 11 59 29l-36 23c-6-9-16-14-28-14-19 0-33 14-33 33s14 33 34 33c14 0 25-5 31-15h-36v-31h79v22c0 38-30 67-75 67-38 0-62-28-62-77z" fill="#071021"/>
+  <path d="M391 109l48 128h-36l-8-23h-49l-8 23h-34l48-128h39zm-35 75h30l-15-43-15 43z" fill="#FFFFFF"/>
+  <path d="M436 76l15 15 28-30" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="360" y="372" text-anchor="middle" font-family="Inter, Avenir Next, Arial, sans-serif" font-size="82" font-weight="850">
+    <tspan fill="#2388D8">Gen</tspan><tspan fill="#111827">Academy</tspan>
+  </text>
+  <text x="360" y="424" text-anchor="middle" font-family="Inter, Avenir Next, Arial, sans-serif" font-size="24" font-weight="750" letter-spacing="2.8" fill="#526070">K-12 TECHNOLOGY EDUCATION</text>
+</svg>

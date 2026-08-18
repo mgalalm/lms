@@ -1,5 +1,13 @@
 <script setup lang="ts">
+import wordmarkDark from '@/assets/branding/gen-academy-primary-dark.svg';
 import { Link } from '@inertiajs/vue3';
+
+const socialLinks = [
+    { icon: 'facebook', href: 'https://www.facebook.com/GenAcademyEU' },
+    { icon: 'twitter', href: '#' },
+    { icon: 'linkedin', href: '#' },
+    { icon: 'instagram', href: '#' },
+];
 </script>
 
 <template>
@@ -8,7 +16,7 @@ import { Link } from '@inertiajs/vue3';
             <section>
                 <div class="gap-30px pb-50px pt-60px md:pb-30px md:pt-30px lg:pt-110px grid grid-cols-12 md:gap-y-5 lg:gap-y-0 lg:pb-20">
                     <div class="mr-30px col-span-12 col-start-1 md:col-span-6 lg:col-span-5" data-aos="fade-up">
-                        <h4 class="text-size-22 text-whiteColor mb-3 font-bold">Gen<span class="text-primaryColor">Academy</span></h4>
+                        <img :src="wordmarkDark" alt="Gen Academy" class="mb-3 h-8 w-auto max-w-none" />
                         <p class="mb-30px leading-1.8 text-darkgray 2xl:leading-1.8 text-base lg:text-sm 2xl:text-base">
                             A live-tutoring platform for teachers, students, and admins — Zoom sessions, certification, payroll, and HR requests in
                             one place.
@@ -60,7 +68,7 @@ import { Link } from '@inertiajs/vue3';
             <div>
                 <div class="lg:gap-30px grid grid-cols-1 items-center gap-5 pt-10 lg:grid-cols-12">
                     <div class="lg:col-span-3 lg:col-start-1">
-                        <Link href="/" class="text-whiteColor text-xl font-bold">Gen<span class="text-primaryColor">Academy</span></Link>
+                        <Link href="/"><img :src="wordmarkDark" alt="Gen Academy" class="h-6 w-auto max-w-none" /></Link>
                     </div>
 
                     <div class="lg:col-span-6 lg:col-start-4">
@@ -71,11 +79,13 @@ import { Link } from '@inertiajs/vue3';
 
                     <div class="lg:col-span-3 lg:col-start-10">
                         <ul class="flex gap-3 lg:justify-end lg:gap-2 2xl:gap-3">
-                            <li v-for="icon in ['facebook', 'twitter', 'linkedin', 'instagram']" :key="icon">
+                            <li v-for="social in socialLinks" :key="social.icon">
                                 <a
-                                    href="#"
+                                    :href="social.href"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     class="h-37px w-40.19px bg-whiteColor leading-37px text-whiteColor hover:bg-primaryColor lg:h-35px lg:w-35px lg:leading-35px 2xl:h-37px 2xl:w-40.19px 2xl:leading-37px block bg-opacity-10 text-center"
-                                    ><i :class="`icofont-${icon}`"></i
+                                    ><i :class="`icofont-${social.icon}`"></i
                                 ></a>
                             </li>
                         </ul>

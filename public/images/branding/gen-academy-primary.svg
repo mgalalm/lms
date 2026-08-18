@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="220" viewBox="0 0 980 220" role="img" aria-labelledby="title desc">
+  <title id="title">Gen Academy logo</title>
+  <desc id="desc">Primary horizontal Gen Academy wordmark with a playful technology learning icon.</desc>
+  <defs>
+    <linearGradient id="iconFill" x1="20" y1="18" x2="148" y2="154" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#35C8F6"/>
+      <stop offset="0.55" stop-color="#23B8C9"/>
+      <stop offset="1" stop-color="#72E36F"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(52 34)">
+    <rect x="0" y="0" width="152" height="152" rx="38" fill="url(#iconFill)"/>
+    <circle cx="114" cy="39" r="13" fill="#FFE51E"/>
+    <circle cx="39" cy="114" r="12" fill="#FF5528"/>
+    <path d="M46 82c0-25 18-45 43-45 17 0 30 7 38 19l-23 15c-4-6-10-9-18-9-12 0-21 9-21 21s9 21 22 21c9 0 16-3 20-9h-23V75h51v14c0 24-19 43-48 43-25 0-41-18-41-50z" fill="#071021"/>
+    <path d="M96 45l31 83H103l-5-15H66l-5 15H39l31-83h26zm-23 49h19l-9-28-10 28z" fill="#FFFFFF"/>
+    <path d="M126 22l10 10 18-19" fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g transform="translate(236 66)">
+    <text x="0" y="72" font-family="Inter, Avenir Next, Arial, sans-serif" font-size="78" font-weight="850" letter-spacing="0">
+      <tspan fill="#2388D8">Gen</tspan><tspan fill="#111827">Academy</tspan>
+    </text>
+    <text x="4" y="112" font-family="Inter, Avenir Next, Arial, sans-serif" font-size="23" font-weight="750" letter-spacing="2.6" fill="#526070">K-12 TECHNOLOGY EDUCATION</text>
+  </g>
+</svg>
