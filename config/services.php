@@ -62,7 +62,12 @@ return [
     'bunny_stream' => [
         'api_key' => env('BUNNY_STREAM_API_KEY'),
         'library_id' => env('BUNNY_STREAM_LIBRARY_ID'),
-        'webhook_secret' => env('BUNNY_WEBHOOK_SECRET'),
+    ],
+
+    'bunny' => [
+        // Bunny signs webhook requests with the library's Read-Only API
+        // key — there is no separate webhook secret for this integration.
+        'stream_readonly_key' => env('BUNNY_STREAM_READONLY_KEY'),
     ],
 
 ];

@@ -11,20 +11,27 @@ class VerifyBunnyWebhookSignature
     /**
      * Handle an incoming request.
      *
-     * Verifies an HMAC-SHA256 signature of the raw request body against our
-     * configured webhook secret. Header name (`X-Bunny-Signature`) follows
-     * this project's other webhook integrations (see VerifyZoomWebhookSignature)
-     * — reconfirm the exact header Bunny sends against their current docs
-     * before relying on this in production.
+     * Bunny doesn't use a separate webhook secret — it signs requests with
+     * the library's Read-Only API key: hash_hmac('sha256', $rawBody, $key),
+     * sent as the X-BunnyStream-Signature header, alongside an
+     * X-BunnyStream-Signature-Version header that must equal 'v1'.
      *
      * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $secret = config('services.bunny_stream.webhook_secret');
-        $signature = $request->header('x-bunny-signature');
+        if ($request->header('x-bunnystream-signature-version') !== 'v1') {
+            abort(401, 'Invalid Bunny webhook signature.');
+        }
 
-        $expected = hash_hmac('sha256', $request->getContent(), (string) $secret);
+        // Raw body, captured before any JSON parsing — parsing and
+        // re-serializing would not byte-for-byte match what Bunny signed.
+        $rawBody = $request->getContent();
+
+        $readOnlyKey = (string) config('services.bunny.stream_readonly_key');
+        $signature = $request->header('x-bunnystream-signature');
+
+        $expected = hash_hmac('sha256', $rawBody, $readOnlyKey);
 
         if (! $signature || ! hash_equals($expected, $signature)) {
             abort(401, 'Invalid Bunny webhook signature.');

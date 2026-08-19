@@ -24,7 +24,7 @@ class LessonVideoTest extends TestCase
         $this->seed(RoleSeeder::class);
 
         config([
-            'services.bunny_stream.webhook_secret' => 'test-secret',
+            'services.bunny.stream_readonly_key' => 'test-readonly-key',
             'services.bunny_stream.library_id' => 1,
         ]);
     }
@@ -123,14 +123,13 @@ class LessonVideoTest extends TestCase
             'bunny_video_id' => 'bunny-guid-1',
         ]);
 
-        $bunny = $this->createMock(BunnyStreamClient::class);
-        $bunny->method('getVideo')->with('bunny-guid-1')->willReturn([
-            'duration_seconds' => 245,
-            'thumbnail_url' => 'https://video.bunnycdn.com/library/1/videos/bunny-guid-1/thumb.jpg',
-        ]);
-        $this->app->instance(BunnyStreamClient::class, $bunny);
-
-        $payload = ['VideoLibraryId' => 1, 'VideoGuid' => 'bunny-guid-1', 'Status' => 4];
+        $payload = [
+            'VideoLibraryId' => 1,
+            'VideoGuid' => 'bunny-guid-1',
+            'Status' => 4,
+            'Length' => 245,
+            'ThumbnailUrl' => 'https://video.bunnycdn.com/library/1/videos/bunny-guid-1/thumb.jpg',
+        ];
 
         $this->postJson(route('webhooks.bunny'), $payload, $this->signedHeaders($payload))
             ->assertOk();
@@ -145,8 +144,19 @@ class LessonVideoTest extends TestCase
     {
         $payload = ['VideoLibraryId' => 1, 'VideoGuid' => 'bunny-guid-1', 'Status' => 4];
 
-        $this->postJson(route('webhooks.bunny'), $payload, ['x-bunny-signature' => 'not-the-real-signature'])
-            ->assertUnauthorized();
+        $this->postJson(route('webhooks.bunny'), $payload, [
+            'x-bunnystream-signature-version' => 'v1',
+            'x-bunnystream-signature' => 'not-the-real-signature',
+        ])->assertUnauthorized();
+    }
+
+    public function test_the_webhook_rejects_a_wrong_signature_version(): void
+    {
+        $payload = ['VideoLibraryId' => 1, 'VideoGuid' => 'bunny-guid-1', 'Status' => 4];
+        $headers = $this->signedHeaders($payload);
+        $headers['x-bunnystream-signature-version'] = 'v2';
+
+        $this->postJson(route('webhooks.bunny'), $payload, $headers)->assertUnauthorized();
     }
 
     public function test_the_webhook_ignores_a_non_finished_status(): void
@@ -184,11 +194,9 @@ class LessonVideoTest extends TestCase
         $lessonVideo = LessonVideo::factory()->draft()->create(['bunny_video_id' => 'bunny-guid-1']);
         $originalDuration = $lessonVideo->duration_seconds;
 
-        $bunny = $this->createMock(BunnyStreamClient::class);
-        $bunny->expects($this->never())->method('getVideo');
-        $this->app->instance(BunnyStreamClient::class, $bunny);
-
-        $payload = ['VideoLibraryId' => 1, 'VideoGuid' => 'bunny-guid-1', 'Status' => 4];
+        // Different Length than what's already stored — proves a retry
+        // (or an out-of-order duplicate callback) doesn't get re-applied.
+        $payload = ['VideoLibraryId' => 1, 'VideoGuid' => 'bunny-guid-1', 'Status' => 4, 'Length' => 999];
 
         $this->postJson(route('webhooks.bunny'), $payload, $this->signedHeaders($payload))
             ->assertOk();
@@ -202,11 +210,7 @@ class LessonVideoTest extends TestCase
     {
         $lessonVideo = LessonVideo::factory()->published()->create(['bunny_video_id' => 'bunny-guid-1']);
 
-        $bunny = $this->createMock(BunnyStreamClient::class);
-        $bunny->expects($this->never())->method('getVideo');
-        $this->app->instance(BunnyStreamClient::class, $bunny);
-
-        $payload = ['VideoLibraryId' => 1, 'VideoGuid' => 'bunny-guid-1', 'Status' => 4];
+        $payload = ['VideoLibraryId' => 1, 'VideoGuid' => 'bunny-guid-1', 'Status' => 4, 'Length' => 999];
 
         $this->postJson(route('webhooks.bunny'), $payload, $this->signedHeaders($payload))
             ->assertOk();
@@ -220,8 +224,11 @@ class LessonVideoTest extends TestCase
      */
     private function signedHeaders(array $payload): array
     {
-        $signature = hash_hmac('sha256', json_encode($payload), 'test-secret');
+        $signature = hash_hmac('sha256', json_encode($payload), 'test-readonly-key');
 
-        return ['x-bunny-signature' => $signature];
+        return [
+            'x-bunnystream-signature-version' => 'v1',
+            'x-bunnystream-signature' => $signature,
+        ];
     }
 }

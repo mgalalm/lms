@@ -4,16 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Enums\LessonVideoStatus;
 use App\Models\LessonVideo;
-use App\Services\Bunny\BunnyStreamClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class BunnyWebhookController extends Controller
 {
     /**
-     * Bunny's numeric VideoStatus code for "encoding finished successfully".
-     * Per Bunny's documented VideoStatus enum — reconfirm against their
-     * current docs before relying on this in production.
+     * Bunny's numeric VideoStatus code for "finished processing / playable".
+     * Bunny sends several intermediate state-change callbacks first (e.g.
+     * resolution-finished) — only this final one should move our record
+     * forward. Per Bunny's documented VideoStatus enum — reconfirm against
+     * their current docs before relying on this in production.
      */
     private const FINISHED_STATUS = 4;
 
@@ -23,7 +24,7 @@ class BunnyWebhookController extends Controller
      * unrecognized video, or an already-processed video is a no-op, not
      * an error.
      */
-    public function __invoke(Request $request, BunnyStreamClient $bunny): JsonResponse
+    public function __invoke(Request $request): JsonResponse
     {
         if ((int) $request->input('VideoLibraryId') !== (int) config('services.bunny_stream.library_id')) {
             return $this->acknowledge();
@@ -40,17 +41,16 @@ class BunnyWebhookController extends Controller
         }
 
         // Idempotency: only Processing -> Draft transitions here. A
-        // retried webhook (or one arriving after the video was already
-        // published) must not re-fetch metadata or clobber a later state.
+        // retried webhook, an earlier intermediate callback arriving out
+        // of order, or one arriving after the video was already
+        // published must not clobber a later state.
         if ($lessonVideo->status !== LessonVideoStatus::Processing) {
             return $this->acknowledge();
         }
 
-        $metadata = $bunny->getVideo($lessonVideo->bunny_video_id);
-
         $lessonVideo->update([
-            'duration_seconds' => $metadata['duration_seconds'],
-            'thumbnail_url' => $metadata['thumbnail_url'],
+            'duration_seconds' => $request->input('Length'),
+            'thumbnail_url' => $request->input('ThumbnailUrl'),
             'status' => LessonVideoStatus::Draft,
         ]);
 

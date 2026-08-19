@@ -60,27 +60,6 @@ class BunnyStreamClient
     }
 
     /**
-     * Fetch encoding metadata once processing finishes (duration, thumbnail).
-     *
-     * @return array{duration_seconds: ?int, thumbnail_url: ?string}
-     */
-    public function getVideo(string $videoId): array
-    {
-        $response = $this->request()
-            ->get(self::API_BASE_URL.'/'.$this->libraryId().'/videos/'.$videoId)
-            ->throw();
-
-        $thumbnailFileName = $response->json('thumbnailFileName');
-
-        return [
-            'duration_seconds' => $response->json('length'),
-            'thumbnail_url' => $thumbnailFileName
-                ? self::API_BASE_URL.'/'.$this->libraryId().'/videos/'.$videoId.'/'.$thumbnailFileName
-                : null,
-        ];
-    }
-
-    /**
      * Build a short-expiry, token-signed embed URL for playback. Never
      * hand out a raw/permanent Bunny URL — always mint one of these
      * on-demand, per request.
