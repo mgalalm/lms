@@ -23,7 +23,10 @@ class LessonVideoTest extends TestCase
 
         $this->seed(RoleSeeder::class);
 
-        config(['services.bunny_stream.webhook_secret' => 'test-secret']);
+        config([
+            'services.bunny_stream.webhook_secret' => 'test-secret',
+            'services.bunny_stream.library_id' => 1,
+        ]);
     }
 
     public function test_a_published_video_is_playable_by_a_guest(): void
@@ -130,7 +133,7 @@ class LessonVideoTest extends TestCase
         $payload = ['VideoLibraryId' => 1, 'VideoGuid' => 'bunny-guid-1', 'Status' => 4];
 
         $this->postJson(route('webhooks.bunny'), $payload, $this->signedHeaders($payload))
-            ->assertNoContent();
+            ->assertOk();
 
         $lessonVideo->refresh();
         $this->assertSame(LessonVideoStatus::Draft, $lessonVideo->status);
@@ -156,9 +159,59 @@ class LessonVideoTest extends TestCase
         $payload = ['VideoLibraryId' => 1, 'VideoGuid' => 'bunny-guid-1', 'Status' => 2];
 
         $this->postJson(route('webhooks.bunny'), $payload, $this->signedHeaders($payload))
-            ->assertNoContent();
+            ->assertOk();
 
         $this->assertSame(LessonVideoStatus::Processing, $lessonVideo->fresh()->status);
+    }
+
+    public function test_the_webhook_ignores_a_mismatched_video_library_id(): void
+    {
+        $lessonVideo = LessonVideo::factory()->create([
+            'status' => LessonVideoStatus::Processing,
+            'bunny_video_id' => 'bunny-guid-1',
+        ]);
+
+        $payload = ['VideoLibraryId' => 999, 'VideoGuid' => 'bunny-guid-1', 'Status' => 4];
+
+        $this->postJson(route('webhooks.bunny'), $payload, $this->signedHeaders($payload))
+            ->assertOk();
+
+        $this->assertSame(LessonVideoStatus::Processing, $lessonVideo->fresh()->status);
+    }
+
+    public function test_the_webhook_is_idempotent_and_does_not_reprocess_an_already_draft_video(): void
+    {
+        $lessonVideo = LessonVideo::factory()->draft()->create(['bunny_video_id' => 'bunny-guid-1']);
+        $originalDuration = $lessonVideo->duration_seconds;
+
+        $bunny = $this->createMock(BunnyStreamClient::class);
+        $bunny->expects($this->never())->method('getVideo');
+        $this->app->instance(BunnyStreamClient::class, $bunny);
+
+        $payload = ['VideoLibraryId' => 1, 'VideoGuid' => 'bunny-guid-1', 'Status' => 4];
+
+        $this->postJson(route('webhooks.bunny'), $payload, $this->signedHeaders($payload))
+            ->assertOk();
+
+        $lessonVideo->refresh();
+        $this->assertSame(LessonVideoStatus::Draft, $lessonVideo->status);
+        $this->assertSame($originalDuration, $lessonVideo->duration_seconds);
+    }
+
+    public function test_the_webhook_does_not_downgrade_an_already_published_video(): void
+    {
+        $lessonVideo = LessonVideo::factory()->published()->create(['bunny_video_id' => 'bunny-guid-1']);
+
+        $bunny = $this->createMock(BunnyStreamClient::class);
+        $bunny->expects($this->never())->method('getVideo');
+        $this->app->instance(BunnyStreamClient::class, $bunny);
+
+        $payload = ['VideoLibraryId' => 1, 'VideoGuid' => 'bunny-guid-1', 'Status' => 4];
+
+        $this->postJson(route('webhooks.bunny'), $payload, $this->signedHeaders($payload))
+            ->assertOk();
+
+        $this->assertSame(LessonVideoStatus::Published, $lessonVideo->fresh()->status);
     }
 
     /**

@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Enums\LessonVideoStatus;
 use App\Models\LessonVideo;
 use App\Services\Bunny\BunnyStreamClient;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 
 class BunnyWebhookController extends Controller
 {
@@ -18,18 +18,32 @@ class BunnyWebhookController extends Controller
     private const FINISHED_STATUS = 4;
 
     /**
-     * Handle the incoming request.
+     * Handle the incoming request. Always returns 200 so Bunny doesn't
+     * retry unnecessarily — a webhook for a status we don't act on, an
+     * unrecognized video, or an already-processed video is a no-op, not
+     * an error.
      */
-    public function __invoke(Request $request, BunnyStreamClient $bunny): Response
+    public function __invoke(Request $request, BunnyStreamClient $bunny): JsonResponse
     {
+        if ((int) $request->input('VideoLibraryId') !== (int) config('services.bunny_stream.library_id')) {
+            return $this->acknowledge();
+        }
+
         if ((int) $request->input('Status') !== self::FINISHED_STATUS) {
-            return response()->noContent();
+            return $this->acknowledge();
         }
 
         $lessonVideo = LessonVideo::where('bunny_video_id', $request->input('VideoGuid'))->first();
 
         if (! $lessonVideo) {
-            return response()->noContent();
+            return $this->acknowledge();
+        }
+
+        // Idempotency: only Processing -> Draft transitions here. A
+        // retried webhook (or one arriving after the video was already
+        // published) must not re-fetch metadata or clobber a later state.
+        if ($lessonVideo->status !== LessonVideoStatus::Processing) {
+            return $this->acknowledge();
         }
 
         $metadata = $bunny->getVideo($lessonVideo->bunny_video_id);
@@ -40,6 +54,11 @@ class BunnyWebhookController extends Controller
             'status' => LessonVideoStatus::Draft,
         ]);
 
-        return response()->noContent();
+        return $this->acknowledge();
+    }
+
+    private function acknowledge(): JsonResponse
+    {
+        return response()->json(['status' => 'ok']);
     }
 }
