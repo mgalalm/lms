@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Lesson extends Model
 {
@@ -39,5 +40,14 @@ class Lesson extends Model
     public function sessions(): HasMany
     {
         return $this->hasMany(ClassSession::class);
+    }
+
+    /**
+     * Get this lesson's teaching video (curriculum content) — distinct from
+     * a ClassSession's recap recording.
+     */
+    public function video(): HasOne
+    {
+        return $this->hasOne(LessonVideo::class);
     }
 }

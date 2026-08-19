@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\LessonVideoStatus;
 use App\Enums\SessionStatus;
 use App\Enums\UserRole;
 use App\Http\Resources\BadgeResource;
@@ -74,7 +75,7 @@ class DashboardController extends Controller
         $currentLesson = $currentSession?->lesson;
 
         if ($currentLesson) {
-            $currentLesson->loadMissing('module.course');
+            $currentLesson->loadMissing('module.course', 'video');
         }
 
         return Inertia::render('dashboard/Student', [
@@ -94,6 +95,9 @@ class DashboardController extends Controller
                 'module_title' => $currentLesson->module?->title,
                 'course_title' => $currentLesson->module?->course?->title,
                 'recap' => $currentSession?->recap_path ? ['class_session_id' => $currentSession->id] : null,
+                'video' => $currentLesson->video?->status === LessonVideoStatus::Published
+                    ? ['duration_seconds' => $currentLesson->video->duration_seconds]
+                    : null,
             ] : null,
             'progress' => $currentLesson ? $this->moduleProgress($user, $currentLesson) : null,
             'points' => $user->totalPoints(),

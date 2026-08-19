@@ -4,14 +4,57 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { CurrentLesson } from '@/types';
-import { BookOpen, HelpCircle, PackagePlus, Play } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { BookOpen, HelpCircle, Loader2, PackagePlus, Play, Video } from 'lucide-vue-next';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps<{
     lesson: CurrentLesson | null;
 }>();
 
 const lessonPath = computed(() => [props.lesson?.course_title, props.lesson?.module_title].filter(Boolean).join(' / '));
+
+const activeTab = ref('recap');
+const videoPlaybackUrl = ref<string | null>(null);
+const videoTokenLoading = ref(false);
+const videoTokenError = ref(false);
+
+async function fetchVideoPlaybackUrl(): Promise<void> {
+    if (!props.lesson) {
+        return;
+    }
+
+    videoTokenLoading.value = true;
+    videoTokenError.value = false;
+
+    try {
+        const response = await fetch(route('lessons.video.playback-token', props.lesson.id));
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch video playback token');
+        }
+
+        const data = await response.json();
+        videoPlaybackUrl.value = data.url;
+    } catch {
+        videoTokenError.value = true;
+    } finally {
+        videoTokenLoading.value = false;
+    }
+}
+
+watch(activeTab, (tab) => {
+    if (tab === 'video' && props.lesson?.video && !videoPlaybackUrl.value && !videoTokenLoading.value) {
+        fetchVideoPlaybackUrl();
+    }
+});
+
+watch(
+    () => props.lesson?.id,
+    () => {
+        videoPlaybackUrl.value = null;
+        videoTokenError.value = false;
+    },
+);
 </script>
 
 <template>
@@ -33,9 +76,10 @@ const lessonPath = computed(() => [props.lesson?.course_title, props.lesson?.mod
             <div v-else class="space-y-3">
                 <p class="text-sm font-medium">{{ lesson.title }}</p>
 
-                <Tabs default-value="recap">
+                <Tabs v-model="activeTab">
                     <TabsList>
                         <TabsTrigger value="recap">Recap</TabsTrigger>
+                        <TabsTrigger value="video">Video</TabsTrigger>
                         <TabsTrigger value="reading">Reading</TabsTrigger>
                         <TabsTrigger value="quiz">Quiz</TabsTrigger>
                     </TabsList>
@@ -59,6 +103,30 @@ const lessonPath = computed(() => [props.lesson?.course_title, props.lesson?.mod
                             Watch Recap
                         </Button>
                         <Button v-else disabled class="mt-3 w-fit" size="sm">Recap not available yet</Button>
+                    </TabsContent>
+
+                    <TabsContent value="video">
+                        <div v-if="!lesson.video">
+                            <EmptyState
+                                :icon="Video"
+                                heading="No teaching video yet"
+                                description="Your teacher hasn't added a video for this lesson."
+                            />
+                        </div>
+                        <div v-else-if="videoTokenLoading" class="flex aspect-video items-center justify-center rounded-lg bg-muted">
+                            <Loader2 class="size-6 animate-spin text-muted-foreground" />
+                        </div>
+                        <div v-else-if="videoTokenError" class="flex aspect-video flex-col items-center justify-center gap-3 rounded-lg bg-muted">
+                            <p class="text-xs text-muted-foreground">Couldn't load the video.</p>
+                            <Button size="sm" variant="outline" @click="fetchVideoPlaybackUrl">Try Again</Button>
+                        </div>
+                        <iframe
+                            v-else-if="videoPlaybackUrl"
+                            :src="videoPlaybackUrl"
+                            class="aspect-video w-full rounded-lg"
+                            allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+                            allowfullscreen
+                        ></iframe>
                     </TabsContent>
 
                     <TabsContent value="reading">

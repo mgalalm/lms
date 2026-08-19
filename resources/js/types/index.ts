@@ -313,6 +313,7 @@ export interface CurrentLesson {
     module_title: string | null;
     course_title: string | null;
     recap: { class_session_id: number } | null;
+    video: { duration_seconds: number | null } | null;
 }
 
 export interface LessonProgress {

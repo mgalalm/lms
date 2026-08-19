@@ -59,4 +59,10 @@ return [
         'host_user_id' => env('ZOOM_HOST_USER_ID'),
     ],
 
+    'bunny_stream' => [
+        'api_key' => env('BUNNY_STREAM_API_KEY'),
+        'library_id' => env('BUNNY_STREAM_LIBRARY_ID'),
+        'webhook_secret' => env('BUNNY_WEBHOOK_SECRET'),
+    ],
+
 ];
