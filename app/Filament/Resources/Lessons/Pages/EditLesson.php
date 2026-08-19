@@ -28,6 +28,7 @@ class EditLesson extends EditRecord
                         ->directory('lesson-video-uploads')
                         ->visibility('private')
                         ->acceptedFileTypes(['video/mp4', 'video/quicktime', 'video/webm'])
+                        ->maxSize(512000)
                         ->required(),
                 ])
                 ->action(function (array $data) {
