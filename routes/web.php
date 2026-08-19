@@ -33,6 +33,7 @@ require __DIR__.'/achievements.php';
 require __DIR__.'/session-feedback.php';
 require __DIR__.'/session-recaps.php';
 require __DIR__.'/lesson-videos.php';
+require __DIR__.'/lesson-tutor-guides.php';
 require __DIR__.'/referral-codes.php';
 require __DIR__.'/payroll.php';
 require __DIR__.'/requests.php';

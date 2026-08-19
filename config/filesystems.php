@@ -73,6 +73,20 @@ return [
             'report' => false,
         ],
 
+        // Bunny Storage (not Bunny Stream, which lesson videos use) —
+        // accessed via its S3-compatible API. Browser-facing files only:
+        // lesson content images and slideshow PDFs.
+        'bunny' => [
+            'driver' => 's3',
+            'key' => env('BUNNY_S3_ACCESS_KEY'),
+            'secret' => env('BUNNY_S3_SECRET_KEY'),
+            'region' => 'us-east-1',
+            'bucket' => env('BUNNY_S3_BUCKET'),
+            'endpoint' => env('BUNNY_S3_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+            'throw' => true,
+        ],
+
     ],
 
     /*

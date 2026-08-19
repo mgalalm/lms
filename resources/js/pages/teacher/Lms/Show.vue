@@ -3,7 +3,7 @@ import LessonVideoPlayer from '@/components/LessonVideoPlayer.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem, LmsCourseDetail, SharedData } from '@/types';
-import { Head, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, reactive, ref } from 'vue';
 
 const props = defineProps<{
@@ -112,6 +112,9 @@ function submitQuiz(): void {
                             <div class="flex shrink-0 items-center gap-2">
                                 <Button v-if="lesson.has_video" size="sm" variant="outline" @click="toggleVideo(lesson.id)">
                                     {{ expandedVideoLessonIds.has(lesson.id) ? 'Hide Video' : 'Watch Video' }}
+                                </Button>
+                                <Button as-child size="sm" variant="outline">
+                                    <Link :href="route('lessons.tutor-guide', lesson.id)">Tutor Guide</Link>
                                 </Button>
                                 <Button v-if="lesson.completed" disabled size="sm" variant="secondary">Completed</Button>
                                 <Button v-else size="sm" @click="markLessonComplete(lesson.id)">Mark as complete</Button>

@@ -206,6 +206,17 @@ export interface LmsLesson {
     has_video: boolean;
 }
 
+export interface TutorGuideProcedureStep {
+    phase: 'explore' | 'evaluate';
+    title: string;
+    duration_minutes: number;
+}
+
+export interface TutorGuideGlossaryTerm {
+    term: string;
+    definition: string;
+}
+
 export interface LmsModule {
     id: number;
     title: string;

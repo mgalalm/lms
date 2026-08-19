@@ -4,7 +4,9 @@ namespace App\Filament\Resources\Lessons\Schemas;
 
 use App\Models\Lesson;
 use App\Services\Bunny\BunnyStreamClient;
+use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -65,6 +67,41 @@ class LessonForm
                                     .'allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>'
                                 );
                             }),
+                    ])
+                    ->hiddenOn('create')
+                    ->columnSpanFull(),
+                Section::make('Tutor Guide')
+                    ->description('Teacher/admin prep material for this lesson — never shown to students, under any circumstance.')
+                    ->schema([
+                        MarkdownEditor::make('tutor_guide_intro')
+                            ->label('Intro')
+                            ->fileAttachmentsDisk('bunny')
+                            ->fileAttachmentsDirectory(fn (?Lesson $record) => 'lesson-tutor-guides/'.($record?->id ?? 'new').'/images')
+                            ->columnSpanFull(),
+                        Repeater::make('tutor_guide_procedure_steps')
+                            ->label('Procedure Steps')
+                            ->schema([
+                                Select::make('phase')
+                                    ->options(['explore' => 'Explore', 'evaluate' => 'Evaluate'])
+                                    ->required(),
+                                TextInput::make('title')
+                                    ->required(),
+                                TextInput::make('duration_minutes')
+                                    ->numeric()
+                                    ->required(),
+                            ])
+                            ->columns(3)
+                            ->reorderable()
+                            ->columnSpanFull(),
+                        Repeater::make('tutor_guide_glossary_terms')
+                            ->label('Glossary Terms')
+                            ->schema([
+                                TextInput::make('term')
+                                    ->required(),
+                                Textarea::make('definition')
+                                    ->required(),
+                            ])
+                            ->columnSpanFull(),
                     ])
                     ->hiddenOn('create')
                     ->columnSpanFull(),

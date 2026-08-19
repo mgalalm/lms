@@ -50,4 +50,13 @@ class Lesson extends Model
     {
         return $this->hasOne(LessonVideo::class);
     }
+
+    /**
+     * Get this lesson's teacher/admin-only prep material — never visible
+     * to students. See LessonTutorGuidePolicy.
+     */
+    public function tutorGuide(): HasOne
+    {
+        return $this->hasOne(LessonTutorGuide::class);
+    }
 }
