@@ -64,6 +64,36 @@ class LessonVideosTest extends TestCase
             ->assertActionDisabled('publishVideo');
     }
 
+    public function test_the_edit_page_shows_a_video_preview_once_pushed_to_bunny(): void
+    {
+        config(['services.bunny_stream.api_key' => 'test-key', 'services.bunny_stream.library_id' => 1]);
+
+        $admin = User::factory()->admin()->create();
+        $lessonVideo = LessonVideo::factory()->processing()->create(['bunny_video_id' => 'bunny-123']);
+
+        $this->actingAs($admin);
+
+        $html = Livewire::test(EditLesson::class, ['record' => $lessonVideo->lesson->getRouteKey()])->html();
+
+        $this->assertStringContainsString('<iframe', $html);
+        $this->assertStringContainsString('bunny-123', $html);
+    }
+
+    public function test_the_edit_page_shows_no_preview_while_still_uploading(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $lessonVideo = LessonVideo::factory()->create([
+            'status' => LessonVideoStatus::Uploading,
+            'bunny_video_id' => null,
+        ]);
+
+        $this->actingAs($admin);
+
+        $html = Livewire::test(EditLesson::class, ['record' => $lessonVideo->lesson->getRouteKey()])->html();
+
+        $this->assertStringNotContainsString('<iframe', $html);
+    }
+
     public function test_admin_can_publish_a_draft_video(): void
     {
         $admin = User::factory()->admin()->create();

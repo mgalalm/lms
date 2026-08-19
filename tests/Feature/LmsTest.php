@@ -6,6 +6,7 @@ use App\Enums\SessionCreditReason;
 use App\Filament\Resources\ClassSessions\Pages\CreateClassSession;
 use App\Models\Course;
 use App\Models\Lesson;
+use App\Models\LessonVideo;
 use App\Models\Module;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
@@ -68,6 +69,24 @@ class LmsTest extends TestCase
                 ->where('course.modules.0.lessons.0.id', $lesson->id)
                 ->where('course.modules.0.lessons.0.completed', false)
                 ->where('course.is_certified', false)
+            );
+    }
+
+    public function test_course_detail_reports_whether_a_lesson_has_a_watchable_video(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $module = Module::factory()->create();
+        $lessonWithVideo = Lesson::factory()->for($module)->create();
+        $lessonStillUploading = Lesson::factory()->for($module)->create();
+
+        LessonVideo::factory()->for($lessonWithVideo)->create(['bunny_video_id' => 'bunny-123']);
+        LessonVideo::factory()->for($lessonStillUploading)->create(['bunny_video_id' => null]);
+
+        $this->actingAs($teacher)
+            ->get(route('lms.show', $module->course))
+            ->assertInertia(fn (Assert $page) => $page->component('teacher/Lms/Show')
+                ->where('course.modules.0.lessons.0.has_video', true)
+                ->where('course.modules.0.lessons.1.has_video', false)
             );
     }
 

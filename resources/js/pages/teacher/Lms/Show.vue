@@ -1,13 +1,28 @@
 <script setup lang="ts">
+import LessonVideoPlayer from '@/components/LessonVideoPlayer.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem, LmsCourseDetail, SharedData } from '@/types';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { computed, reactive } from 'vue';
+import { computed, reactive, ref } from 'vue';
 
 const props = defineProps<{
     course: LmsCourseDetail;
 }>();
+
+const expandedVideoLessonIds = ref<Set<number>>(new Set());
+
+function toggleVideo(lessonId: number): void {
+    const next = new Set(expandedVideoLessonIds.value);
+
+    if (next.has(lessonId)) {
+        next.delete(lessonId);
+    } else {
+        next.add(lessonId);
+    }
+
+    expandedVideoLessonIds.value = next;
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'LMS', href: route('lms.index') },
@@ -85,16 +100,25 @@ function submitQuiz(): void {
                 <div
                     class="divide-y divide-sidebar-border/70 rounded-xl border border-sidebar-border/70 bg-card dark:divide-sidebar-border dark:border-sidebar-border"
                 >
-                    <div v-for="lesson in module.lessons" :key="lesson.id" class="flex items-start justify-between gap-4 p-4">
-                        <div>
-                            <p class="font-medium">{{ lesson.title }}</p>
-                            <p v-if="lesson.reading_content" class="mt-1 whitespace-pre-line text-sm text-muted-foreground">
-                                {{ lesson.reading_content }}
-                            </p>
+                    <div v-for="lesson in module.lessons" :key="lesson.id" class="p-4">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="font-medium">{{ lesson.title }}</p>
+                                <p v-if="lesson.reading_content" class="mt-1 whitespace-pre-line text-sm text-muted-foreground">
+                                    {{ lesson.reading_content }}
+                                </p>
+                            </div>
+
+                            <div class="flex shrink-0 items-center gap-2">
+                                <Button v-if="lesson.has_video" size="sm" variant="outline" @click="toggleVideo(lesson.id)">
+                                    {{ expandedVideoLessonIds.has(lesson.id) ? 'Hide Video' : 'Watch Video' }}
+                                </Button>
+                                <Button v-if="lesson.completed" disabled size="sm" variant="secondary">Completed</Button>
+                                <Button v-else size="sm" @click="markLessonComplete(lesson.id)">Mark as complete</Button>
+                            </div>
                         </div>
 
-                        <Button v-if="lesson.completed" disabled size="sm" variant="secondary" class="shrink-0">Completed</Button>
-                        <Button v-else size="sm" class="shrink-0" @click="markLessonComplete(lesson.id)">Mark as complete</Button>
+                        <LessonVideoPlayer v-if="expandedVideoLessonIds.has(lesson.id)" :lesson-id="lesson.id" class="mt-3" />
                     </div>
                 </div>
             </div>

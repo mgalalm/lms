@@ -203,6 +203,7 @@ export interface LmsLesson {
     title: string;
     reading_content: string | null;
     completed: boolean;
+    has_video: boolean;
 }
 
 export interface LmsModule {

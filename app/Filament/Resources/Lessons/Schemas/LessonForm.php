@@ -3,12 +3,14 @@
 namespace App\Filament\Resources\Lessons\Schemas;
 
 use App\Models\Lesson;
+use App\Services\Bunny\BunnyStreamClient;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
 
 class LessonForm
 {
@@ -46,6 +48,22 @@ class LessonForm
                                 }
 
                                 return $summary;
+                            }),
+                        Placeholder::make('video_preview')
+                            ->hiddenLabel()
+                            ->content(function (?Lesson $record) {
+                                $video = $record?->video;
+
+                                if (! $video || ! $video->bunny_video_id) {
+                                    return null;
+                                }
+
+                                $url = app(BunnyStreamClient::class)->signedPlaybackUrl($video->bunny_video_id);
+
+                                return new HtmlString(
+                                    '<iframe src="'.e($url).'" class="aspect-video w-full max-w-xl rounded-lg" '
+                                    .'allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>'
+                                );
                             }),
                     ])
                     ->hiddenOn('create')

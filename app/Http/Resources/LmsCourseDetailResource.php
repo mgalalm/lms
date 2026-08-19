@@ -54,6 +54,11 @@ class LmsCourseDetailResource extends JsonResource
                     'title' => $lesson->title,
                     'reading_content' => $lesson->reading_content,
                     'completed' => $this->completedLessonIds->contains($lesson->id),
+                    // Teachers can preview a video at any stage (not just
+                    // published) — see LessonVideoPolicy. bunny_video_id
+                    // is required for playback, so a video still uploading
+                    // (not yet pushed to Bunny) doesn't count as watchable.
+                    'has_video' => $lesson->video !== null && $lesson->video->bunny_video_id !== null,
                 ]),
             ]),
             'quiz' => $this->whenLoaded('quiz', fn () => $this->quiz ? [

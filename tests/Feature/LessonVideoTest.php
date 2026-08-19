@@ -104,7 +104,10 @@ class LessonVideoTest extends TestCase
 
         $bunny = $this->createMock(BunnyStreamClient::class);
         $bunny->expects($this->once())->method('createVideo')->willReturn('new-bunny-guid');
-        $bunny->expects($this->once())->method('uploadVideo')->with('new-bunny-guid', 'fake video bytes');
+        $bunny->expects($this->once())->method('uploadVideo')->with(
+            'new-bunny-guid',
+            $this->callback(fn ($stream) => is_resource($stream) && stream_get_contents($stream) === 'fake video bytes'),
+        );
         $this->app->instance(BunnyStreamClient::class, $bunny);
 
         (new PushLessonVideoToBunnyJob($lessonVideo, 'local', 'lesson-video-uploads/test.mp4'))

@@ -37,13 +37,17 @@ class BunnyStreamClient
     }
 
     /**
-     * Push the raw video file contents to Bunny for encoding. Bunny starts
-     * transcoding asynchronously and calls our webhook when it's done.
+     * Push the video file to Bunny for encoding, streamed rather than
+     * loaded into memory (large files would risk exhausting the worker's
+     * memory_limit). Bunny starts transcoding asynchronously and calls our
+     * webhook when it's done.
+     *
+     * @param  resource  $stream
      */
-    public function uploadVideo(string $videoId, string $contents): void
+    public function uploadVideo(string $videoId, $stream): void
     {
         $this->request()
-            ->withBody($contents, 'application/octet-stream')
+            ->withBody($stream, 'application/octet-stream')
             ->put(self::API_BASE_URL.'/'.$this->libraryId().'/videos/'.$videoId)
             ->throw();
     }
@@ -77,7 +81,7 @@ class BunnyStreamClient
         return Http::withHeaders([
             'AccessKey' => $this->apiKey(),
             'accept' => 'application/json',
-        ]);
+        ])->timeout(3600);
     }
 
     private function apiKey(): string
