@@ -36,6 +36,19 @@ return [
             'serve' => true,
             'throw' => false,
             'report' => false,
+            // Flysystem's local adapter defaults new dirs/files to 0700, which
+            // locks out the www-data group entirely. Horizon runs as deployuser
+            // (a www-data group member), so files php-fpm (www-data) writes here
+            // — e.g. lesson-video-uploads, livewire-tmp — must stay group-readable
+            // or the queued PushLessonVideoToBunnyJob can't read them back.
+            'permissions' => [
+                'file' => [
+                    'private' => 0660,
+                ],
+                'dir' => [
+                    'private' => 02770,
+                ],
+            ],
         ],
 
         'public' => [
