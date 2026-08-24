@@ -10,6 +10,7 @@ use App\Jobs\PushLessonVideoToBunnyJob;
 use App\Jobs\SyncNotionContentJob;
 use App\Services\Notion\NotionSyncService;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Notifications\Notification;
@@ -116,60 +117,69 @@ class EditLesson extends EditRecord
 
                     $this->record->unsetRelation('slideshow');
                 }),
-            Action::make('syncFromNotion')
-                ->label('Sync from Notion')
-                ->icon(Heroicon::OutlinedArrowPath)
-                ->visible(fn () => $this->record->tutorGuide?->notion_page_id !== null)
-                ->action(function () {
-                    try {
-                        // dispatchNow (not dispatchSync) so the job's
-                        // handle() return value — skipped block types —
-                        // actually reaches us: dispatchSync() on a
-                        // ShouldQueue job routes through the queue
-                        // abstraction and discards the return value.
-                        $skippedBlockTypes = Bus::dispatchNow(new SyncNotionContentJob($this->record->tutorGuide));
+            // Grouped rather than two standalone buttons — the tutor
+            // guide's video/slideshow/delete actions already fill the
+            // header, and a labeled dropdown keeps both Notion actions
+            // reachable without squeezing the page title into a narrow
+            // wrapping column.
+            ActionGroup::make([
+                Action::make('syncFromNotion')
+                    ->label('Sync from Notion')
+                    ->icon(Heroicon::OutlinedArrowPath)
+                    ->action(function () {
+                        try {
+                            // dispatchNow (not dispatchSync) so the job's
+                            // handle() return value — skipped block types —
+                            // actually reaches us: dispatchSync() on a
+                            // ShouldQueue job routes through the queue
+                            // abstraction and discards the return value.
+                            $skippedBlockTypes = Bus::dispatchNow(new SyncNotionContentJob($this->record->tutorGuide));
 
-                        if ($skippedBlockTypes === []) {
-                            Notification::make()->title('Synced from Notion')->success()->send();
-                        } else {
+                            if ($skippedBlockTypes === []) {
+                                Notification::make()->title('Synced from Notion')->success()->send();
+                            } else {
+                                Notification::make()
+                                    ->title('Synced from Notion (with skipped content)')
+                                    ->body(
+                                        "Some content types aren't supported yet and were skipped: "
+                                        .implode(', ', $skippedBlockTypes).'.'
+                                    )
+                                    ->warning()
+                                    ->send();
+                            }
+                        } catch (Throwable $e) {
+                            report($e);
+
                             Notification::make()
-                                ->title('Synced from Notion (with skipped content)')
-                                ->body(
-                                    "Some content types aren't supported yet and were skipped: "
-                                    .implode(', ', $skippedBlockTypes).'.'
-                                )
-                                ->warning()
+                                ->title('Notion sync failed')
+                                ->body($e->getMessage())
+                                ->danger()
                                 ->send();
                         }
-                    } catch (Throwable $e) {
-                        report($e);
+
+                        $this->record->unsetRelation('tutorGuide');
+                    }),
+                Action::make('unlinkNotionPage')
+                    ->label('Unlink Notion Page')
+                    ->icon(Heroicon::OutlinedLinkSlash)
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalDescription('The lesson keeps its already-synced content, but will no longer be re-synced from Notion until a new page URL is linked.')
+                    ->action(function () {
+                        $this->record->tutorGuide?->update(['notion_page_id' => null]);
 
                         Notification::make()
-                            ->title('Notion sync failed')
-                            ->body($e->getMessage())
-                            ->danger()
+                            ->title('Notion page unlinked')
+                            ->success()
                             ->send();
-                    }
 
-                    $this->record->unsetRelation('tutorGuide');
-                }),
-            Action::make('unlinkNotionPage')
-                ->label('Unlink Notion Page')
-                ->icon(Heroicon::OutlinedLinkSlash)
-                ->color('danger')
-                ->visible(fn () => $this->record->tutorGuide?->notion_page_id !== null)
-                ->requiresConfirmation()
-                ->modalDescription('The lesson keeps its already-synced content, but will no longer be re-synced from Notion until a new page URL is linked.')
-                ->action(function () {
-                    $this->record->tutorGuide?->update(['notion_page_id' => null]);
-
-                    Notification::make()
-                        ->title('Notion page unlinked')
-                        ->success()
-                        ->send();
-
-                    $this->record->unsetRelation('tutorGuide');
-                }),
+                        $this->record->unsetRelation('tutorGuide');
+                    }),
+            ])
+                ->label('Notion')
+                ->icon(Heroicon::OutlinedLink)
+                ->button()
+                ->visible(fn () => $this->record->tutorGuide?->notion_page_id !== null),
             DeleteAction::make(),
         ];
     }
