@@ -86,6 +86,10 @@ class NotionSyncServiceTest extends TestCase
             ->usingFileName('old-image.png')
             ->toMediaCollection('intro-images');
         $previousImagePath = $previousImage->getPathRelativeToRoot();
+        $previousImageDirectory = dirname($previousImagePath);
+        $previousImageDirectoryMarkerPath = "{$previousImageDirectory}/.folder-marker";
+
+        Storage::disk('bunny')->put($previousImageDirectoryMarkerPath, '');
 
         SyncNotionContentJob::dispatchSync($guide);
 
@@ -107,6 +111,7 @@ class NotionSyncServiceTest extends TestCase
 
         $this->assertModelMissing($previousImage);
         Storage::disk('bunny')->assertMissing($previousImagePath);
+        Storage::disk('bunny')->assertMissing($previousImageDirectoryMarkerPath);
         $this->assertCount(1, $guide->fresh()->getMedia('intro-images'));
     }
 

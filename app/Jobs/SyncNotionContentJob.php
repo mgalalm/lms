@@ -6,6 +6,7 @@ use App\Models\LessonTutorGuide;
 use App\Services\Notion\NotionSyncService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
 /**
@@ -38,6 +39,14 @@ class SyncNotionContentJob implements ShouldQueue
         }
 
         $previousIntroImages = $this->lessonTutorGuide->getMedia('intro-images');
+        $previousIntroImageDirectories = $previousIntroImages
+            ->map(fn ($media) => [
+                'disk' => $media->disk,
+                'directory' => dirname($media->getPathRelativeToRoot()),
+            ])
+            ->filter(fn (array $path) => $path['directory'] !== '.')
+            ->unique(fn (array $path) => $path['disk'].'|'.$path['directory'])
+            ->values();
 
         $markdown = $notion->fetchPageAsMarkdown($this->lessonTutorGuide->notion_page_id, $this->lessonTutorGuide);
 
@@ -45,5 +54,9 @@ class SyncNotionContentJob implements ShouldQueue
         $this->lessonTutorGuide->update(['last_synced_at' => now()]);
 
         $previousIntroImages->each->delete();
+        $previousIntroImageDirectories->each(function (array $path): void {
+            Storage::disk($path['disk'])->deleteDirectory($path['directory']);
+            Storage::disk($path['disk'])->delete($path['directory']);
+        });
     }
 }
