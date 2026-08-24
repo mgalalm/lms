@@ -123,6 +123,28 @@ const breadcrumbs: BreadcrumbItem[] = [
     border: 1px solid hsl(var(--border));
 }
 
+.tutor-guide-content :deep(table) {
+    display: block;
+    margin-top: 1em;
+    margin-bottom: 1em;
+    width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font-size: 0.9em;
+}
+
+.tutor-guide-content :deep(th),
+.tutor-guide-content :deep(td) {
+    border: 1px solid hsl(var(--border));
+    padding: 0.5em 0.75em;
+    text-align: left;
+}
+
+.tutor-guide-content :deep(th) {
+    background-color: hsl(var(--muted));
+    font-weight: 600;
+}
+
 .tutor-guide-content :deep(iframe) {
     margin-top: 1em;
     margin-bottom: 1em;
