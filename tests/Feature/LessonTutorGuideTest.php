@@ -92,13 +92,13 @@ class LessonTutorGuideTest extends TestCase
     {
         $teacher = User::factory()->teacher()->create();
         $guide = LessonTutorGuide::factory()->create();
-        $guide->updateIntroMarkdown('**Bold** intro.');
+        $guide->updateIntroMarkdown("Click **Marketplace** in your sidebar\n\nCheck out [Notion Academy](https://academy.notion.com/?utm_campaign=gsqw) to level up.");
 
         $this->actingAs($teacher)
             ->get(route('lessons.tutor-guide', $guide->lesson))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page->component('teacher/Lms/TutorGuide')
-                ->where('introHtml', "<p><strong>Bold</strong> intro.</p>\n")
+                ->where('introHtml', "<p>Click <strong>Marketplace</strong> in your sidebar</p>\n<p>Check out <a href=\"https://academy.notion.com/?utm_campaign=gsqw\">Notion Academy</a> to level up.</p>\n")
                 ->has('procedureSteps', 2)
                 ->has('glossaryTerms', 1)
             );
