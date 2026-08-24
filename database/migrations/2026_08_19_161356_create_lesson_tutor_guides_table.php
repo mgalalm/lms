@@ -15,8 +15,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('lesson_id')->constrained()->cascadeOnDelete();
             $table->string('locale')->default('en');
-            $table->json('procedure_steps')->nullable();
-            $table->json('glossary_terms')->nullable();
             $table->timestamps();
 
             $table->unique(['lesson_id', 'locale']);

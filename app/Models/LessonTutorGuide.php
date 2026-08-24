@@ -31,8 +31,6 @@ class LessonTutorGuide extends Model implements HasMedia
         'locale',
         'notion_page_id',
         'last_synced_at',
-        'procedure_steps',
-        'glossary_terms',
     ];
 
     /**
@@ -44,8 +42,6 @@ class LessonTutorGuide extends Model implements HasMedia
     {
         return [
             'last_synced_at' => 'datetime',
-            'procedure_steps' => 'array',
-            'glossary_terms' => 'array',
         ];
     }
 

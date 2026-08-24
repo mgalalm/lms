@@ -21,13 +21,6 @@ class LessonTutorGuideFactory extends Factory
         return [
             'lesson_id' => Lesson::factory(),
             'locale' => 'en',
-            'procedure_steps' => [
-                ['phase' => 'explore', 'title' => fake()->sentence(4), 'duration_minutes' => 10],
-                ['phase' => 'evaluate', 'title' => fake()->sentence(4), 'duration_minutes' => 15],
-            ],
-            'glossary_terms' => [
-                ['term' => fake()->word(), 'definition' => fake()->sentence()],
-            ],
         ];
     }
 }

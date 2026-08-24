@@ -7,7 +7,6 @@ use App\Services\Bunny\BunnyStreamClient;
 use App\Services\Notion\NotionSyncService;
 use Closure;
 use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -116,30 +115,6 @@ class LessonForm
                                     }
                                 };
                             })
-                            ->columnSpanFull(),
-                        Repeater::make('tutor_guide_procedure_steps')
-                            ->label('Procedure Steps')
-                            ->schema([
-                                Select::make('phase')
-                                    ->options(['explore' => 'Explore', 'evaluate' => 'Evaluate'])
-                                    ->required(),
-                                TextInput::make('title')
-                                    ->required(),
-                                TextInput::make('duration_minutes')
-                                    ->numeric()
-                                    ->required(),
-                            ])
-                            ->columns(3)
-                            ->reorderable()
-                            ->columnSpanFull(),
-                        Repeater::make('tutor_guide_glossary_terms')
-                            ->label('Glossary Terms')
-                            ->schema([
-                                TextInput::make('term')
-                                    ->required(),
-                                Textarea::make('definition')
-                                    ->required(),
-                            ])
                             ->columnSpanFull(),
                     ])
                     ->hiddenOn('create')

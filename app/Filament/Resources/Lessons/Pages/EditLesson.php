@@ -22,27 +22,6 @@ class EditLesson extends EditRecord
     protected static string $resource = LessonResource::class;
 
     /**
-     * The tutor guide's fields aren't Lesson columns (see afterSave()), so
-     * Filament's normal fill-from-model doesn't populate them.
-     *
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    protected function mutateFormDataBeforeFill(array $data): array
-    {
-        $guide = $this->record->tutorGuide;
-
-        // tutor_guide_notion_url is intentionally left blank on fill — it's
-        // a "paste to (re)connect" field, not a display of the stored page
-        // ID (the original URL isn't retained). Current link status is
-        // shown separately via the tutor_guide_notion_status Placeholder.
-        $data['tutor_guide_procedure_steps'] = $guide?->procedure_steps ?? [];
-        $data['tutor_guide_glossary_terms'] = $guide?->glossary_terms ?? [];
-
-        return $data;
-    }
-
-    /**
      * Upsert the tutor guide alongside the Lesson save. Its fields live
      * outside $data's Lesson-column keys (Eloquent mass assignment just
      * ignores the extras), so this reads back the raw submitted state via
@@ -59,11 +38,7 @@ class EditLesson extends EditRecord
 
         $this->record->tutorGuide()->updateOrCreate(
             ['locale' => 'en'],
-            [
-                'notion_page_id' => $pageId,
-                'procedure_steps' => $this->data['tutor_guide_procedure_steps'] ?? [],
-                'glossary_terms' => $this->data['tutor_guide_glossary_terms'] ?? [],
-            ],
+            ['notion_page_id' => $pageId],
         );
 
         $this->record->unsetRelation('tutorGuide');

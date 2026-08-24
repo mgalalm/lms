@@ -1,15 +1,13 @@
 <script setup lang="ts">
 import EmptyState from '@/components/EmptyState.vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import type { BreadcrumbItem, TutorGuideGlossaryTerm, TutorGuideProcedureStep } from '@/types';
+import type { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/vue3';
 import { BookOpen } from 'lucide-vue-next';
 
 const props = defineProps<{
     lesson: { id: number; title: string };
     introHtml: string | null;
-    procedureSteps: TutorGuideProcedureStep[];
-    glossaryTerms: TutorGuideGlossaryTerm[];
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -18,15 +16,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Tutor Guide', href: '#' },
 ];
 
-const phaseStyles: Record<TutorGuideProcedureStep['phase'], string> = {
-    explore: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-    evaluate: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
-};
-
-const phaseLabels: Record<TutorGuideProcedureStep['phase'], string> = {
-    explore: 'Explore',
-    evaluate: 'Evaluate',
-};
 </script>
 
 <template>
@@ -40,53 +29,19 @@ const phaseLabels: Record<TutorGuideProcedureStep['phase'], string> = {
             </div>
 
             <EmptyState
-                v-if="!introHtml && procedureSteps.length === 0 && glossaryTerms.length === 0"
+                v-if="!introHtml"
                 :icon="BookOpen"
                 heading="No tutor guide yet"
-                description="Add an intro, procedure steps, and glossary terms for this lesson from the admin panel."
+                description="Link and sync a Notion tutor guide for this lesson from the admin panel."
             />
 
-            <template v-else>
-                <div v-if="introHtml" class="space-y-3">
-                    <h2 class="text-muted-foreground text-sm font-semibold">Intro</h2>
-                    <div
-                        class="tutor-guide-content border-sidebar-border/70 bg-card dark:border-sidebar-border max-w-none rounded-xl border p-4 text-sm leading-relaxed break-words"
-                        v-html="introHtml"
-                    />
-                </div>
-
-                <div v-if="procedureSteps.length > 0" class="space-y-3">
-                    <h2 class="text-muted-foreground text-sm font-semibold">Procedure Steps</h2>
-                    <ol
-                        class="divide-sidebar-border/70 border-sidebar-border/70 bg-card dark:divide-sidebar-border dark:border-sidebar-border divide-y rounded-xl border"
-                    >
-                        <li v-for="(step, index) in procedureSteps" :key="index" class="flex items-center justify-between gap-4 p-4">
-                            <div class="flex items-center gap-3">
-                                <span class="text-muted-foreground text-sm font-medium">{{ index + 1 }}.</span>
-                                <span class="rounded-full px-2 py-0.5 text-xs font-medium" :class="phaseStyles[step.phase]">
-                                    {{ phaseLabels[step.phase] }}
-                                </span>
-                                <p class="text-sm font-medium">{{ step.title }}</p>
-                            </div>
-                            <span class="bg-muted text-muted-foreground shrink-0 rounded-full px-2 py-0.5 text-xs">
-                                {{ step.duration_minutes }} min
-                            </span>
-                        </li>
-                    </ol>
-                </div>
-
-                <div v-if="glossaryTerms.length > 0" class="space-y-3">
-                    <h2 class="text-muted-foreground text-sm font-semibold">Glossary</h2>
-                    <dl
-                        class="divide-sidebar-border/70 border-sidebar-border/70 bg-card dark:divide-sidebar-border dark:border-sidebar-border divide-y rounded-xl border p-4"
-                    >
-                        <div v-for="(item, index) in glossaryTerms" :key="index" class="py-2 first:pt-0 last:pb-0">
-                            <dt class="text-sm font-medium">{{ item.term }}</dt>
-                            <dd class="text-muted-foreground mt-0.5 text-sm">{{ item.definition }}</dd>
-                        </div>
-                    </dl>
-                </div>
-            </template>
+            <div v-else class="space-y-3">
+                <h2 class="text-muted-foreground text-sm font-semibold">Tutor Notes</h2>
+                <div
+                    class="tutor-guide-content border-sidebar-border/70 bg-card dark:border-sidebar-border max-w-none rounded-xl border p-4 text-sm leading-relaxed break-words"
+                    v-html="introHtml"
+                />
+            </div>
         </div>
     </AppLayout>
 </template>

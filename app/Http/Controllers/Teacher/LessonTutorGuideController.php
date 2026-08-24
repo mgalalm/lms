@@ -32,8 +32,6 @@ class LessonTutorGuideController extends Controller
                 'title' => $lesson->title,
             ],
             'introHtml' => $introMarkdown ? (new CommonMarkConverter)->convert($introMarkdown)->getContent() : null,
-            'procedureSteps' => $guide?->procedure_steps ?? [],
-            'glossaryTerms' => $guide?->glossary_terms ?? [],
         ]);
     }
 }

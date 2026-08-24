@@ -37,13 +37,6 @@ class LessonTutorGuideTest extends TestCase
         Livewire::test(EditLesson::class, ['record' => $lesson->getRouteKey()])
             ->fillForm([
                 'tutor_guide_notion_url' => 'https://www.notion.so/My-Page-83f2c4b1a2e94b0f9c6d3e5a7b8c9d0e',
-                'tutor_guide_procedure_steps' => [
-                    ['phase' => 'explore', 'title' => 'Introduce sprites', 'duration_minutes' => 10],
-                    ['phase' => 'evaluate', 'title' => 'Quick quiz', 'duration_minutes' => 5],
-                ],
-                'tutor_guide_glossary_terms' => [
-                    ['term' => 'Sprite', 'definition' => 'A movable object on the stage.'],
-                ],
             ])
             ->call('save')
             ->assertHasNoFormErrors();
@@ -51,8 +44,6 @@ class LessonTutorGuideTest extends TestCase
         $guide = $lesson->tutorGuide()->firstOrFail();
 
         $this->assertSame('83f2c4b1a2e94b0f9c6d3e5a7b8c9d0e', $guide->notion_page_id);
-        $this->assertSame('explore', $guide->procedure_steps[0]['phase']);
-        $this->assertSame('Sprite', $guide->glossary_terms[0]['term']);
     }
 
     public function test_the_notion_url_field_rejects_a_non_notion_url(): void
@@ -108,8 +99,8 @@ class LessonTutorGuideTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page->component('teacher/Lms/TutorGuide')
                 ->where('introHtml', "<p>Click <strong>Marketplace</strong> in your sidebar</p>\n<p><img src=\"{$imageUrl}\" alt=\"\" /></p>\n<p>Check out <a href=\"https://academy.notion.com/?utm_campaign=gsqw\">Notion Academy</a> to level up.</p>\n")
-                ->has('procedureSteps', 2)
-                ->has('glossaryTerms', 1)
+                ->missing('procedureSteps')
+                ->missing('glossaryTerms')
             );
     }
 
@@ -248,8 +239,8 @@ class LessonTutorGuideTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page->component('teacher/Lms/TutorGuide')
                 ->where('introHtml', null)
-                ->where('procedureSteps', [])
-                ->where('glossaryTerms', [])
+                ->missing('procedureSteps')
+                ->missing('glossaryTerms')
             );
     }
 
