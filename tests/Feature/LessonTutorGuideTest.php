@@ -104,6 +104,20 @@ class LessonTutorGuideTest extends TestCase
             );
     }
 
+    public function test_a_teacher_can_view_syntax_highlighted_code_blocks(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $guide = LessonTutorGuide::factory()->create();
+        $guide->updateIntroMarkdown("```php\n<?php echo 1;\n```");
+
+        $this->actingAs($teacher)
+            ->get(route('lessons.tutor-guide', $guide->lesson))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->component('teacher/Lms/TutorGuide')
+                ->where('introHtml', "<pre data-language=\"PHP\"><code class=\"language-php hljs\"><span class=\"hljs-meta\">&lt;?php</span> <span class=\"hljs-keyword\">echo</span> <span class=\"hljs-number\">1</span>;\n</code></pre>\n")
+            );
+    }
+
     public function test_a_teacher_can_view_a_tutor_guide_image(): void
     {
         Storage::fake('bunny');

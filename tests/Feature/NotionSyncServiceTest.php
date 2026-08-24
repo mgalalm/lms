@@ -102,6 +102,7 @@ class NotionSyncServiceTest extends TestCase
 
         $this->assertStringContainsString('Hello world', $markdown);
         $this->assertStringContainsString('Click **Marketplace** in your sidebar', $markdown);
+        $this->assertStringContainsString("```php\n<?php echo 1;\n```", $markdown);
         $this->assertStringContainsString("![](/lesson-tutor-guides/{$guide->id}/media/", $markdown);
         $this->assertStringNotContainsString('** Marketplace**', $markdown);
 
@@ -170,6 +171,23 @@ class NotionSyncServiceTest extends TestCase
                 [
                     'object' => 'block',
                     'id' => 'block-3',
+                    'type' => 'code',
+                    'has_children' => false,
+                    'code' => [
+                        'language' => 'php',
+                        'rich_text' => [
+                            [
+                                'type' => 'text',
+                                'plain_text' => '<?php echo 1;',
+                                'annotations' => ['bold' => false, 'italic' => false, 'code' => false],
+                                'href' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                [
+                    'object' => 'block',
+                    'id' => 'block-4',
                     'type' => 'image',
                     'has_children' => false,
                     'image' => [

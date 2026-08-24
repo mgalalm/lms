@@ -15,7 +15,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: props.lesson.title, href: '#' },
     { title: 'Tutor Guide', href: '#' },
 ];
-
 </script>
 
 <template>
@@ -124,15 +123,77 @@ const breadcrumbs: BreadcrumbItem[] = [
 }
 
 .tutor-guide-content :deep(pre) {
+    position: relative;
     margin-bottom: 0.85em;
     overflow-x: auto;
     border-radius: 0.5rem;
-    background-color: hsl(var(--muted));
-    padding: 0.85em;
+    border: 1px solid hsl(var(--border));
+    background-color: #111827;
+    padding: 1rem;
+    color: #d1d5db;
 }
 
 .tutor-guide-content :deep(pre code) {
     background-color: transparent;
     padding: 0;
+    color: inherit;
+}
+
+.tutor-guide-content :deep(pre[data-language]) {
+    padding-top: 2.25rem;
+}
+
+.tutor-guide-content :deep(pre[data-language]::before) {
+    position: absolute;
+    top: 0.65rem;
+    right: 0.85rem;
+    color: #9ca3af;
+    content: attr(data-language);
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.tutor-guide-content :deep(.hljs-keyword),
+.tutor-guide-content :deep(.hljs-selector-tag),
+.tutor-guide-content :deep(.hljs-built_in),
+.tutor-guide-content :deep(.hljs-name),
+.tutor-guide-content :deep(.hljs-tag) {
+    color: #93c5fd;
+}
+
+.tutor-guide-content :deep(.hljs-string),
+.tutor-guide-content :deep(.hljs-title),
+.tutor-guide-content :deep(.hljs-section),
+.tutor-guide-content :deep(.hljs-attribute),
+.tutor-guide-content :deep(.hljs-literal),
+.tutor-guide-content :deep(.hljs-template-tag),
+.tutor-guide-content :deep(.hljs-template-variable),
+.tutor-guide-content :deep(.hljs-type),
+.tutor-guide-content :deep(.hljs-addition) {
+    color: #86efac;
+}
+
+.tutor-guide-content :deep(.hljs-number),
+.tutor-guide-content :deep(.hljs-symbol),
+.tutor-guide-content :deep(.hljs-bullet),
+.tutor-guide-content :deep(.hljs-variable),
+.tutor-guide-content :deep(.hljs-regexp),
+.tutor-guide-content :deep(.hljs-link) {
+    color: #fca5a5;
+}
+
+.tutor-guide-content :deep(.hljs-comment),
+.tutor-guide-content :deep(.hljs-quote),
+.tutor-guide-content :deep(.hljs-deletion),
+.tutor-guide-content :deep(.hljs-meta) {
+    color: #9ca3af;
+}
+
+.tutor-guide-content :deep(.hljs-emphasis) {
+    font-style: italic;
+}
+
+.tutor-guide-content :deep(.hljs-strong) {
+    font-weight: 600;
 }
 </style>

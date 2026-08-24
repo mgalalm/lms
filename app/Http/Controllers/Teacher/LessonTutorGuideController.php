@@ -5,11 +5,11 @@ namespace App\Http\Controllers\Teacher;
 use App\Http\Controllers\Controller;
 use App\Models\Lesson;
 use App\Models\LessonTutorGuide;
+use App\Support\Markdown\TutorGuideMarkdownRenderer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
-use League\CommonMark\CommonMarkConverter;
 
 class LessonTutorGuideController extends Controller
 {
@@ -18,7 +18,7 @@ class LessonTutorGuideController extends Controller
      * policy — not just hidden in the UI — so a student hitting this URL
      * directly is blocked, not just unable to find a link to it.
      */
-    public function __invoke(Request $request, Lesson $lesson): Response
+    public function __invoke(Request $request, Lesson $lesson, TutorGuideMarkdownRenderer $markdown): Response
     {
         $guide = $lesson->tutorGuide;
 
@@ -31,7 +31,7 @@ class LessonTutorGuideController extends Controller
                 'id' => $lesson->id,
                 'title' => $lesson->title,
             ],
-            'introHtml' => $introMarkdown ? (new CommonMarkConverter)->convert($introMarkdown)->getContent() : null,
+            'introHtml' => $markdown->render($introMarkdown),
         ]);
     }
 }
