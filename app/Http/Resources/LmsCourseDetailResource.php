@@ -59,6 +59,7 @@ class LmsCourseDetailResource extends JsonResource
                     // is required for playback, so a video still uploading
                     // (not yet pushed to Bunny) doesn't count as watchable.
                     'has_video' => $lesson->video !== null && $lesson->video->bunny_video_id !== null,
+                    'has_slideshow' => $lesson->slideshow?->isReady() ?? false,
                 ]),
             ]),
             'quiz' => $this->whenLoaded('quiz', fn () => $this->quiz ? [

@@ -204,6 +204,7 @@ export interface LmsLesson {
     reading_content: string | null;
     completed: boolean;
     has_video: boolean;
+    has_slideshow: boolean;
 }
 
 export interface TutorGuideProcedureStep {

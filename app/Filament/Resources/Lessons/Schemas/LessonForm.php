@@ -105,6 +105,23 @@ class LessonForm
                     ])
                     ->hiddenOn('create')
                     ->columnSpanFull(),
+                Section::make('Slideshow')
+                    ->description('Admin-authored, PowerPoint-style slideshow for this lesson (PDF-backed). Use the Upload/Replace Slideshow button above.')
+                    ->schema([
+                        Placeholder::make('slideshow_summary')
+                            ->hiddenLabel()
+                            ->content(function (?Lesson $record) {
+                                $slideshow = $record?->slideshow;
+
+                                if (! $slideshow) {
+                                    return 'No slideshow uploaded yet.';
+                                }
+
+                                return $slideshow->isReady() ? 'Ready.' : 'Converting to PDF…';
+                            }),
+                    ])
+                    ->hiddenOn('create')
+                    ->columnSpanFull(),
             ]);
     }
 }

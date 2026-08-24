@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import LessonSlideshowViewer from '@/components/LessonSlideshowViewer.vue';
 import LessonVideoPlayer from '@/components/LessonVideoPlayer.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -11,9 +12,10 @@ const props = defineProps<{
 }>();
 
 const expandedVideoLessonIds = ref<Set<number>>(new Set());
+const expandedSlideshowLessonIds = ref<Set<number>>(new Set());
 
-function toggleVideo(lessonId: number): void {
-    const next = new Set(expandedVideoLessonIds.value);
+function toggleExpanded(set: Set<number>, lessonId: number): Set<number> {
+    const next = new Set(set);
 
     if (next.has(lessonId)) {
         next.delete(lessonId);
@@ -21,7 +23,15 @@ function toggleVideo(lessonId: number): void {
         next.add(lessonId);
     }
 
-    expandedVideoLessonIds.value = next;
+    return next;
+}
+
+function toggleVideo(lessonId: number): void {
+    expandedVideoLessonIds.value = toggleExpanded(expandedVideoLessonIds.value, lessonId);
+}
+
+function toggleSlideshow(lessonId: number): void {
+    expandedSlideshowLessonIds.value = toggleExpanded(expandedSlideshowLessonIds.value, lessonId);
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -113,6 +123,9 @@ function submitQuiz(): void {
                                 <Button v-if="lesson.has_video" size="sm" variant="outline" @click="toggleVideo(lesson.id)">
                                     {{ expandedVideoLessonIds.has(lesson.id) ? 'Hide Video' : 'Watch Video' }}
                                 </Button>
+                                <Button v-if="lesson.has_slideshow" size="sm" variant="outline" @click="toggleSlideshow(lesson.id)">
+                                    {{ expandedSlideshowLessonIds.has(lesson.id) ? 'Hide Slideshow' : 'View Slideshow' }}
+                                </Button>
                                 <Button as-child size="sm" variant="outline">
                                     <Link :href="route('lessons.tutor-guide', lesson.id)">Tutor Guide</Link>
                                 </Button>
@@ -122,6 +135,7 @@ function submitQuiz(): void {
                         </div>
 
                         <LessonVideoPlayer v-if="expandedVideoLessonIds.has(lesson.id)" :lesson-id="lesson.id" class="mt-3" />
+                        <LessonSlideshowViewer v-if="expandedSlideshowLessonIds.has(lesson.id)" :lesson-id="lesson.id" class="mt-3" />
                     </div>
                 </div>
             </div>

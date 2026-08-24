@@ -4,6 +4,8 @@ namespace App\Filament\Resources\Lessons\Pages;
 
 use App\Enums\LessonVideoStatus;
 use App\Filament\Resources\Lessons\LessonResource;
+use App\Jobs\ConvertLessonSlideshowToPdfJob;
+use App\Jobs\PushLessonSlideshowToBunnyJob;
 use App\Jobs\PushLessonVideoToBunnyJob;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
@@ -97,6 +99,36 @@ class EditLesson extends EditRecord
                 ->disabled(fn () => $this->record->video?->status !== LessonVideoStatus::Draft)
                 ->requiresConfirmation()
                 ->action(fn () => $this->record->video->publish()),
+            Action::make('uploadSlideshow')
+                ->label(fn () => $this->record->slideshow ? 'Replace Slideshow' : 'Upload Slideshow')
+                ->icon(Heroicon::OutlinedPresentationChartBar)
+                ->schema([
+                    FileUpload::make('file')
+                        ->label('Slideshow File (PPTX or PDF)')
+                        ->disk('local')
+                        ->directory('lesson-slideshow-uploads')
+                        ->visibility('private')
+                        ->acceptedFileTypes([
+                            'application/pdf',
+                            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                        ])
+                        ->maxSize(512000)
+                        ->required(),
+                ])
+                ->action(function (array $data) {
+                    $slideshow = $this->record->slideshow()->updateOrCreate(
+                        ['locale' => 'en'],
+                        ['file_path' => null],
+                    );
+
+                    if (strtolower(pathinfo($data['file'], PATHINFO_EXTENSION)) === 'pdf') {
+                        PushLessonSlideshowToBunnyJob::dispatch($slideshow, 'local', $data['file']);
+                    } else {
+                        ConvertLessonSlideshowToPdfJob::dispatch($slideshow, 'local', $data['file']);
+                    }
+
+                    $this->record->unsetRelation('slideshow');
+                }),
             DeleteAction::make(),
         ];
     }

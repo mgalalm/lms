@@ -59,4 +59,12 @@ class Lesson extends Model
     {
         return $this->hasOne(LessonTutorGuide::class);
     }
+
+    /**
+     * Get this lesson's admin-authored, PDF-backed slideshow.
+     */
+    public function slideshow(): HasOne
+    {
+        return $this->hasOne(LessonSlideshow::class);
+    }
 }

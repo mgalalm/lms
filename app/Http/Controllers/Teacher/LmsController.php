@@ -62,7 +62,7 @@ class LmsController extends Controller
      */
     public function show(Request $request, Course $course): Response
     {
-        $course->load(['modules.lessons.video', 'quiz.questions']);
+        $course->load(['modules.lessons.video', 'modules.lessons.slideshow', 'quiz.questions']);
 
         $teacherProfile = $request->user()->teacherProfile;
         $lessonIds = $course->modules->flatMap(fn ($module) => $module->lessons)->pluck('id');
