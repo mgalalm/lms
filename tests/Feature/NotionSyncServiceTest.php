@@ -81,6 +81,11 @@ class NotionSyncServiceTest extends TestCase
             'notion_page_id' => '83f2c4b1a2e94b0f9c6d3e5a7b8c9d0e',
             'last_synced_at' => null,
         ]);
+        $previousImage = $guide
+            ->addMediaFromString('old-image-bytes')
+            ->usingFileName('old-image.png')
+            ->toMediaCollection('intro-images');
+        $previousImagePath = $previousImage->getPathRelativeToRoot();
 
         SyncNotionContentJob::dispatchSync($guide);
 
@@ -99,6 +104,10 @@ class NotionSyncServiceTest extends TestCase
         // The image must be re-hosted on our own disk — never linked
         // straight back to Notion's expiring temporary URL.
         $this->assertStringNotContainsString('notion-temp.example.com', $markdown);
+
+        $this->assertModelMissing($previousImage);
+        Storage::disk('bunny')->assertMissing($previousImagePath);
+        $this->assertCount(1, $guide->fresh()->getMedia('intro-images'));
     }
 
     /**

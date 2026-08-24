@@ -37,9 +37,13 @@ class SyncNotionContentJob implements ShouldQueue
             throw new RuntimeException("LessonTutorGuide #{$this->lessonTutorGuide->id} has no notion_page_id to sync from.");
         }
 
+        $previousIntroImages = $this->lessonTutorGuide->getMedia('intro-images');
+
         $markdown = $notion->fetchPageAsMarkdown($this->lessonTutorGuide->notion_page_id, $this->lessonTutorGuide);
 
         $this->lessonTutorGuide->updateIntroMarkdown($markdown);
         $this->lessonTutorGuide->update(['last_synced_at' => now()]);
+
+        $previousIntroImages->each->delete();
     }
 }
