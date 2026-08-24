@@ -90,18 +90,104 @@ class LessonTutorGuideTest extends TestCase
 
     public function test_a_teacher_can_view_a_tutor_guide(): void
     {
+        Storage::fake('local');
+        Storage::fake('bunny');
+
         $teacher = User::factory()->teacher()->create();
         $guide = LessonTutorGuide::factory()->create();
-        $guide->updateIntroMarkdown("Click **Marketplace** in your sidebar\n\n![](https://content.example.com/notion/image.png)\n\nCheck out [Notion Academy](https://academy.notion.com/?utm_campaign=gsqw) to level up.");
+        $media = $guide
+            ->addMediaFromString($this->fakePng())
+            ->usingFileName('image.png')
+            ->toMediaCollection('intro-images');
+        $imageUrl = route('lesson-tutor-guides.media', ['lessonTutorGuide' => $guide, 'media' => $media], false);
+
+        $guide->updateIntroMarkdown("Click **Marketplace** in your sidebar\n\n![]({$imageUrl})\n\nCheck out [Notion Academy](https://academy.notion.com/?utm_campaign=gsqw) to level up.");
 
         $this->actingAs($teacher)
             ->get(route('lessons.tutor-guide', $guide->lesson))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page->component('teacher/Lms/TutorGuide')
-                ->where('introHtml', "<p>Click <strong>Marketplace</strong> in your sidebar</p>\n<p><img src=\"https://content.example.com/notion/image.png\" alt=\"\" /></p>\n<p>Check out <a href=\"https://academy.notion.com/?utm_campaign=gsqw\">Notion Academy</a> to level up.</p>\n")
+                ->where('introHtml', "<p>Click <strong>Marketplace</strong> in your sidebar</p>\n<p><img src=\"{$imageUrl}\" alt=\"\" /></p>\n<p>Check out <a href=\"https://academy.notion.com/?utm_campaign=gsqw\">Notion Academy</a> to level up.</p>\n")
                 ->has('procedureSteps', 2)
                 ->has('glossaryTerms', 1)
             );
+    }
+
+    public function test_a_teacher_can_view_a_tutor_guide_image(): void
+    {
+        Storage::fake('bunny');
+
+        $teacher = User::factory()->teacher()->create();
+        $guide = LessonTutorGuide::factory()->create();
+        $media = $guide
+            ->addMediaFromString($this->fakePng())
+            ->usingFileName('image.png')
+            ->toMediaCollection('intro-images');
+
+        $this->actingAs($teacher)
+            ->get(route('lesson-tutor-guides.media', ['lessonTutorGuide' => $guide, 'media' => $media]))
+            ->assertOk()
+            ->assertHeader('content-type', 'image/png');
+    }
+
+    public function test_a_student_is_denied_access_to_a_tutor_guide_image(): void
+    {
+        Storage::fake('bunny');
+
+        $student = User::factory()->student()->create();
+        $guide = LessonTutorGuide::factory()->create();
+        $media = $guide
+            ->addMediaFromString($this->fakePng())
+            ->usingFileName('image.png')
+            ->toMediaCollection('intro-images');
+
+        $this->actingAs($student)
+            ->get(route('lesson-tutor-guides.media', ['lessonTutorGuide' => $guide, 'media' => $media]))
+            ->assertForbidden();
+    }
+
+    public function test_a_tutor_guide_image_must_belong_to_the_requested_guide(): void
+    {
+        Storage::fake('bunny');
+
+        $teacher = User::factory()->teacher()->create();
+        $guide = LessonTutorGuide::factory()->create();
+        $otherGuide = LessonTutorGuide::factory()->create();
+        $media = $otherGuide
+            ->addMediaFromString($this->fakePng())
+            ->usingFileName('image.png')
+            ->toMediaCollection('intro-images');
+
+        $this->actingAs($teacher)
+            ->get(route('lesson-tutor-guides.media', ['lessonTutorGuide' => $guide, 'media' => $media]))
+            ->assertNotFound();
+    }
+
+    public function test_a_tutor_guide_media_route_only_serves_intro_images(): void
+    {
+        Storage::fake('local');
+
+        $teacher = User::factory()->teacher()->create();
+        $guide = LessonTutorGuide::factory()->create();
+        $media = $guide->updateIntroMarkdown('private markdown');
+
+        $this->actingAs($teacher)
+            ->get(route('lesson-tutor-guides.media', ['lessonTutorGuide' => $guide, 'media' => $media]))
+            ->assertNotFound();
+    }
+
+    public function test_a_guest_is_redirected_from_a_tutor_guide_image(): void
+    {
+        Storage::fake('bunny');
+
+        $guide = LessonTutorGuide::factory()->create();
+        $media = $guide
+            ->addMediaFromString($this->fakePng())
+            ->usingFileName('image.png')
+            ->toMediaCollection('intro-images');
+
+        $this->get(route('lesson-tutor-guides.media', ['lessonTutorGuide' => $guide, 'media' => $media]))
+            ->assertRedirect(route('login'));
     }
 
     public function test_an_admin_can_view_a_tutor_guide(): void
@@ -165,5 +251,10 @@ class LessonTutorGuideTest extends TestCase
                 ->where('procedureSteps', [])
                 ->where('glossaryTerms', [])
             );
+    }
+
+    private function fakePng(): string
+    {
+        return (string) base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=');
     }
 }
