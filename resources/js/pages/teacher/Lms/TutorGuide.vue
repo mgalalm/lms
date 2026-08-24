@@ -128,13 +128,14 @@ const breadcrumbs: BreadcrumbItem[] = [
 }
 
 .tutor-guide-content :deep(table) {
-    /* No fixed width: Notion's public API doesn't expose per-column
-       pixel widths, so the closest match to how a table actually looked
-       in Notion is to let column widths size to their own content
-       (the browser's default table-layout behavior) rather than forcing
-       every table — including small ones — to stretch to fill the page. */
+    /* Notion tables span their block's full width by default (and the
+       API doesn't expose per-column pixel widths to reproduce manual
+       resizing anyway), so match that instead of shrinking to content.
+       Do NOT pair this with `display: block` — that breaks the table
+       layout algorithm and silently defeats width: 100% entirely. */
     margin-top: 1em;
     margin-bottom: 1em;
+    width: 100%;
     border-collapse: collapse;
     font-size: 0.9em;
 }
