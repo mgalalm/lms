@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Loader2, Maximize, Minimize } from 'lucide-v
 import * as pdfjsLib from 'pdfjs-dist';
 import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
 import pdfjsWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
 
@@ -43,14 +43,19 @@ async function load(): Promise<void> {
         pdfDocument = await pdfjsLib.getDocument({ url: data.url }).promise;
         totalPages.value = pdfDocument.numPages;
         currentPage.value = 1;
-
-        await renderPage(1);
-        renderThumbnails();
     } catch {
         error.value = true;
+        return;
     } finally {
         loading.value = false;
     }
+
+    // The canvas only exists once `loading` flips to false and Vue
+    // re-renders past the v-if — render before that mounts and canvasEl
+    // is still null, silently doing nothing.
+    await nextTick();
+    await renderPage(currentPage.value);
+    renderThumbnails();
 }
 
 function computeScale(page: PDFPageProxy): number {
