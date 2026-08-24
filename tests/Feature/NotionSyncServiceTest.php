@@ -41,6 +41,10 @@ class NotionSyncServiceTest extends TestCase
                 'https://my-workspace.notion.site/My-Page-83f2c4b1a2e94b0f9c6d3e5a7b8c9d0e',
                 '83f2c4b1a2e94b0f9c6d3e5a7b8c9d0e',
             ],
+            'app.notion.com copied page link' => [
+                'https://app.notion.com/p/Welcome-to-Notion-3c668ba0d26f801cbefbc7b864826a2f?source=copy_link',
+                '3c668ba0d26f801cbefbc7b864826a2f',
+            ],
             'trailing query string' => [
                 'https://www.notion.so/My-Page-Title-83f2c4b1a2e94b0f9c6d3e5a7b8c9d0e?pvs=4',
                 '83f2c4b1a2e94b0f9c6d3e5a7b8c9d0e',

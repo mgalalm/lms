@@ -96,7 +96,7 @@ class LessonForm
                         TextInput::make('tutor_guide_notion_url')
                             ->label('Notion Page URL')
                             ->url()
-                            ->helperText('Paste a notion.so or notion.site page URL to (re)connect. Leave blank to keep the current link. Use "Sync from Notion" above to pull in content.')
+                            ->helperText('Paste an app.notion.com, notion.so, or notion.site page URL to (re)connect. Leave blank to keep the current link. Use "Sync from Notion" above to pull in content.')
                             ->rule(function () {
                                 return function (string $attribute, $value, Closure $fail) {
                                     if (blank($value)) {
@@ -105,8 +105,8 @@ class LessonForm
 
                                     $host = parse_url($value, PHP_URL_HOST);
 
-                                    if (! $host || ! preg_match('/(^|\.)notion\.(so|site)$/', $host)) {
-                                        $fail('The Notion Page URL must be a notion.so or notion.site link.');
+                                    if (! $host || ! preg_match('/(^|\.)notion\.(com|so|site)$/', $host)) {
+                                        $fail('The Notion Page URL must be an app.notion.com, notion.so, or notion.site link.');
 
                                         return;
                                     }

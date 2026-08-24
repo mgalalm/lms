@@ -57,9 +57,6 @@ class LessonTutorGuideTest extends TestCase
 
     public function test_the_notion_url_field_rejects_a_non_notion_url(): void
     {
-        Storage::fake('local');
-        Storage::fake('bunny');
-
         $admin = User::factory()->admin()->create();
         $lesson = Lesson::factory()->create();
 
@@ -69,6 +66,26 @@ class LessonTutorGuideTest extends TestCase
             ->fillForm(['tutor_guide_notion_url' => 'https://example.com/not-notion'])
             ->call('save')
             ->assertHasFormErrors(['tutor_guide_notion_url']);
+    }
+
+    public function test_the_notion_url_field_accepts_an_app_notion_page_url(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $lesson = Lesson::factory()->create();
+
+        $this->actingAs($admin);
+
+        Livewire::test(EditLesson::class, ['record' => $lesson->getRouteKey()])
+            ->fillForm([
+                'tutor_guide_notion_url' => 'https://app.notion.com/p/Welcome-to-Notion-3c668ba0d26f801cbefbc7b864826a2f?source=copy_link',
+            ])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(
+            '3c668ba0d26f801cbefbc7b864826a2f',
+            $lesson->tutorGuide()->firstOrFail()->notion_page_id,
+        );
     }
 
     public function test_a_teacher_can_view_a_tutor_guide(): void
