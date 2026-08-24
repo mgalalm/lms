@@ -15,6 +15,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Facades\Bus;
 use Throwable;
 
 class EditLesson extends EditRecord
@@ -121,12 +122,25 @@ class EditLesson extends EditRecord
                 ->visible(fn () => $this->record->tutorGuide?->notion_page_id !== null)
                 ->action(function () {
                     try {
-                        SyncNotionContentJob::dispatchSync($this->record->tutorGuide);
+                        // dispatchNow (not dispatchSync) so the job's
+                        // handle() return value — skipped block types —
+                        // actually reaches us: dispatchSync() on a
+                        // ShouldQueue job routes through the queue
+                        // abstraction and discards the return value.
+                        $skippedBlockTypes = Bus::dispatchNow(new SyncNotionContentJob($this->record->tutorGuide));
 
-                        Notification::make()
-                            ->title('Synced from Notion')
-                            ->success()
-                            ->send();
+                        if ($skippedBlockTypes === []) {
+                            Notification::make()->title('Synced from Notion')->success()->send();
+                        } else {
+                            Notification::make()
+                                ->title('Synced from Notion (with skipped content)')
+                                ->body(
+                                    "Some content types aren't supported yet and were skipped: "
+                                    .implode(', ', $skippedBlockTypes).'.'
+                                )
+                                ->warning()
+                                ->send();
+                        }
                     } catch (Throwable $e) {
                         report($e);
 
@@ -136,6 +150,23 @@ class EditLesson extends EditRecord
                             ->danger()
                             ->send();
                     }
+
+                    $this->record->unsetRelation('tutorGuide');
+                }),
+            Action::make('unlinkNotionPage')
+                ->label('Unlink Notion Page')
+                ->icon(Heroicon::OutlinedLinkSlash)
+                ->color('danger')
+                ->visible(fn () => $this->record->tutorGuide?->notion_page_id !== null)
+                ->requiresConfirmation()
+                ->modalDescription('The lesson keeps its already-synced content, but will no longer be re-synced from Notion until a new page URL is linked.')
+                ->action(function () {
+                    $this->record->tutorGuide?->update(['notion_page_id' => null]);
+
+                    Notification::make()
+                        ->title('Notion page unlinked')
+                        ->success()
+                        ->send();
 
                     $this->record->unsetRelation('tutorGuide');
                 }),

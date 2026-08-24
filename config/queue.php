@@ -67,7 +67,12 @@ return [
             'driver' => 'redis',
             'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
             'queue' => env('REDIS_QUEUE', 'default'),
-            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
+            // Must stay comfortably above the longest job $timeout on this
+            // connection (currently ConvertLessonSlideshowToPdfJob at
+            // 3600s) — otherwise redis reclaims a still-running job's
+            // reservation and redelivers it to another worker as a
+            // spurious retry/failure.
+            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 3900),
             'block_for' => null,
             'after_commit' => false,
         ],

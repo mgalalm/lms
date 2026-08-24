@@ -4,7 +4,10 @@ namespace App\Services\Notion;
 
 use App\Models\LessonTutorGuide;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Pool;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Throwable;
 
 /**
  * Pulls a Notion page's content into our own storage via Notion's official
@@ -55,12 +58,14 @@ class NotionSyncService
      * to $lessonTutorGuide's 'intro-images' media collection so the
      * resulting markdown never references Notion's (expiring) URLs.
      */
-    public function fetchPageAsMarkdown(string $pageId, LessonTutorGuide $lessonTutorGuide): string
+    public function fetchPageAsMarkdown(string $pageId, LessonTutorGuide $lessonTutorGuide): NotionSyncResult
     {
         $blocks = $this->fetchBlockChildrenRecursive($pageId);
         $blocks = $this->resolveImages($blocks, $lessonTutorGuide);
 
-        return $this->converter->convert($blocks);
+        $markdown = $this->converter->convert($blocks);
+
+        return new NotionSyncResult($markdown, $this->converter->skippedBlockTypes());
     }
 
     /**
@@ -99,20 +104,68 @@ class NotionSyncService
      */
     private function resolveImages(array $blocks, LessonTutorGuide $lessonTutorGuide): array
     {
-        foreach ($blocks as &$block) {
-            if (($block['type'] ?? null) === 'image') {
-                $block['_resolved_image_url'] = $this->resolveImageUrl($block, $lessonTutorGuide);
+        $downloads = $this->collectNotionHostedImageUrls($blocks);
+
+        // Notion-hosted image bytes are fetched concurrently rather than
+        // one blocking Http::get() per image in sequence — a page with
+        // many images would otherwise make total sync time scale linearly
+        // with image count.
+        $responses = $downloads === [] ? [] : Http::pool(
+            fn (Pool $pool) => collect($downloads)
+                ->map(fn (string $url, string $blockId) => $pool->as($blockId)->get($url))
+                ->all()
+        );
+
+        return $this->applyResolvedImageUrls($blocks, $responses, $lessonTutorGuide);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $blocks
+     * @return array<string, string> block id => temporary Notion file URL
+     */
+    private function collectNotionHostedImageUrls(array $blocks): array
+    {
+        $urls = [];
+
+        foreach ($blocks as $block) {
+            $image = $block['image'] ?? [];
+
+            if (($block['type'] ?? null) === 'image' && ($image['type'] ?? null) === 'file' && filled($image['file']['url'] ?? null)) {
+                $urls[$block['id']] = $image['file']['url'];
             }
 
             if (! empty($block['children'])) {
-                $block['children'] = $this->resolveImages($block['children'], $lessonTutorGuide);
+                $urls += $this->collectNotionHostedImageUrls($block['children']);
+            }
+        }
+
+        return $urls;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $blocks
+     * @param  array<string, Response|Throwable>  $downloadedResponses
+     * @return array<int, array<string, mixed>>
+     */
+    private function applyResolvedImageUrls(array $blocks, array $downloadedResponses, LessonTutorGuide $lessonTutorGuide): array
+    {
+        foreach ($blocks as &$block) {
+            if (($block['type'] ?? null) === 'image') {
+                $block['_resolved_image_url'] = $this->resolveImageUrl($block, $downloadedResponses, $lessonTutorGuide);
+            }
+
+            if (! empty($block['children'])) {
+                $block['children'] = $this->applyResolvedImageUrls($block['children'], $downloadedResponses, $lessonTutorGuide);
             }
         }
 
         return $blocks;
     }
 
-    private function resolveImageUrl(array $block, LessonTutorGuide $lessonTutorGuide): ?string
+    /**
+     * @param  array<string, Response|Throwable>  $downloadedResponses
+     */
+    private function resolveImageUrl(array $block, array $downloadedResponses, LessonTutorGuide $lessonTutorGuide): ?string
     {
         $image = $block['image'] ?? [];
 
@@ -122,17 +175,19 @@ class NotionSyncService
             return $image['external']['url'] ?? null;
         }
 
-        $temporaryUrl = $image['file']['url'] ?? null;
+        $response = $downloadedResponses[$block['id']] ?? null;
 
-        if (! $temporaryUrl) {
+        if ($response === null) {
             return null;
         }
 
-        $contents = Http::get($temporaryUrl)->throw()->body();
+        if ($response instanceof Throwable) {
+            throw $response;
+        }
 
         $media = $lessonTutorGuide
-            ->addMediaFromString($contents)
-            ->usingFileName(($block['id'] ?? uniqid()).'.'.$this->guessExtension($temporaryUrl))
+            ->addMediaFromString($response->throw()->body())
+            ->usingFileName($block['id'].'.'.$this->guessExtension($image['file']['url'] ?? ''))
             ->toMediaCollection('intro-images');
 
         return route('lesson-tutor-guides.media', [

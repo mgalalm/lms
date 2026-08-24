@@ -8,6 +8,7 @@ use App\Models\LessonTutorGuide;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 use Livewire\Livewire;
@@ -136,7 +137,10 @@ class LessonTutorGuideTest extends TestCase
     {
         $teacher = User::factory()->teacher()->create();
         $guide = LessonTutorGuide::factory()->create();
-        $guide->updateIntroMarkdown('<iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="YouTube video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>');
+        // Real synced content encodes a YouTube embed as this fenced code
+        // block, never as raw <iframe> HTML — see NotionBlockConverter and
+        // YouTubeEmbedFencedCodeRenderer.
+        $guide->updateIntroMarkdown("```youtube-embed\ndQw4w9WgXcQ\n```");
 
         $this->actingAs($teacher)
             ->get(route('lessons.tutor-guide', $guide->lesson))
@@ -144,6 +148,73 @@ class LessonTutorGuideTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->component('teacher/Lms/TutorGuide')
                 ->where('introHtml', "<iframe src=\"https://www.youtube.com/embed/dQw4w9WgXcQ\" title=\"YouTube video\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" referrerpolicy=\"strict-origin-when-cross-origin\" allowfullscreen></iframe>\n")
             );
+    }
+
+    public function test_raw_html_typed_into_stored_markdown_is_escaped_not_rendered(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $guide = LessonTutorGuide::factory()->create();
+        $guide->updateIntroMarkdown('Hello <img src=x onerror="alert(1)">');
+
+        $this->actingAs($teacher)
+            ->get(route('lessons.tutor-guide', $guide->lesson))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->component('teacher/Lms/TutorGuide')
+                ->where('introHtml', "<p>Hello &lt;img src=x onerror=\"alert(1)\"&gt;</p>\n")
+            );
+    }
+
+    public function test_an_admin_can_sync_a_tutor_guide_from_notion_via_the_edit_page(): void
+    {
+        Storage::fake('local');
+        Storage::fake('bunny');
+
+        Http::fake([
+            'api.notion.com/v1/blocks/*/children*' => Http::response([
+                'object' => 'list',
+                'results' => [
+                    [
+                        'object' => 'block',
+                        'id' => 'block-1',
+                        'type' => 'paragraph',
+                        'has_children' => false,
+                        'paragraph' => ['rich_text' => [
+                            ['type' => 'text', 'plain_text' => 'Synced from Notion', 'annotations' => [], 'href' => null],
+                        ]],
+                    ],
+                ],
+                'has_more' => false,
+                'next_cursor' => null,
+            ]),
+        ]);
+
+        $admin = User::factory()->admin()->create();
+        $guide = LessonTutorGuide::factory()->create(['notion_page_id' => '83f2c4b1a2e94b0f9c6d3e5a7b8c9d0e']);
+
+        $this->actingAs($admin);
+
+        Livewire::test(EditLesson::class, ['record' => $guide->lesson->getRouteKey()])
+            ->callAction('syncFromNotion')
+            ->assertNotified('Synced from Notion');
+
+        $guide->refresh();
+
+        $this->assertNotNull($guide->last_synced_at);
+        $this->assertStringContainsString('Synced from Notion', $guide->introMarkdown());
+    }
+
+    public function test_an_admin_can_unlink_a_tutor_guide_from_notion(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $guide = LessonTutorGuide::factory()->create(['notion_page_id' => '83f2c4b1a2e94b0f9c6d3e5a7b8c9d0e']);
+
+        $this->actingAs($admin);
+
+        Livewire::test(EditLesson::class, ['record' => $guide->lesson->getRouteKey()])
+            ->callAction('unlinkNotionPage')
+            ->assertNotified('Notion page unlinked');
+
+        $this->assertNull($guide->fresh()->notion_page_id);
     }
 
     public function test_a_teacher_can_view_a_tutor_guide_image(): void
