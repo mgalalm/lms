@@ -46,6 +46,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 </template>
 
 <style scoped>
+.tutor-guide-content {
+    overflow-x: auto;
+}
+
 .tutor-guide-content :deep(h1),
 .tutor-guide-content :deep(h2),
 .tutor-guide-content :deep(h3) {
@@ -124,11 +128,13 @@ const breadcrumbs: BreadcrumbItem[] = [
 }
 
 .tutor-guide-content :deep(table) {
-    display: block;
+    /* No fixed width: Notion's public API doesn't expose per-column
+       pixel widths, so the closest match to how a table actually looked
+       in Notion is to let column widths size to their own content
+       (the browser's default table-layout behavior) rather than forcing
+       every table — including small ones — to stretch to fill the page. */
     margin-top: 1em;
     margin-bottom: 1em;
-    width: 100%;
-    overflow-x: auto;
     border-collapse: collapse;
     font-size: 0.9em;
 }
