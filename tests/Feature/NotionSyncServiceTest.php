@@ -92,6 +92,8 @@ class NotionSyncServiceTest extends TestCase
         $markdown = $guide->introMarkdown();
 
         $this->assertStringContainsString('Hello world', $markdown);
+        $this->assertStringContainsString('Click **Marketplace** in your sidebar', $markdown);
+        $this->assertStringNotContainsString('** Marketplace**', $markdown);
 
         // The image must be re-hosted on our own disk — never linked
         // straight back to Notion's expiring temporary URL.
@@ -125,6 +127,34 @@ class NotionSyncServiceTest extends TestCase
                 [
                     'object' => 'block',
                     'id' => 'block-2',
+                    'type' => 'paragraph',
+                    'has_children' => false,
+                    'paragraph' => [
+                        'rich_text' => [
+                            [
+                                'type' => 'text',
+                                'plain_text' => 'Click',
+                                'annotations' => ['bold' => false, 'italic' => false, 'code' => false],
+                                'href' => null,
+                            ],
+                            [
+                                'type' => 'text',
+                                'plain_text' => ' Marketplace',
+                                'annotations' => ['bold' => true, 'italic' => false, 'code' => false],
+                                'href' => null,
+                            ],
+                            [
+                                'type' => 'text',
+                                'plain_text' => ' in your sidebar',
+                                'annotations' => ['bold' => false, 'italic' => false, 'code' => false],
+                                'href' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                [
+                    'object' => 'block',
+                    'id' => 'block-3',
                     'type' => 'image',
                     'has_children' => false,
                     'image' => [

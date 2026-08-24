@@ -107,6 +107,18 @@ class NotionBlockConverter
                     return '';
                 }
 
+                if (! preg_match('/^(\s*)(.*?)(\s*)$/u', $text, $matches)) {
+                    return $text;
+                }
+
+                $leadingWhitespace = $matches[1];
+                $text = $matches[2];
+                $trailingWhitespace = $matches[3];
+
+                if ($text === '') {
+                    return $leadingWhitespace.$trailingWhitespace;
+                }
+
                 if ($annotations['code'] ?? false) {
                     $text = "`{$text}`";
                 }
@@ -125,7 +137,7 @@ class NotionBlockConverter
                     $text = "[{$text}]({$href})";
                 }
 
-                return $text;
+                return $leadingWhitespace.$text.$trailingWhitespace;
             })
             ->implode('');
     }
