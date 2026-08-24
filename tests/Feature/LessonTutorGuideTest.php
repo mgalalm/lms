@@ -36,7 +36,7 @@ class LessonTutorGuideTest extends TestCase
 
         Livewire::test(EditLesson::class, ['record' => $lesson->getRouteKey()])
             ->fillForm([
-                'tutor_guide_intro' => "# Warm-up\n\nAsk students what they already know.",
+                'tutor_guide_notion_url' => 'https://www.notion.so/My-Page-83f2c4b1a2e94b0f9c6d3e5a7b8c9d0e',
                 'tutor_guide_procedure_steps' => [
                     ['phase' => 'explore', 'title' => 'Introduce sprites', 'duration_minutes' => 10],
                     ['phase' => 'evaluate', 'title' => 'Quick quiz', 'duration_minutes' => 5],
@@ -50,12 +50,25 @@ class LessonTutorGuideTest extends TestCase
 
         $guide = $lesson->tutorGuide()->firstOrFail();
 
-        $this->assertSame(
-            "# Warm-up\n\nAsk students what they already know.",
-            $guide->introMarkdown(),
-        );
+        $this->assertSame('83f2c4b1a2e94b0f9c6d3e5a7b8c9d0e', $guide->notion_page_id);
         $this->assertSame('explore', $guide->procedure_steps[0]['phase']);
         $this->assertSame('Sprite', $guide->glossary_terms[0]['term']);
+    }
+
+    public function test_the_notion_url_field_rejects_a_non_notion_url(): void
+    {
+        Storage::fake('local');
+        Storage::fake('bunny');
+
+        $admin = User::factory()->admin()->create();
+        $lesson = Lesson::factory()->create();
+
+        $this->actingAs($admin);
+
+        Livewire::test(EditLesson::class, ['record' => $lesson->getRouteKey()])
+            ->fillForm(['tutor_guide_notion_url' => 'https://example.com/not-notion'])
+            ->call('save')
+            ->assertHasFormErrors(['tutor_guide_notion_url']);
     }
 
     public function test_a_teacher_can_view_a_tutor_guide(): void

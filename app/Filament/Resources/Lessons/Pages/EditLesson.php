@@ -7,11 +7,15 @@ use App\Filament\Resources\Lessons\LessonResource;
 use App\Jobs\ConvertLessonSlideshowToPdfJob;
 use App\Jobs\PushLessonSlideshowToBunnyJob;
 use App\Jobs\PushLessonVideoToBunnyJob;
+use App\Jobs\SyncNotionContentJob;
+use App\Services\Notion\NotionSyncService;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Forms\Components\FileUpload;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
+use Throwable;
 
 class EditLesson extends EditRecord
 {
@@ -28,7 +32,10 @@ class EditLesson extends EditRecord
     {
         $guide = $this->record->tutorGuide;
 
-        $data['tutor_guide_intro'] = $guide?->introMarkdown();
+        // tutor_guide_notion_url is intentionally left blank on fill — it's
+        // a "paste to (re)connect" field, not a display of the stored page
+        // ID (the original URL isn't retained). Current link status is
+        // shown separately via the tutor_guide_notion_status Placeholder.
         $data['tutor_guide_procedure_steps'] = $guide?->procedure_steps ?? [];
         $data['tutor_guide_glossary_terms'] = $guide?->glossary_terms ?? [];
 
@@ -43,17 +50,21 @@ class EditLesson extends EditRecord
      */
     protected function afterSave(): void
     {
-        $guide = $this->record->tutorGuide()->updateOrCreate(
+        $guide = $this->record->tutorGuide;
+        $notionUrl = $this->data['tutor_guide_notion_url'] ?? null;
+
+        $pageId = filled($notionUrl)
+            ? app(NotionSyncService::class)->extractPageId($notionUrl)
+            : $guide?->notion_page_id;
+
+        $this->record->tutorGuide()->updateOrCreate(
             ['locale' => 'en'],
             [
+                'notion_page_id' => $pageId,
                 'procedure_steps' => $this->data['tutor_guide_procedure_steps'] ?? [],
                 'glossary_terms' => $this->data['tutor_guide_glossary_terms'] ?? [],
             ],
         );
-
-        if (filled($this->data['tutor_guide_intro'] ?? null)) {
-            $guide->updateIntroMarkdown($this->data['tutor_guide_intro']);
-        }
 
         $this->record->unsetRelation('tutorGuide');
     }
@@ -128,6 +139,30 @@ class EditLesson extends EditRecord
                     }
 
                     $this->record->unsetRelation('slideshow');
+                }),
+            Action::make('syncFromNotion')
+                ->label('Sync from Notion')
+                ->icon(Heroicon::OutlinedArrowPath)
+                ->visible(fn () => $this->record->tutorGuide?->notion_page_id !== null)
+                ->action(function () {
+                    try {
+                        SyncNotionContentJob::dispatchSync($this->record->tutorGuide);
+
+                        Notification::make()
+                            ->title('Synced from Notion')
+                            ->success()
+                            ->send();
+                    } catch (Throwable $e) {
+                        report($e);
+
+                        Notification::make()
+                            ->title('Notion sync failed')
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->send();
+                    }
+
+                    $this->record->unsetRelation('tutorGuide');
                 }),
             DeleteAction::make(),
         ];

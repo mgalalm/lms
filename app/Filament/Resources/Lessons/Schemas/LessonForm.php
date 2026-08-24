@@ -4,7 +4,8 @@ namespace App\Filament\Resources\Lessons\Schemas;
 
 use App\Models\Lesson;
 use App\Services\Bunny\BunnyStreamClient;
-use Filament\Forms\Components\MarkdownEditor;
+use App\Services\Notion\NotionSyncService;
+use Closure;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -71,12 +72,50 @@ class LessonForm
                     ->hiddenOn('create')
                     ->columnSpanFull(),
                 Section::make('Tutor Guide')
-                    ->description('Teacher/admin prep material for this lesson — never shown to students, under any circumstance.')
+                    ->description('Teacher/admin prep material for this lesson — never shown to students, under any circumstance. Authored in Notion, synced into our own storage — content never links out to Notion.')
                     ->schema([
-                        MarkdownEditor::make('tutor_guide_intro')
-                            ->label('Intro')
-                            ->fileAttachmentsDisk('bunny')
-                            ->fileAttachmentsDirectory(fn (?Lesson $record) => 'lesson-tutor-guides/'.($record?->id ?? 'new').'/images')
+                        Placeholder::make('tutor_guide_notion_status')
+                            ->label('Notion Sync Status')
+                            ->content(function (?Lesson $record) {
+                                $guide = $record?->tutorGuide;
+
+                                if (! $guide?->notion_page_id) {
+                                    return 'Not linked to a Notion page yet.';
+                                }
+
+                                $syncedAt = $guide->last_synced_at?->diffForHumans() ?? 'never';
+                                $text = "Linked to Notion page {$guide->notion_page_id}. Last synced: {$syncedAt}.";
+
+                                if ($guide->isSyncStale()) {
+                                    return new HtmlString('<span class="font-medium text-danger-600">⚠ '.e($text).' Sync is more than 7 days old.</span>');
+                                }
+
+                                return $text;
+                            })
+                            ->columnSpanFull(),
+                        TextInput::make('tutor_guide_notion_url')
+                            ->label('Notion Page URL')
+                            ->url()
+                            ->helperText('Paste a notion.so or notion.site page URL to (re)connect. Leave blank to keep the current link. Use "Sync from Notion" above to pull in content.')
+                            ->rule(function () {
+                                return function (string $attribute, $value, Closure $fail) {
+                                    if (blank($value)) {
+                                        return;
+                                    }
+
+                                    $host = parse_url($value, PHP_URL_HOST);
+
+                                    if (! $host || ! preg_match('/(^|\.)notion\.(so|site)$/', $host)) {
+                                        $fail('The Notion Page URL must be a notion.so or notion.site link.');
+
+                                        return;
+                                    }
+
+                                    if (! app(NotionSyncService::class)->extractPageId($value)) {
+                                        $fail('Could not find a Notion page ID in that URL.');
+                                    }
+                                };
+                            })
                             ->columnSpanFull(),
                         Repeater::make('tutor_guide_procedure_steps')
                             ->label('Procedure Steps')

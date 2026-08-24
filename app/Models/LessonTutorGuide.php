@@ -29,6 +29,8 @@ class LessonTutorGuide extends Model implements HasMedia
     protected $fillable = [
         'lesson_id',
         'locale',
+        'notion_page_id',
+        'last_synced_at',
         'procedure_steps',
         'glossary_terms',
     ];
@@ -41,6 +43,7 @@ class LessonTutorGuide extends Model implements HasMedia
     protected function casts(): array
     {
         return [
+            'last_synced_at' => 'datetime',
             'procedure_steps' => 'array',
             'glossary_terms' => 'array',
         ];
@@ -49,6 +52,15 @@ class LessonTutorGuide extends Model implements HasMedia
     public function lesson(): BelongsTo
     {
         return $this->belongsTo(Lesson::class);
+    }
+
+    /**
+     * Whether the last Notion sync is more than a week old (or has never
+     * happened) — surfaced as a warning in Filament, not enforced anywhere.
+     */
+    public function isSyncStale(): bool
+    {
+        return $this->last_synced_at === null || $this->last_synced_at->lt(now()->subDays(7));
     }
 
     public function registerMediaCollections(): void
