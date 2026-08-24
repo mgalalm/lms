@@ -5,6 +5,7 @@ namespace App\Support\Markdown;
 use League\CommonMark\Environment\Environment;
 use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
 use League\CommonMark\Extension\CommonMark\Node\Block\FencedCode;
+use League\CommonMark\Extension\TaskList\TaskListExtension;
 use League\CommonMark\MarkdownConverter;
 
 class TutorGuideMarkdownRenderer
@@ -29,6 +30,7 @@ class TutorGuideMarkdownRenderer
     {
         $environment = new Environment;
         $environment->addExtension(new CommonMarkCoreExtension);
+        $environment->addExtension(new TaskListExtension);
         $environment->addRenderer(FencedCode::class, new HighlightedFencedCodeRenderer, 100);
 
         return new MarkdownConverter($environment);

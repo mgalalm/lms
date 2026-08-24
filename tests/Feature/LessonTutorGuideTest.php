@@ -118,6 +118,34 @@ class LessonTutorGuideTest extends TestCase
             );
     }
 
+    public function test_a_teacher_can_view_checkboxes(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $guide = LessonTutorGuide::factory()->create();
+        $guide->updateIntroMarkdown("- [x] Completed setup\n- [ ] Review with student");
+
+        $this->actingAs($teacher)
+            ->get(route('lessons.tutor-guide', $guide->lesson))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->component('teacher/Lms/TutorGuide')
+                ->where('introHtml', "<ul>\n<li><input checked=\"\" disabled=\"\" type=\"checkbox\"> Completed setup</li>\n<li><input disabled=\"\" type=\"checkbox\"> Review with student</li>\n</ul>\n")
+            );
+    }
+
+    public function test_a_teacher_can_view_youtube_embeds(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $guide = LessonTutorGuide::factory()->create();
+        $guide->updateIntroMarkdown('<iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="YouTube video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>');
+
+        $this->actingAs($teacher)
+            ->get(route('lessons.tutor-guide', $guide->lesson))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->component('teacher/Lms/TutorGuide')
+                ->where('introHtml', "<iframe src=\"https://www.youtube.com/embed/dQw4w9WgXcQ\" title=\"YouTube video\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" referrerpolicy=\"strict-origin-when-cross-origin\" allowfullscreen></iframe>\n")
+            );
+    }
+
     public function test_a_teacher_can_view_a_tutor_guide_image(): void
     {
         Storage::fake('bunny');

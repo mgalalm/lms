@@ -89,6 +89,14 @@ const breadcrumbs: BreadcrumbItem[] = [
     margin-bottom: 0.35em;
 }
 
+.tutor-guide-content :deep(input[type='checkbox']) {
+    margin-right: 0.45em;
+    height: 1em;
+    width: 1em;
+    vertical-align: -0.15em;
+    accent-color: hsl(var(--primary));
+}
+
 .tutor-guide-content :deep(a) {
     color: hsl(var(--primary));
     text-decoration: underline;
@@ -111,6 +119,16 @@ const breadcrumbs: BreadcrumbItem[] = [
     margin-top: 1em;
     margin-bottom: 1em;
     max-width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid hsl(var(--border));
+}
+
+.tutor-guide-content :deep(iframe) {
+    margin-top: 1em;
+    margin-bottom: 1em;
+    aspect-ratio: 16 / 9;
+    width: 100%;
+    max-width: 56rem;
     border-radius: 0.5rem;
     border: 1px solid hsl(var(--border));
 }

@@ -102,7 +102,10 @@ class NotionSyncServiceTest extends TestCase
 
         $this->assertStringContainsString('Hello world', $markdown);
         $this->assertStringContainsString('Click **Marketplace** in your sidebar', $markdown);
+        $this->assertStringContainsString('- [x] Completed setup', $markdown);
+        $this->assertStringContainsString('- [ ] Review with student', $markdown);
         $this->assertStringContainsString("```php\n<?php echo 1;\n```", $markdown);
+        $this->assertStringContainsString('<iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ"', $markdown);
         $this->assertStringContainsString("![](/lesson-tutor-guides/{$guide->id}/media/", $markdown);
         $this->assertStringNotContainsString('** Marketplace**', $markdown);
 
@@ -171,6 +174,50 @@ class NotionSyncServiceTest extends TestCase
                 [
                     'object' => 'block',
                     'id' => 'block-3',
+                    'type' => 'to_do',
+                    'has_children' => false,
+                    'to_do' => [
+                        'checked' => true,
+                        'rich_text' => [
+                            [
+                                'type' => 'text',
+                                'plain_text' => 'Completed setup',
+                                'annotations' => ['bold' => false, 'italic' => false, 'code' => false],
+                                'href' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                [
+                    'object' => 'block',
+                    'id' => 'block-4',
+                    'type' => 'to_do',
+                    'has_children' => false,
+                    'to_do' => [
+                        'checked' => false,
+                        'rich_text' => [
+                            [
+                                'type' => 'text',
+                                'plain_text' => 'Review with student',
+                                'annotations' => ['bold' => false, 'italic' => false, 'code' => false],
+                                'href' => null,
+                            ],
+                        ],
+                    ],
+                ],
+                [
+                    'object' => 'block',
+                    'id' => 'block-5',
+                    'type' => 'embed',
+                    'has_children' => false,
+                    'embed' => [
+                        'url' => 'https://youtu.be/dQw4w9WgXcQ?si=test',
+                        'caption' => [],
+                    ],
+                ],
+                [
+                    'object' => 'block',
+                    'id' => 'block-6',
                     'type' => 'code',
                     'has_children' => false,
                     'code' => [
@@ -187,7 +234,7 @@ class NotionSyncServiceTest extends TestCase
                 ],
                 [
                     'object' => 'block',
-                    'id' => 'block-4',
+                    'id' => 'block-7',
                     'type' => 'image',
                     'has_children' => false,
                     'image' => [

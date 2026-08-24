@@ -10,8 +10,8 @@ namespace App\Services\Notion;
  * NotionSyncService before blocks reach here, since Notion's own image
  * URLs expire and must never be linked to directly.
  *
- * Supports: headings (h1-h3), paragraphs, bulleted/numbered lists, code
- * blocks with language, images, and bold/italic/inline-code/link text
+ * Supports: headings (h1-h3), paragraphs, bulleted/numbered lists, to-dos, code
+ * blocks with language, images, YouTube embeds, and bold/italic/inline-code/link text
  * annotations. Unsupported block types are silently skipped rather than
  * erroring, since a real Notion page will contain many block kinds
  * (toggles, callouts, tables, embeds, ...) outside this minimum scope.
@@ -49,8 +49,11 @@ class NotionBlockConverter
                 'paragraph' => $this->richTextToMarkdown($block['paragraph']['rich_text'] ?? []),
                 'bulleted_list_item' => $indent.'- '.$this->richTextToMarkdown($block['bulleted_list_item']['rich_text'] ?? []),
                 'numbered_list_item' => $indent.(++$numberedIndex).'. '.$this->richTextToMarkdown($block['numbered_list_item']['rich_text'] ?? []),
+                'to_do' => $indent.'- ['.(($block['to_do']['checked'] ?? false) ? 'x' : ' ').'] '.$this->richTextToMarkdown($block['to_do']['rich_text'] ?? []),
                 'code' => $this->convertCodeBlock($block),
                 'image' => $this->convertImageBlock($block),
+                'embed' => $this->convertYouTubeBlock($block['embed']['url'] ?? null),
+                'video' => $this->convertYouTubeBlock($block['video']['external']['url'] ?? null),
                 default => null,
             };
 
@@ -91,6 +94,46 @@ class NotionBlockConverter
         $caption = $this->richTextToMarkdown($image['caption'] ?? []);
 
         return "![{$caption}]({$url})";
+    }
+
+    private function convertYouTubeBlock(?string $url): string
+    {
+        $embedUrl = $this->youTubeEmbedUrl($url);
+
+        if ($embedUrl === null) {
+            return '';
+        }
+
+        return '<iframe src="'.e($embedUrl).'" title="YouTube video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>';
+    }
+
+    private function youTubeEmbedUrl(?string $url): ?string
+    {
+        if ($url === null || $url === '') {
+            return null;
+        }
+
+        $parts = parse_url($url);
+        $host = strtolower($parts['host'] ?? '');
+        $path = $parts['path'] ?? '';
+        $videoId = null;
+
+        if (in_array($host, ['youtu.be', 'www.youtu.be'], true)) {
+            $videoId = explode('/', trim($path, '/'))[0] ?? null;
+        } elseif ($host === 'youtube.com' || str_ends_with($host, '.youtube.com')) {
+            if ($path === '/watch') {
+                parse_str($parts['query'] ?? '', $query);
+                $videoId = $query['v'] ?? null;
+            } elseif (preg_match('#^/(embed|shorts|live)/([^/?]+)#', $path, $matches)) {
+                $videoId = $matches[2];
+            }
+        }
+
+        if (! is_string($videoId) || ! preg_match('/^[A-Za-z0-9_-]{11}$/', $videoId)) {
+            return null;
+        }
+
+        return "https://www.youtube.com/embed/{$videoId}";
     }
 
     /**
