@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-vue-next';
+import { ChevronLeft, ChevronRight, Loader2, Maximize, Minimize } from 'lucide-vue-next';
 import * as pdfjsLib from 'pdfjs-dist';
-import type { PDFDocumentProxy } from 'pdfjs-dist';
+import type { PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist';
 import pdfjsWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { onMounted, onUnmounted, ref, watch } from 'vue';
 
@@ -20,7 +20,9 @@ const error = ref(false);
 const currentPage = ref(1);
 const totalPages = ref(0);
 const canvasEl = ref<HTMLCanvasElement | null>(null);
+const viewerEl = ref<HTMLDivElement | null>(null);
 const thumbnails = ref<string[]>([]);
+const isFullscreen = ref(false);
 
 let pdfDocument: PDFDocumentProxy | null = null;
 
@@ -51,13 +53,25 @@ async function load(): Promise<void> {
     }
 }
 
+function computeScale(page: PDFPageProxy): number {
+    if (!isFullscreen.value) {
+        return 1.5;
+    }
+
+    const unscaledViewport = page.getViewport({ scale: 1 });
+    const availableWidth = window.innerWidth - 48;
+    const availableHeight = window.innerHeight - 140;
+
+    return Math.min(availableWidth / unscaledViewport.width, availableHeight / unscaledViewport.height);
+}
+
 async function renderPage(pageNumber: number): Promise<void> {
     if (!pdfDocument || !canvasEl.value) {
         return;
     }
 
     const page = await pdfDocument.getPage(pageNumber);
-    const viewport = page.getViewport({ scale: 1.5 });
+    const viewport = page.getViewport({ scale: computeScale(page) });
     const canvas = canvasEl.value;
 
     canvas.width = viewport.width;
@@ -95,15 +109,32 @@ function goToPage(page: number): void {
     currentPage.value = page;
 }
 
+async function toggleFullscreen(): Promise<void> {
+    if (!document.fullscreenElement) {
+        await viewerEl.value?.requestFullscreen();
+    } else {
+        await document.exitFullscreen();
+    }
+}
+
+function onFullscreenChange(): void {
+    isFullscreen.value = document.fullscreenElement === viewerEl.value;
+    renderPage(currentPage.value);
+}
+
 watch(currentPage, (page) => {
     renderPage(page);
 });
 
-onMounted(load);
+onMounted(() => {
+    load();
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+});
 
 onUnmounted(() => {
     pdfDocument?.destroy();
     pdfDocument = null;
+    document.removeEventListener('fullscreenchange', onFullscreenChange);
 });
 </script>
 
@@ -116,9 +147,15 @@ onUnmounted(() => {
             <p class="text-xs text-muted-foreground">Couldn't load the slideshow.</p>
             <Button size="sm" variant="outline" @click="load">Try Again</Button>
         </div>
-        <div v-else class="space-y-3">
+        <div
+            v-else
+            ref="viewerEl"
+            class="space-y-3"
+            :class="isFullscreen ? 'flex h-full w-full flex-col items-center justify-center bg-black p-4' : ''"
+        >
             <div
                 class="flex items-center justify-center overflow-auto rounded-lg border border-sidebar-border/70 bg-muted p-2 dark:border-sidebar-border"
+                :class="isFullscreen ? 'border-none bg-black' : ''"
             >
                 <canvas ref="canvasEl" class="max-w-full" />
             </div>
@@ -128,10 +165,17 @@ onUnmounted(() => {
                     <ChevronLeft class="size-4" />
                     Previous
                 </Button>
-                <span class="text-sm text-muted-foreground">Slide {{ currentPage }} of {{ totalPages }}</span>
+                <span class="text-sm" :class="isFullscreen ? 'text-white' : 'text-muted-foreground'">
+                    Slide {{ currentPage }} of {{ totalPages }}
+                </span>
                 <Button size="sm" variant="outline" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">
                     Next
                     <ChevronRight class="size-4" />
+                </Button>
+                <Button size="sm" variant="outline" @click="toggleFullscreen">
+                    <Minimize v-if="isFullscreen" class="size-4" />
+                    <Maximize v-else class="size-4" />
+                    {{ isFullscreen ? 'Exit Full Screen' : 'Full Screen' }}
                 </Button>
             </div>
 
