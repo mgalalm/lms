@@ -69,6 +69,8 @@ class NotionSyncServiceTest extends TestCase
 
     public function test_a_sync_writes_markdown_to_storage_and_updates_last_synced_at(): void
     {
+        config(['filesystems.disks.bunny.url' => 'https://content.example.com']);
+
         Storage::fake('local');
         Storage::fake('bunny');
 
@@ -93,6 +95,7 @@ class NotionSyncServiceTest extends TestCase
 
         $this->assertStringContainsString('Hello world', $markdown);
         $this->assertStringContainsString('Click **Marketplace** in your sidebar', $markdown);
+        $this->assertStringContainsString('![](https://content.example.com/', $markdown);
         $this->assertStringNotContainsString('** Marketplace**', $markdown);
 
         // The image must be re-hosted on our own disk — never linked

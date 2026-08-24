@@ -92,13 +92,13 @@ class LessonTutorGuideTest extends TestCase
     {
         $teacher = User::factory()->teacher()->create();
         $guide = LessonTutorGuide::factory()->create();
-        $guide->updateIntroMarkdown("Click **Marketplace** in your sidebar\n\nCheck out [Notion Academy](https://academy.notion.com/?utm_campaign=gsqw) to level up.");
+        $guide->updateIntroMarkdown("Click **Marketplace** in your sidebar\n\n![](https://content.example.com/notion/image.png)\n\nCheck out [Notion Academy](https://academy.notion.com/?utm_campaign=gsqw) to level up.");
 
         $this->actingAs($teacher)
             ->get(route('lessons.tutor-guide', $guide->lesson))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page->component('teacher/Lms/TutorGuide')
-                ->where('introHtml', "<p>Click <strong>Marketplace</strong> in your sidebar</p>\n<p>Check out <a href=\"https://academy.notion.com/?utm_campaign=gsqw\">Notion Academy</a> to level up.</p>\n")
+                ->where('introHtml', "<p>Click <strong>Marketplace</strong> in your sidebar</p>\n<p><img src=\"https://content.example.com/notion/image.png\" alt=\"\" /></p>\n<p>Check out <a href=\"https://academy.notion.com/?utm_campaign=gsqw\">Notion Academy</a> to level up.</p>\n")
                 ->has('procedureSteps', 2)
                 ->has('glossaryTerms', 1)
             );

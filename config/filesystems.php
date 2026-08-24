@@ -82,6 +82,7 @@ return [
             'secret' => env('BUNNY_S3_SECRET_KEY'),
             'region' => 'us-east-1',
             'bucket' => env('BUNNY_S3_BUCKET'),
+            'url' => env('BUNNY_CDN_URL'),
             'endpoint' => env('BUNNY_S3_ENDPOINT'),
             'use_path_style_endpoint' => true,
             'throw' => true,

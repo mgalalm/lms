@@ -5,6 +5,7 @@ namespace App\Services\Notion;
 use App\Models\LessonTutorGuide;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
  * Pulls a Notion page's content into our own storage via Notion's official
@@ -134,6 +135,17 @@ class NotionSyncService
             ->addMediaFromString($contents)
             ->usingFileName(($block['id'] ?? uniqid()).'.'.$this->guessExtension($temporaryUrl))
             ->toMediaCollection('intro-images');
+
+        return $this->browserFacingMediaUrl($media);
+    }
+
+    private function browserFacingMediaUrl(Media $media): string
+    {
+        $diskUrl = config("filesystems.disks.{$media->disk}.url");
+
+        if (is_string($diskUrl) && $diskUrl !== '') {
+            return rtrim($diskUrl, '/').'/'.ltrim($media->getPathRelativeToRoot(), '/');
+        }
 
         return $media->getUrl();
     }
