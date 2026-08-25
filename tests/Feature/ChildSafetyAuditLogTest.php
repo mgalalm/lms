@@ -10,7 +10,6 @@ use App\Models\Message;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Storage;
 use Spatie\Activitylog\Models\Activity;
 use Tests\TestCase;
 
@@ -32,14 +31,11 @@ class ChildSafetyAuditLogTest extends TestCase
         $session = ClassSession::factory()
             ->for($teacher, 'teacher')
             ->for($student, 'student')
-            ->create(['type' => SessionType::Physical, 'recap_path' => 'recordings/1.mp4']);
-
-        Storage::fake('local');
-        Storage::disk('local')->put('recordings/1.mp4', 'fake video contents');
+            ->create(['type' => SessionType::Physical, 'zoom_recap_url' => 'https://zoom.us/rec/play/abc123']);
 
         $this->actingAs($teacher)
             ->get(route('sessions.recap', $session))
-            ->assertOk();
+            ->assertRedirect('https://zoom.us/rec/play/abc123');
 
         $activity = Activity::latest('id')->first();
 
@@ -58,7 +54,7 @@ class ChildSafetyAuditLogTest extends TestCase
         $session = ClassSession::factory()
             ->for($teacher, 'teacher')
             ->for($student, 'student')
-            ->create(['type' => SessionType::Physical, 'recap_path' => 'recordings/2.mp4']);
+            ->create(['type' => SessionType::Physical, 'zoom_recap_url' => 'https://zoom.us/rec/play/abc123']);
 
         $this->actingAs($otherStudent)
             ->get(route('sessions.recap', $session))
@@ -74,7 +70,7 @@ class ChildSafetyAuditLogTest extends TestCase
         $session = ClassSession::factory()
             ->for($teacher, 'teacher')
             ->for($student, 'student')
-            ->create(['type' => SessionType::Physical, 'recap_path' => null]);
+            ->create(['type' => SessionType::Physical, 'zoom_recap_url' => null]);
 
         $this->actingAs($student)
             ->get(route('sessions.recap', $session))

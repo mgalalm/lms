@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Enums\SessionStatus;
-use App\Jobs\DownloadZoomRecordingJob;
 use App\Models\ClassSession;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,7 +18,7 @@ class ZoomWebhookController extends Controller
             'endpoint.url_validation' => $this->validateEndpointUrl($request),
             'meeting.participant_joined' => $this->recordParticipantJoined($request),
             'meeting.ended' => $this->completeSession($request),
-            'recording.completed' => $this->queueRecordingDownload($request),
+            'recording.completed' => $this->recordRecapUrl($request),
             default => response()->noContent(),
         };
     }
@@ -77,17 +76,20 @@ class ZoomWebhookController extends Controller
     }
 
     /**
-     * Queue the recap video for download once Zoom finishes processing it.
+     * Record the recap's Zoom-hosted play URL once Zoom finishes
+     * processing the recording. Recaps are played directly from Zoom
+     * (see ClassSessionRecapController) rather than downloaded and
+     * re-hosted, so this is just a field write, not a queued job.
      */
-    private function queueRecordingDownload(Request $request): Response
+    private function recordRecapUrl(Request $request): Response
     {
         $session = $this->findSessionByMeetingId($request->input('payload.object.id'));
 
         $videoFile = collect($request->input('payload.object.recording_files', []))
             ->firstWhere('file_type', 'MP4');
 
-        if ($session && $videoFile && filled($videoFile['download_url'] ?? null)) {
-            DownloadZoomRecordingJob::dispatch($session, $videoFile['download_url']);
+        if ($session && $videoFile && filled($videoFile['play_url'] ?? null)) {
+            $session->update(['zoom_recap_url' => $videoFile['play_url']]);
         }
 
         return response()->noContent();

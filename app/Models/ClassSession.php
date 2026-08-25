@@ -39,7 +39,7 @@ class ClassSession extends Model
         'teacher_joined_at',
         'student_joined_at',
         'ended_at',
-        'recap_path',
+        'zoom_recap_url',
         'tags',
     ];
 

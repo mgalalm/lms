@@ -5,15 +5,12 @@ namespace Tests\Feature;
 use App\Enums\SessionStatus;
 use App\Enums\SessionType;
 use App\Jobs\CreateZoomMeetingJob;
-use App\Jobs\DownloadZoomRecordingJob;
 use App\Models\ClassSession;
 use App\Models\User;
-use App\Services\Zoom\ZoomClient;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ClassSessionZoomIntegrationTest extends TestCase
@@ -179,10 +176,8 @@ class ClassSessionZoomIntegrationTest extends TestCase
         $this->assertNull($session->student_joined_at);
     }
 
-    public function test_recording_completed_webhook_dispatches_the_download_job(): void
+    public function test_recording_completed_webhook_records_the_zoom_play_url(): void
     {
-        Queue::fake();
-
         $session = ClassSession::factory()->create(['zoom_meeting_id' => '444555666']);
 
         $this->postSignedZoomWebhook([
@@ -191,37 +186,35 @@ class ClassSessionZoomIntegrationTest extends TestCase
                 'object' => [
                     'id' => '444555666',
                     'recording_files' => [
-                        ['file_type' => 'CHAT', 'download_url' => 'https://zoom.us/rec/download/chat'],
-                        ['file_type' => 'MP4', 'download_url' => 'https://zoom.us/rec/download/video'],
+                        ['file_type' => 'CHAT', 'play_url' => 'https://zoom.us/rec/play/chat'],
+                        ['file_type' => 'MP4', 'play_url' => 'https://zoom.us/rec/play/video'],
                     ],
                 ],
             ],
         ])->assertNoContent();
 
-        Queue::assertPushed(
-            DownloadZoomRecordingJob::class,
-            fn (DownloadZoomRecordingJob $job) => $job->classSession->is($session)
-                && $job->downloadUrl === 'https://zoom.us/rec/download/video'
-        );
-    }
-
-    public function test_download_recording_job_stores_the_file_and_updates_the_session(): void
-    {
-        Storage::fake('local');
-        Http::fake([
-            'zoom.us/oauth/token' => Http::response(['access_token' => 'fake-token', 'expires_in' => 3600]),
-            'zoom.us/rec/download/*' => Http::response('fake-video-bytes'),
-        ]);
-
-        $session = ClassSession::factory()->create(['type' => SessionType::Physical]);
-
-        (new DownloadZoomRecordingJob($session, 'https://zoom.us/rec/download/video'))
-            ->handle(app(ZoomClient::class));
-
         $session->refresh();
 
-        Storage::disk('local')->assertExists("recordings/{$session->id}.mp4");
-        $this->assertSame("recordings/{$session->id}.mp4", $session->recap_path);
+        $this->assertSame('https://zoom.us/rec/play/video', $session->zoom_recap_url);
+    }
+
+    public function test_recording_completed_webhook_does_nothing_without_an_mp4_file(): void
+    {
+        $session = ClassSession::factory()->create(['zoom_meeting_id' => '444555666']);
+
+        $this->postSignedZoomWebhook([
+            'event' => 'recording.completed',
+            'payload' => [
+                'object' => [
+                    'id' => '444555666',
+                    'recording_files' => [
+                        ['file_type' => 'CHAT', 'play_url' => 'https://zoom.us/rec/play/chat'],
+                    ],
+                ],
+            ],
+        ])->assertNoContent();
+
+        $this->assertNull($session->refresh()->zoom_recap_url);
     }
 
     /**

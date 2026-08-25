@@ -46,17 +46,6 @@ class ZoomClient
     }
 
     /**
-     * Download a recording file from a Zoom-issued temporary download URL.
-     */
-    public function downloadRecording(string $downloadUrl): string
-    {
-        return Http::withToken($this->getAccessToken())
-            ->get($downloadUrl)
-            ->throw()
-            ->body();
-    }
-
-    /**
      * Get a cached Server-to-Server OAuth access token, fetching a new one if expired.
      */
     private function getAccessToken(): string
