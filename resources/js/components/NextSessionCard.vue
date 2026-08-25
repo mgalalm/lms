@@ -84,7 +84,14 @@ const scheduledLabel = computed(() => {
             />
 
             <div v-else class="flex flex-col gap-4">
-                <div v-if="countdown" class="flex items-baseline gap-6">
+                <div v-if="countdown?.isPast" class="flex items-baseline gap-3">
+                    <span class="inline-flex items-center gap-1.5 text-sm font-semibold text-green-600 dark:text-green-500">
+                        <span class="h-2 w-2 rounded-full bg-green-600 dark:bg-green-500" />
+                        Live now
+                    </span>
+                    <div class="text-sm text-muted-foreground">{{ scheduledLabel }}</div>
+                </div>
+                <div v-else-if="countdown" class="flex items-baseline gap-6">
                     <div class="text-center">
                         <div class="text-2xl font-semibold tabular-nums">{{ countdown.days }}</div>
                         <div class="text-xs uppercase text-muted-foreground">Days</div>

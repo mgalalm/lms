@@ -66,6 +66,82 @@ class RoleDashboardTest extends TestCase
             );
     }
 
+    public function test_student_dashboard_still_shows_a_session_that_recently_started(): void
+    {
+        $student = User::factory()->student()->create();
+        $session = ClassSession::factory()
+            ->for($student, 'student')
+            ->create([
+                'status' => SessionStatus::Scheduled,
+                'scheduled_at' => now()->subMinutes(15),
+                'zoom_meeting_id' => 'test-meeting-live',
+            ]);
+
+        $this->actingAs($student)
+            ->get('/dashboard')
+            ->assertInertia(fn (Assert $page) => $page->component('dashboard/Student')
+                ->where('nextSession.id', $session->id)
+            );
+    }
+
+    public function test_teacher_dashboard_still_shows_a_session_that_recently_started(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $session = ClassSession::factory()
+            ->for($teacher, 'teacher')
+            ->create([
+                'status' => SessionStatus::Scheduled,
+                'scheduled_at' => now()->subMinutes(15),
+                'zoom_meeting_id' => 'test-meeting-live',
+            ]);
+
+        $this->actingAs($teacher)
+            ->get('/dashboard')
+            ->assertInertia(fn (Assert $page) => $page->component('dashboard/Teacher')
+                ->where('nextSession.id', $session->id)
+            );
+    }
+
+    public function test_dashboard_stops_showing_a_session_once_the_zoom_webhook_marks_it_completed(): void
+    {
+        $student = User::factory()->student()->create();
+        ClassSession::factory()
+            ->for($student, 'student')
+            ->create([
+                'status' => SessionStatus::Completed,
+                'scheduled_at' => now()->subMinutes(15),
+                'zoom_meeting_id' => 'test-meeting-ended',
+            ]);
+
+        $this->actingAs($student)
+            ->get('/dashboard')
+            ->assertInertia(fn (Assert $page) => $page->component('dashboard/Student')
+                ->where('nextSession', null)
+            );
+    }
+
+    public function test_dashboard_stops_showing_a_session_that_started_too_long_ago(): void
+    {
+        $student = User::factory()->student()->create();
+        ClassSession::factory()
+            ->for($student, 'student')
+            ->create([
+                // Still Scheduled — simulates a missed/failed Zoom
+                // meeting.ended webhook — but well past any plausible
+                // session length, so the live-window fallback still
+                // stops it from being surfaced as "next" forever.
+                'status' => SessionStatus::Scheduled,
+                'scheduled_at' => now()->subMinutes(90),
+                'zoom_meeting_id' => 'test-meeting-stale',
+            ]);
+
+        $this->actingAs($student)
+            ->get('/dashboard')
+            ->assertInertia(fn (Assert $page) => $page->component('dashboard/Student')
+                ->where('nextSession', null)
+            );
+    }
+
     public function test_student_dashboard_exposes_the_join_url_but_not_the_start_url(): void
     {
         $student = User::factory()->student()->create();

@@ -110,12 +110,39 @@ class ClassSession extends Model
     }
 
     /**
+     * How long after its scheduled start a session is still treated as
+     * "current" by scopeCurrentOrUpcoming() if Zoom's meeting.ended
+     * webhook hasn't marked it Completed yet — matches the default Zoom
+     * meeting length set in CreateZoomMeetingJob, so a session stays
+     * joinable for its whole expected duration rather than disappearing
+     * the instant the clock passes its start time.
+     */
+    private const LIVE_WINDOW_MINUTES = 60;
+
+    /**
      * Scope sessions that are scheduled to happen from now on.
      */
     public function scopeUpcoming(Builder $query): Builder
     {
         return $query->where('scheduled_at', '>=', now())
             ->where('status', '!=', SessionStatus::Cancelled)
+            ->orderBy('scheduled_at');
+    }
+
+    /**
+     * Scope sessions worth surfacing as the dashboard's "next session" Join
+     * card: still-genuinely-upcoming sessions, plus ones that started
+     * recently and haven't been marked Completed (by Zoom's meeting.ended
+     * webhook) or Cancelled yet — so a session a student/teacher is
+     * currently in stays joinable for its whole duration instead of
+     * vanishing the moment scheduled_at passes. Distinct from upcoming(),
+     * which the schedule list's "Upcoming" filter tab intentionally keeps
+     * meaning "hasn't started yet".
+     */
+    public function scopeCurrentOrUpcoming(Builder $query): Builder
+    {
+        return $query->where('scheduled_at', '>=', now()->subMinutes(self::LIVE_WINDOW_MINUTES))
+            ->whereNotIn('status', [SessionStatus::Cancelled, SessionStatus::Completed])
             ->orderBy('scheduled_at');
     }
 

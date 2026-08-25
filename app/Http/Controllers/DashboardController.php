@@ -52,7 +52,7 @@ class DashboardController extends Controller
     {
         $nextSession = $user->sessionsAsStudent()
             ->with(['lesson.module.course', 'teacher.teacherProfile'])
-            ->upcoming()
+            ->currentOrUpcoming()
             ->first();
 
         $pendingFeedbackSession = $user->sessionsAsStudent()
@@ -140,7 +140,7 @@ class DashboardController extends Controller
     {
         $nextSession = $user->sessionsAsTeacher()
             ->with(['lesson.module.course', 'student.studentProfile'])
-            ->upcoming()
+            ->currentOrUpcoming()
             ->first();
 
         return Inertia::render('dashboard/Teacher', [
