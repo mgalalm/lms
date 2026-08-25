@@ -250,6 +250,20 @@ class ClassSessionZoomIntegrationTest extends TestCase
         $this->assertNull($session->fresh()->zoom_recap_url);
     }
 
+    public function test_backfill_command_prints_the_zoom_error_for_a_failed_lookup(): void
+    {
+        Http::fake([
+            'zoom.us/oauth/token' => Http::response(['access_token' => 'fake-token', 'expires_in' => 3600]),
+            'api.zoom.us/v2/meetings/*/recordings' => Http::response(['code' => 124, 'message' => 'Invalid access token.'], 401),
+        ]);
+
+        ClassSession::factory()->create(['zoom_meeting_id' => '444', 'zoom_recap_url' => null]);
+
+        $this->artisan('zoom:backfill-recap-urls')
+            ->assertSuccessful()
+            ->expectsOutputToContain('HTTP 401 — {"code":124,"message":"Invalid access token."}');
+    }
+
     public function test_backfill_command_does_not_touch_sessions_that_already_have_a_recap_url(): void
     {
         Http::fake();

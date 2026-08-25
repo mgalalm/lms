@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\ClassSession;
 use App\Services\Zoom\ZoomClient;
 use Illuminate\Console\Command;
+use Illuminate\Http\Client\RequestException;
 use Throwable;
 
 /**
@@ -52,6 +53,13 @@ class BackfillZoomRecapUrlsCommand extends Command
             } catch (Throwable $e) {
                 report($e);
                 $failed++;
+
+                $this->error(
+                    "Session #{$session->id} (meeting {$session->zoom_meeting_id}): "
+                    .($e instanceof RequestException
+                        ? "HTTP {$e->response->status()} — {$e->response->body()}"
+                        : $e->getMessage())
+                );
 
                 continue;
             }
