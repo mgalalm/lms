@@ -46,6 +46,30 @@ class ZoomClient
     }
 
     /**
+     * Look up a past meeting's recap play URL directly, for backfilling
+     * sessions whose recording.completed webhook was never captured (or
+     * was captured before zoom_recap_url existed). Returns null if Zoom
+     * has no MP4 recording for this meeting — either it was never
+     * recorded, or it's aged out of Zoom's cloud retention window.
+     */
+    public function findRecapUrl(string $meetingId): ?string
+    {
+        $response = Http::withToken($this->getAccessToken())
+            ->get(self::API_BASE_URL."/meetings/{$meetingId}/recordings");
+
+        if ($response->status() === 404) {
+            return null;
+        }
+
+        $response->throw();
+
+        $videoFile = collect($response->json('recording_files', []))
+            ->firstWhere('file_type', 'MP4');
+
+        return $videoFile['play_url'] ?? null;
+    }
+
+    /**
      * Get a cached Server-to-Server OAuth access token, fetching a new one if expired.
      */
     private function getAccessToken(): string

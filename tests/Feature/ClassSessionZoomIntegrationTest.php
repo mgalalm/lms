@@ -217,6 +217,53 @@ class ClassSessionZoomIntegrationTest extends TestCase
         $this->assertNull($session->refresh()->zoom_recap_url);
     }
 
+    public function test_backfill_command_fills_in_missing_recap_urls_from_zoom(): void
+    {
+        Http::fake([
+            'zoom.us/oauth/token' => Http::response(['access_token' => 'fake-token', 'expires_in' => 3600]),
+            'api.zoom.us/v2/meetings/111/recordings' => Http::response([
+                'recording_files' => [
+                    ['file_type' => 'CHAT', 'play_url' => 'https://zoom.us/rec/play/chat'],
+                    ['file_type' => 'MP4', 'play_url' => 'https://zoom.us/rec/play/backfilled'],
+                ],
+            ]),
+        ]);
+
+        $session = ClassSession::factory()->create(['zoom_meeting_id' => '111', 'zoom_recap_url' => null]);
+
+        $this->artisan('zoom:backfill-recap-urls')->assertSuccessful();
+
+        $this->assertSame('https://zoom.us/rec/play/backfilled', $session->fresh()->zoom_recap_url);
+    }
+
+    public function test_backfill_command_skips_sessions_zoom_has_no_recording_for(): void
+    {
+        Http::fake([
+            'zoom.us/oauth/token' => Http::response(['access_token' => 'fake-token', 'expires_in' => 3600]),
+            'api.zoom.us/v2/meetings/222/recordings' => Http::response(['code' => 3301, 'message' => 'Recording does not exist.'], 404),
+        ]);
+
+        $session = ClassSession::factory()->create(['zoom_meeting_id' => '222', 'zoom_recap_url' => null]);
+
+        $this->artisan('zoom:backfill-recap-urls')->assertSuccessful();
+
+        $this->assertNull($session->fresh()->zoom_recap_url);
+    }
+
+    public function test_backfill_command_does_not_touch_sessions_that_already_have_a_recap_url(): void
+    {
+        Http::fake();
+
+        ClassSession::factory()->create([
+            'zoom_meeting_id' => '333',
+            'zoom_recap_url' => 'https://zoom.us/rec/play/already-set',
+        ]);
+
+        $this->artisan('zoom:backfill-recap-urls')->assertSuccessful();
+
+        Http::assertNothingSent();
+    }
+
     /**
      * Post a Zoom webhook payload signed the way Zoom signs real requests.
      */
