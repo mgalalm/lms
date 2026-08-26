@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\StudentProfiles\Tables;
 
+use App\Filament\Actions\ImpersonateAction;
 use App\Filament\Resources\StudentProfiles\StudentProfileActions;
 use App\Models\StudentProfile;
 use Filament\Actions\EditAction;
@@ -56,6 +57,7 @@ class StudentProfilesTable
             ->recordActions([
                 EditAction::make()
                     ->visible(fn (StudentProfile $record) => ! $record->user->gdpr_erased_at),
+                ImpersonateAction::make(),
                 StudentProfileActions::eraseAction(),
             ]);
     }

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\TeacherProfiles\Tables;
 
+use App\Filament\Actions\ImpersonateAction;
 use App\Models\TeacherProfile;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
@@ -30,6 +31,7 @@ class TeacherProfilesTable
             ])
             ->recordActions([
                 EditAction::make(),
+                ImpersonateAction::make(),
             ]);
     }
 }

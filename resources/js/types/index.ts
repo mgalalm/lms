@@ -20,6 +20,7 @@ export interface SharedData {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
+    impersonator: { name: string } | null;
     flash: {
         quizResult: { score: number; passed: boolean } | null;
         success: string | null;

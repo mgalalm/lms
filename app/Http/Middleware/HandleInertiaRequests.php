@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Http\Resources\AuthUserResource;
+use App\Models\User;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -52,6 +53,9 @@ class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
             ],
+            'impersonator' => $request->session()->has('impersonator_id')
+                ? ['name' => User::find($request->session()->get('impersonator_id'))?->name]
+                : null,
             'unreadNotificationsCount' => $request->user()?->unreadNotifications()->count() ?? 0,
             'notifications' => Inertia::optional(fn () => $request->user()
                 ?->notifications()
