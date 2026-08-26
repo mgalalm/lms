@@ -9,7 +9,7 @@ import SessionFeedbackModal from '@/components/SessionFeedbackModal.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/AppLayout.vue';
-import type { Badge, BreadcrumbItem, ClassSession, CurrentLesson, LatestSessionReview, LeaderboardEntry, LessonProgress } from '@/types';
+import type { Badge, BreadcrumbItem, ClassSession, CurrentLesson, LatestSessionReview, LeaderboardEntry, LessonProgress, ProjectSubmission } from '@/types';
 import { Head, Link } from '@inertiajs/vue3';
 import { Coins, Frown, Meh, Smile, Star } from 'lucide-vue-next';
 
@@ -18,6 +18,7 @@ defineProps<{
     pendingFeedbackSession: ClassSession | null;
     latestReview: LatestSessionReview | null;
     currentLesson: CurrentLesson | null;
+    projectSubmissions: ProjectSubmission[];
     progress: LessonProgress | null;
     points: number;
     recentBadges: Badge[];
@@ -40,7 +41,7 @@ const sentimentIcon = { negative: Frown, neutral: Meh, positive: Smile } as cons
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
                 <div class="flex flex-col gap-6 lg:col-span-2">
                     <NextSessionCard :session="nextSession" viewer-role="student" :timezone="timezone" />
-                    <CurrentLessonCard :lesson="currentLesson" />
+                    <CurrentLessonCard :lesson="currentLesson" :project-submissions="projectSubmissions" />
                     <MyProgressCard :progress="progress" />
                 </div>
 

@@ -24,10 +24,31 @@ class EditLesson extends EditRecord
     protected static string $resource = LessonResource::class;
 
     /**
-     * Upsert the tutor guide alongside the Lesson save. Its fields live
-     * outside $data's Lesson-column keys (Eloquent mass assignment just
-     * ignores the extras), so this reads back the raw submitted state via
-     * $this->data rather than the (already Lesson-only) save payload.
+     * The project's fields aren't Lesson columns (see afterSave()), so
+     * Filament's normal fill-from-model doesn't populate them. Unlike the
+     * tutor guide's Notion URL (deliberately left blank — paste to
+     * reconnect), these should show the project's actual current values.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $project = $this->record->project;
+
+        $data['project_title'] = $project?->title;
+        $data['project_brief'] = $project?->brief;
+        $data['project_is_required'] = $project?->is_required ?? false;
+
+        return $data;
+    }
+
+    /**
+     * Upsert the tutor guide and project alongside the Lesson save. Their
+     * fields live outside $data's Lesson-column keys (Eloquent mass
+     * assignment just ignores the extras), so this reads back the raw
+     * submitted state via $this->data rather than the (already
+     * Lesson-only) save payload.
      */
     protected function afterSave(): void
     {
@@ -44,6 +65,18 @@ class EditLesson extends EditRecord
         );
 
         $this->record->unsetRelation('tutorGuide');
+
+        if (filled($this->data['project_title'] ?? null)) {
+            $this->record->project()->updateOrCreate([], [
+                'title' => $this->data['project_title'],
+                'brief' => $this->data['project_brief'] ?? null,
+                'is_required' => $this->data['project_is_required'] ?? false,
+            ]);
+        } else {
+            $this->record->project()->delete();
+        }
+
+        $this->record->unsetRelation('project');
     }
 
     protected function getHeaderActions(): array

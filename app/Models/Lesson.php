@@ -67,4 +67,13 @@ class Lesson extends Model
     {
         return $this->hasOne(LessonSlideshow::class);
     }
+
+    /**
+     * Get this lesson's project assignment, if one exists — not every
+     * lesson has one.
+     */
+    public function project(): HasOne
+    {
+        return $this->hasOne(LessonProject::class);
+    }
 }

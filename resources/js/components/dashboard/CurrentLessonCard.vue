@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import EmptyState from '@/components/EmptyState.vue';
+import LessonProjectPanel from '@/components/dashboard/LessonProjectPanel.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { CurrentLesson } from '@/types';
+import type { CurrentLesson, ProjectSubmission } from '@/types';
 import { BookOpen, HelpCircle, Loader2, PackagePlus, Play, Video } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
 const props = defineProps<{
     lesson: CurrentLesson | null;
+    projectSubmissions: ProjectSubmission[];
 }>();
 
 const lessonPath = computed(() => [props.lesson?.course_title, props.lesson?.module_title].filter(Boolean).join(' / '));
@@ -82,6 +84,7 @@ watch(
                         <TabsTrigger value="video">Video</TabsTrigger>
                         <TabsTrigger value="reading">Reading</TabsTrigger>
                         <TabsTrigger value="quiz">Quiz</TabsTrigger>
+                        <TabsTrigger v-if="lesson.project" value="project">Project</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="recap">
@@ -147,6 +150,10 @@ watch(
                             heading="No quiz available yet"
                             description="Check back after your next session — quizzes unlock as your teacher adds them."
                         />
+                    </TabsContent>
+
+                    <TabsContent v-if="lesson.project" value="project">
+                        <LessonProjectPanel :project="lesson.project" :submissions="projectSubmissions" />
                     </TabsContent>
                 </Tabs>
             </div>

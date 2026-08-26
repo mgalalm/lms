@@ -316,6 +316,52 @@ export interface CurrentLesson {
     course_title: string | null;
     recap: { class_session_id: number } | null;
     video: { duration_seconds: number | null } | null;
+    project: LessonProjectSummary | null;
+}
+
+export interface LessonProjectSummary {
+    id: number;
+    title: string;
+    brief: string | null;
+    is_required: boolean;
+}
+
+export type ProjectSubmissionStatus = 'submitted' | 'reviewed';
+
+export type FeedbackSentiment = 'positive' | 'neutral' | 'needs_improvement';
+
+export interface ProjectScreenshot {
+    id: number;
+    url: string;
+}
+
+export interface ProjectFeedback {
+    id: number;
+    rating: number;
+    comment: string;
+    is_featured: boolean;
+    reviewed_at: string;
+    teacher?: { id: number; name: string };
+}
+
+export interface ProjectSubmission {
+    id: number;
+    title: string;
+    description: string | null;
+    live_url: string | null;
+    status: ProjectSubmissionStatus;
+    submitted_at: string;
+    screenshots: ProjectScreenshot[];
+    feedback: ProjectFeedback | null;
+    lesson_project?: { id: number; title: string; brief: string | null; is_required: boolean; lesson?: Lesson };
+    student?: SessionParticipant;
+}
+
+export interface FeedbackTemplate {
+    id: number;
+    label: string;
+    body: string;
+    sentiment: FeedbackSentiment;
 }
 
 export interface LessonProgress {

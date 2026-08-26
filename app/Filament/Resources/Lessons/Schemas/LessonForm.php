@@ -10,6 +10,7 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Support\HtmlString;
@@ -116,6 +117,21 @@ class LessonForm
                                 };
                             })
                             ->columnSpanFull(),
+                    ])
+                    ->hiddenOn('create')
+                    ->columnSpanFull(),
+                Section::make('Project')
+                    ->description('Optional hands-on project assignment for this lesson — students submit their work and teachers review it with structured feedback.')
+                    ->schema([
+                        TextInput::make('project_title')
+                            ->label('Project Title')
+                            ->maxLength(255),
+                        Textarea::make('project_brief')
+                            ->label('Assignment Brief')
+                            ->helperText('Shown to the student alongside the submission form.')
+                            ->columnSpanFull(),
+                        Toggle::make('project_is_required')
+                            ->label('Required to complete the lesson'),
                     ])
                     ->hiddenOn('create')
                     ->columnSpanFull(),

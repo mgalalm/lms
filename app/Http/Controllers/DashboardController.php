@@ -8,6 +8,7 @@ use App\Enums\UserRole;
 use App\Http\Resources\BadgeResource;
 use App\Http\Resources\ClassSessionResource;
 use App\Http\Resources\LeaderboardEntryResource;
+use App\Http\Resources\ProjectSubmissionResource;
 use App\Models\ClassSession;
 use App\Models\Lesson;
 use App\Models\SessionReview;
@@ -75,8 +76,16 @@ class DashboardController extends Controller
         $currentLesson = $currentSession?->lesson;
 
         if ($currentLesson) {
-            $currentLesson->loadMissing('module.course', 'video');
+            $currentLesson->loadMissing('module.course', 'video', 'project');
         }
+
+        $projectSubmissions = $currentLesson?->project
+            ? $currentLesson->project->submissions()
+                ->where('student_id', $user->id)
+                ->with('feedback.teacher')
+                ->latest('submitted_at')
+                ->get()
+            : collect();
 
         return Inertia::render('dashboard/Student', [
             'nextSession' => $nextSession ? new ClassSessionResource($nextSession) : null,
@@ -98,7 +107,14 @@ class DashboardController extends Controller
                 'video' => $currentLesson->video?->status === LessonVideoStatus::Published
                     ? ['duration_seconds' => $currentLesson->video->duration_seconds]
                     : null,
+                'project' => $currentLesson->project ? [
+                    'id' => $currentLesson->project->id,
+                    'title' => $currentLesson->project->title,
+                    'brief' => $currentLesson->project->brief,
+                    'is_required' => $currentLesson->project->is_required,
+                ] : null,
             ] : null,
+            'projectSubmissions' => ProjectSubmissionResource::collection($projectSubmissions),
             'progress' => $currentLesson ? $this->moduleProgress($user, $currentLesson) : null,
             'points' => $user->totalPoints(),
             'recentBadges' => BadgeResource::collection(
