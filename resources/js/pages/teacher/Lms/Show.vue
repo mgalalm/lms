@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem, LmsCourseDetail, SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
-import { computed, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 
 const props = defineProps<{
     course: LmsCourseDetail;
@@ -64,6 +64,39 @@ function submitQuiz(): void {
         },
     );
 }
+
+/**
+ * Deep-linked here from a session's "Lesson" menu (?lesson=X&open=video, or
+ * ?open=quiz) — scroll to and auto-expand the requested content. Done via
+ * query params + JS on mount rather than a plain #hash, since Inertia's
+ * own scroll-reset on navigation isn't guaranteed to play nicely with the
+ * browser's native hash-scroll timing.
+ */
+onMounted(async () => {
+    const params = new URLSearchParams(window.location.search);
+    const lessonId = Number(params.get('lesson'));
+    const open = params.get('open');
+
+    if (open === 'quiz') {
+        await nextTick();
+        document.getElementById('course-quiz')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        return;
+    }
+
+    if (!lessonId) {
+        return;
+    }
+
+    if (open === 'video') {
+        toggleVideo(lessonId);
+    } else if (open === 'slideshow') {
+        toggleSlideshow(lessonId);
+    }
+
+    await nextTick();
+    document.getElementById(`lesson-${lessonId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 </script>
 
 <template>
@@ -110,7 +143,7 @@ function submitQuiz(): void {
                 <div
                     class="divide-y divide-sidebar-border/70 rounded-xl border border-sidebar-border/70 bg-card dark:divide-sidebar-border dark:border-sidebar-border"
                 >
-                    <div v-for="lesson in module.lessons" :key="lesson.id" class="p-4">
+                    <div v-for="lesson in module.lessons" :id="`lesson-${lesson.id}`" :key="lesson.id" class="scroll-mt-4 p-4">
                         <div class="flex items-start justify-between gap-4">
                             <div>
                                 <p class="font-medium">{{ lesson.title }}</p>
@@ -140,7 +173,7 @@ function submitQuiz(): void {
                 </div>
             </div>
 
-            <div v-if="course.quiz" class="space-y-3">
+            <div v-if="course.quiz" id="course-quiz" class="scroll-mt-4 space-y-3">
                 <h2 class="text-sm font-semibold text-muted-foreground">Certification Quiz</h2>
 
                 <p v-if="course.is_certified" class="text-sm text-muted-foreground">

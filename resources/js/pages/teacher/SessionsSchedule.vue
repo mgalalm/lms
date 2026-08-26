@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Pagination from '@/components/Pagination.vue';
+import LessonMaterialsMenu from '@/components/teacher/LessonMaterialsMenu.vue';
 import SupportTicketDialog from '@/components/teacher/SupportTicketDialog.vue';
 import { Button } from '@/components/ui/button';
 import { withDisplayName } from '@/composables/zoomJoinUrl';
@@ -117,6 +118,8 @@ const supportDialogSessionId = ref<number | null>(null);
                         <Button v-else variant="outline" size="sm" @click="supportDialogSessionId = session.id">Support</Button>
 
                         <Button variant="outline" size="sm" @click="pingParent(session)">Ping Parent</Button>
+
+                        <LessonMaterialsMenu :lesson="session.lesson" />
                     </div>
                 </div>
             </div>

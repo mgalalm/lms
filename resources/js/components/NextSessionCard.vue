@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import EmptyState from '@/components/EmptyState.vue';
+import LessonMaterialsMenu from '@/components/teacher/LessonMaterialsMenu.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCountdown } from '@/composables/useCountdown';
@@ -122,6 +123,7 @@ const scheduledLabel = computed(() => {
                     <Button v-else disabled class="w-fit">{{ joinLabel }}</Button>
 
                     <Button v-if="viewerRole === 'teacher'" variant="outline" class="w-fit" @click="pingParent">Ping Parent</Button>
+                    <LessonMaterialsMenu v-if="viewerRole === 'teacher'" :lesson="session.lesson" />
                 </div>
             </div>
         </CardContent>
