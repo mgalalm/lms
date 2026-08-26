@@ -24,8 +24,6 @@ class StoreProjectSubmissionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
             'live_url' => ['nullable', 'url', 'max:2048'],
             'screenshots' => ['nullable', 'array', 'max:10'],
             'screenshots.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],

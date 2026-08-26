@@ -23,9 +23,7 @@ const previousAttempts = computed(() => props.submissions.slice(1));
 const showForm = computed(() => !latest.value || latest.value.status === 'reviewed');
 const previousAttemptsExpanded = ref(false);
 
-const form = useForm<{ title: string; description: string; live_url: string; screenshots: File[] }>({
-    title: '',
-    description: '',
+const form = useForm<{ live_url: string; screenshots: File[] }>({
     live_url: '',
     screenshots: [],
 });
@@ -116,28 +114,6 @@ function submit(): void {
         </div>
 
         <form v-if="showForm" class="space-y-3" @submit.prevent="submit">
-            <div class="grid gap-1.5">
-                <label class="text-xs font-medium text-muted-foreground" for="project-title">Project Title</label>
-                <input
-                    id="project-title"
-                    v-model="form.title"
-                    type="text"
-                    required
-                    class="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                />
-                <p v-if="form.errors.title" class="text-xs text-destructive">{{ form.errors.title }}</p>
-            </div>
-
-            <div class="grid gap-1.5">
-                <label class="text-xs font-medium text-muted-foreground" for="project-description">Description</label>
-                <textarea
-                    id="project-description"
-                    v-model="form.description"
-                    rows="3"
-                    class="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                />
-            </div>
-
             <div class="grid gap-1.5">
                 <label class="text-xs font-medium text-muted-foreground" for="project-live-url">Live URL (optional)</label>
                 <input

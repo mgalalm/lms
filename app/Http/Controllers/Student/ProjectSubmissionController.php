@@ -19,10 +19,13 @@ class ProjectSubmissionController extends Controller
     {
         $validated = $request->validated();
 
+        // The student submits their work, not a re-statement of the
+        // assignment — title/description belong to the LessonProject
+        // itself (shown read-only), so each attempt just inherits the
+        // project's title rather than asking the student to type one.
         $submission = $lessonProject->submissions()->create([
             'student_id' => $request->user()->id,
-            'title' => $validated['title'],
-            'description' => $validated['description'] ?? null,
+            'title' => $lessonProject->title,
             'live_url' => $validated['live_url'] ?? null,
             'submitted_at' => now(),
         ]);

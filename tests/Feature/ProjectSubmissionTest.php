@@ -31,12 +31,10 @@ class ProjectSubmissionTest extends TestCase
         Storage::fake('bunny');
 
         $student = User::factory()->student()->create();
-        $project = LessonProject::factory()->create();
+        $project = LessonProject::factory()->create(['title' => 'Build a Chatbot']);
 
         $this->actingAs($student)
             ->post(route('lesson-projects.submissions.store', $project), [
-                'title' => 'My Scratch Game',
-                'description' => 'A simple platformer.',
                 'live_url' => 'https://example.com/my-game',
                 'screenshots' => [UploadedFile::fake()->image('screenshot.png')],
             ])
@@ -46,7 +44,11 @@ class ProjectSubmissionTest extends TestCase
 
         $this->assertSame($project->id, $submission->lesson_project_id);
         $this->assertSame($student->id, $submission->student_id);
-        $this->assertSame('My Scratch Game', $submission->title);
+        // The submission inherits the project's title rather than the
+        // student typing one — they're submitting their attempt at the
+        // assignment, not re-describing it.
+        $this->assertSame('Build a Chatbot', $submission->title);
+        $this->assertSame('https://example.com/my-game', $submission->live_url);
         $this->assertSame(ProjectSubmissionStatus::Submitted, $submission->status);
         $this->assertCount(1, $submission->getMedia('screenshots'));
     }
@@ -56,9 +58,7 @@ class ProjectSubmissionTest extends TestCase
         $student = User::factory()->student()->create();
 
         $this->actingAs($student)
-            ->post(route('lesson-projects.submissions.store', 999999), [
-                'title' => 'My Scratch Game',
-            ])
+            ->post(route('lesson-projects.submissions.store', 999999), [])
             ->assertNotFound();
     }
 
@@ -67,8 +67,8 @@ class ProjectSubmissionTest extends TestCase
         $student = User::factory()->student()->create();
         $project = LessonProject::factory()->create();
 
-        $this->actingAs($student)->post(route('lesson-projects.submissions.store', $project), ['title' => 'Attempt 1']);
-        $this->actingAs($student)->post(route('lesson-projects.submissions.store', $project), ['title' => 'Attempt 2']);
+        $this->actingAs($student)->post(route('lesson-projects.submissions.store', $project), []);
+        $this->actingAs($student)->post(route('lesson-projects.submissions.store', $project), []);
 
         $this->assertSame(2, ProjectSubmission::where('lesson_project_id', $project->id)->where('student_id', $student->id)->count());
     }
