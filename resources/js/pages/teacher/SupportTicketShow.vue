@@ -25,7 +25,17 @@ const breadcrumbs: BreadcrumbItem[] = [
 const messages = ref<Message[]>(props.messages);
 
 useEcho(`channel.${props.ticket.channel_id}`, '.message.sent', (payload: { message: Message }) => {
-    messages.value.push(payload.message);
+    // A moderated message can reach this client twice — once from the
+    // initial page load (the sender always sees their own message) and
+    // again from the broadcast once it clears moderation. Replace the
+    // existing entry instead of duplicating it (see community/Index.vue).
+    const existingIndex = messages.value.findIndex((message) => message.id === payload.message.id);
+
+    if (existingIndex === -1) {
+        messages.value.push(payload.message);
+    } else {
+        messages.value[existingIndex] = payload.message;
+    }
 });
 
 function resolve(): void {
