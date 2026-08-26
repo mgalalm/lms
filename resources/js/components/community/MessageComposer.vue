@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EmojiPicker from '@/components/community/EmojiPicker.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Color, TextStyle } from '@tiptap/extension-text-style';
@@ -111,6 +112,10 @@ function onAttachmentsChosen(event: Event) {
 function removeAttachment(index: number) {
     attachments.value.splice(index, 1);
 }
+
+function insertEmoji(emoji: string): void {
+    editor.value?.chain().focus().insertContent(emoji).run();
+}
 </script>
 
 <template>
@@ -173,6 +178,7 @@ function removeAttachment(index: number) {
                     <Button v-if="canSendTaskCard" variant="ghost" size="sm" class="h-7 text-xs" :class="{ 'bg-accent': isTaskMode }" @click="toggleTaskMode">
                         + Task
                     </Button>
+                    <EmojiPicker @select="insertEmoji" />
                     <Button variant="ghost" size="icon" class="size-7" @click="pickAttachments">
                         <Paperclip class="size-3.5" />
                     </Button>
