@@ -73,6 +73,29 @@ class ClassSessionZoomIntegrationTest extends TestCase
         $this->assertSame('abc123', $session->zoom_password);
     }
 
+    public function test_meeting_creation_disables_the_waiting_room(): void
+    {
+        Http::fake([
+            'zoom.us/oauth/token' => Http::response(['access_token' => 'fake-token', 'expires_in' => 3600]),
+            'api.zoom.us/v2/users/*/meetings' => Http::response([
+                'id' => 123456789,
+                'join_url' => 'https://zoom.us/j/123456789',
+                'start_url' => 'https://zoom.us/s/123456789?zak=abc',
+                'password' => 'abc123',
+            ]),
+        ]);
+
+        ClassSession::factory()->create(['type' => SessionType::Online]);
+
+        // Explicit, not left to the Zoom account's own default (commonly
+        // on) — join_before_host already guarantees the teacher is in the
+        // meeting before a student can enter, so a waiting room would
+        // only add a manual per-student admit click with no extra safety.
+        Http::assertSent(fn ($request) => str_contains($request->url(), '/meetings')
+            && $request['settings']['join_before_host'] === false
+            && $request['settings']['waiting_room'] === false);
+    }
+
     public function test_meeting_creation_job_skips_when_no_zoom_host_is_configured(): void
     {
         config(['services.zoom.host_user_id' => null]);

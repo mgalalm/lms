@@ -32,6 +32,13 @@ class ZoomClient
                     'host_video' => true,
                     'participant_video' => true,
                     'join_before_host' => false,
+                    // Explicit, not left to the Zoom account's own default
+                    // (commonly on) — join_before_host already guarantees
+                    // the teacher is already in the meeting before a
+                    // student can enter, so the waiting room would only
+                    // add a manual per-student admit click with no extra
+                    // safety benefit here.
+                    'waiting_room' => false,
                     'auto_recording' => 'cloud',
                 ],
             ])
