@@ -156,7 +156,7 @@ onMounted(async () => {
                                 <Button v-if="lesson.has_video" size="sm" variant="outline" @click="toggleVideo(lesson.id)">
                                     {{ expandedVideoLessonIds.has(lesson.id) ? 'Hide Video' : 'Watch Video' }}
                                 </Button>
-                                <Button v-if="lesson.has_slideshow" size="sm" variant="outline" @click="toggleSlideshow(lesson.id)">
+                                <Button v-if="lesson.slideshow" size="sm" variant="outline" @click="toggleSlideshow(lesson.id)">
                                     {{ expandedSlideshowLessonIds.has(lesson.id) ? 'Hide Slideshow' : 'View Slideshow' }}
                                 </Button>
                                 <Button as-child size="sm" variant="outline">
@@ -168,7 +168,11 @@ onMounted(async () => {
                         </div>
 
                         <LessonVideoPlayer v-if="expandedVideoLessonIds.has(lesson.id)" :lesson-id="lesson.id" class="mt-3" />
-                        <LessonSlideshowViewer v-if="expandedSlideshowLessonIds.has(lesson.id)" :lesson-id="lesson.id" class="mt-3" />
+                        <LessonSlideshowViewer
+                            v-if="expandedSlideshowLessonIds.has(lesson.id) && lesson.slideshow"
+                            :google-slides-id="lesson.slideshow.google_slides_id"
+                            class="mt-3"
+                        />
                     </div>
                 </div>
             </div>

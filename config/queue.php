@@ -68,11 +68,12 @@ return [
             'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
             'queue' => env('REDIS_QUEUE', 'default'),
             // Must stay comfortably above the longest job $timeout on this
-            // connection (currently ConvertLessonSlideshowToPdfJob at
-            // 3600s) — otherwise redis reclaims a still-running job's
+            // connection — otherwise redis reclaims a still-running job's
             // reservation and redelivers it to another worker as a
-            // spurious retry/failure.
-            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 3900),
+            // spurious retry/failure. No job currently overrides Horizon's
+            // global 60s timeout (config/horizon.php), so this only needs
+            // to clear that.
+            'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
             'block_for' => null,
             'after_commit' => false,
         ],

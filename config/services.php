@@ -70,11 +70,6 @@ return [
         'stream_readonly_key' => env('BUNNY_STREAM_READONLY_KEY'),
     ],
 
-    'cloudconvert' => [
-        'api_key' => env('CLOUDCONVERT_API_KEY'),
-        'sandbox' => env('CLOUDCONVERT_SANDBOX', false),
-    ],
-
     'notion' => [
         'api_key' => env('NOTION_API_KEY'),
         'api_version' => env('NOTION_API_VERSION', '2022-06-28'),

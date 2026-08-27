@@ -206,7 +206,7 @@ export interface LmsLesson {
     reading_content: string | null;
     completed: boolean;
     has_video: boolean;
-    has_slideshow: boolean;
+    slideshow: { google_slides_id: string } | null;
 }
 
 export interface LmsModule {

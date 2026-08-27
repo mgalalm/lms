@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Lessons\Schemas;
 
 use App\Models\Lesson;
+use App\Models\LessonSlideshow;
 use App\Services\Bunny\BunnyStreamClient;
 use App\Services\Notion\NotionSyncService;
 use Closure;
@@ -12,6 +13,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Support\HtmlString;
 
@@ -136,19 +138,41 @@ class LessonForm
                     ->hiddenOn('create')
                     ->columnSpanFull(),
                 Section::make('Slideshow')
-                    ->description('Admin-authored, PowerPoint-style slideshow for this lesson (PDF-backed). Use the Upload/Replace Slideshow button above.')
+                    ->description('Google Slides presentation for this lesson, embedded for teachers in the LMS view.')
                     ->schema([
-                        Placeholder::make('slideshow_summary')
-                            ->hiddenLabel()
-                            ->content(function (?Lesson $record) {
-                                $slideshow = $record?->slideshow;
+                        TextInput::make('slideshow_google_url')
+                            ->label('Google Slides URL')
+                            ->url()
+                            ->live(onBlur: true)
+                            ->helperText('Paste a docs.google.com/presentation link. Set sharing to "Anyone with the link can view" in Google Slides, otherwise it will not display for teachers.')
+                            ->rule(function () {
+                                return function (string $attribute, $value, Closure $fail) {
+                                    if (blank($value)) {
+                                        return;
+                                    }
 
-                                if (! $slideshow) {
-                                    return 'No slideshow uploaded yet.';
+                                    if (! LessonSlideshow::extractPresentationId($value)) {
+                                        $fail('That doesn\'t look like a valid Google Slides presentation URL.');
+                                    }
+                                };
+                            })
+                            ->columnSpanFull(),
+                        Placeholder::make('slideshow_preview')
+                            ->hiddenLabel()
+                            ->content(function (Get $get) {
+                                $id = LessonSlideshow::extractPresentationId($get('slideshow_google_url'));
+
+                                if (! $id) {
+                                    return null;
                                 }
 
-                                return $slideshow->isReady() ? 'Ready.' : 'Converting to PDF…';
-                            }),
+                                $url = "https://docs.google.com/presentation/d/{$id}/embed?rm=minimal";
+
+                                return new HtmlString(
+                                    '<iframe src="'.e($url).'" class="aspect-video w-full max-w-xl rounded-lg" allowfullscreen></iframe>'
+                                );
+                            })
+                            ->columnSpanFull(),
                     ])
                     ->hiddenOn('create')
                     ->columnSpanFull(),

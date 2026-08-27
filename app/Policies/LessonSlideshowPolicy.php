@@ -9,11 +9,10 @@ use App\Models\User;
 /**
  * Admin-authored slideshows — teacher/admin prep material, not shown to
  * students. Unlike LessonVideo there's no draft/published state in this
- * model — readiness is just file_path being set (see
- * LessonSlideshow::isReady()), a content concern handled at the
- * controller level, not an authorization one. Only admins can
- * upload/replace one, matching the fact that only the admin role can
- * reach Filament at all.
+ * model — readiness is just google_slides_id being set, a content concern
+ * handled where it's exposed (LmsCourseDetailResource), not an
+ * authorization one. Only admins can set/replace one, matching the fact
+ * that only the admin role can reach Filament at all.
  */
 class LessonSlideshowPolicy
 {

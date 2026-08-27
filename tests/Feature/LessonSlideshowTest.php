@@ -3,18 +3,12 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\Lessons\Pages\EditLesson;
-use App\Jobs\ConvertLessonSlideshowToPdfJob;
-use App\Jobs\PushLessonSlideshowToBunnyJob;
 use App\Models\Lesson;
 use App\Models\LessonSlideshow;
 use App\Models\Module;
 use App\Models\User;
-use App\Services\CloudConvert\CloudConvertClient;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Queue;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -29,189 +23,100 @@ class LessonSlideshowTest extends TestCase
         $this->seed(RoleSeeder::class);
     }
 
-    public function test_a_student_is_denied_access_to_a_slideshow(): void
+    public function test_it_extracts_the_presentation_id_from_a_valid_google_slides_url(): void
     {
-        Storage::fake('bunny');
+        $this->assertSame(
+            'abc123XYZ',
+            LessonSlideshow::extractPresentationId('https://docs.google.com/presentation/d/abc123XYZ/edit#slide=id.p'),
+        );
 
-        $student = User::factory()->student()->create();
-        $slideshow = LessonSlideshow::factory()->create();
-
-        $this->actingAs($student)
-            ->getJson(route('lessons.slideshow.playback-token', $slideshow->lesson))
-            ->assertForbidden();
+        $this->assertSame(
+            'abc123XYZ',
+            LessonSlideshow::extractPresentationId('https://docs.google.com/presentation/d/abc123XYZ/edit'),
+        );
     }
 
-    public function test_a_teacher_can_view_a_ready_slideshow(): void
+    public function test_it_returns_null_for_a_non_google_url(): void
     {
-        Storage::fake('bunny');
-
-        $teacher = User::factory()->teacher()->create();
-        $slideshow = LessonSlideshow::factory()->create();
-
-        $this->actingAs($teacher)
-            ->getJson(route('lessons.slideshow.playback-token', $slideshow->lesson))
-            ->assertOk()
-            ->assertJsonStructure(['url']);
+        $this->assertNull(LessonSlideshow::extractPresentationId('https://example.com/presentation/d/abc123XYZ/edit'));
     }
 
-    public function test_an_admin_can_view_a_ready_slideshow(): void
+    public function test_it_returns_null_for_a_google_url_that_is_not_a_presentation(): void
     {
-        Storage::fake('bunny');
-
-        $admin = User::factory()->admin()->create();
-        $slideshow = LessonSlideshow::factory()->create();
-
-        $this->actingAs($admin)
-            ->getJson(route('lessons.slideshow.playback-token', $slideshow->lesson))
-            ->assertOk();
+        $this->assertNull(LessonSlideshow::extractPresentationId('https://docs.google.com/document/d/abc123XYZ/edit'));
     }
 
-    public function test_a_guest_is_redirected_to_login(): void
+    public function test_it_returns_null_for_a_blank_url(): void
     {
-        $slideshow = LessonSlideshow::factory()->create();
-
-        $this->get(route('lessons.slideshow.playback-token', $slideshow->lesson))
-            ->assertRedirect(route('login'));
+        $this->assertNull(LessonSlideshow::extractPresentationId(null));
+        $this->assertNull(LessonSlideshow::extractPresentationId(''));
     }
 
-    public function test_a_slideshow_still_converting_returns_not_found(): void
+    public function test_admin_saving_a_valid_google_slides_url_upserts_the_slideshow(): void
     {
-        $student = User::factory()->student()->create();
-        $slideshow = LessonSlideshow::factory()->pending()->create();
-
-        $this->actingAs($student)
-            ->getJson(route('lessons.slideshow.playback-token', $slideshow->lesson))
-            ->assertNotFound();
-    }
-
-    public function test_a_lesson_with_no_slideshow_returns_not_found(): void
-    {
-        $student = User::factory()->student()->create();
-        $lesson = Lesson::factory()->create();
-
-        $this->actingAs($student)
-            ->getJson(route('lessons.slideshow.playback-token', $lesson))
-            ->assertNotFound();
-    }
-
-    public function test_the_playback_url_is_freshly_generated_and_expiring_per_request(): void
-    {
-        Storage::fake('bunny');
-
-        $teacher = User::factory()->teacher()->create();
-        $slideshow = LessonSlideshow::factory()->create();
-
-        $first = $this->actingAs($teacher)->getJson(route('lessons.slideshow.playback-token', $slideshow->lesson))->json('url');
-        $this->travel(1)->seconds();
-        $second = $this->actingAs($teacher)->getJson(route('lessons.slideshow.playback-token', $slideshow->lesson))->json('url');
-
-        $this->assertNotSame($first, $second);
-    }
-
-    public function test_the_bunny_push_job_stores_a_pdf_upload_directly(): void
-    {
-        Storage::fake('local');
-        Storage::fake('bunny');
-        Storage::disk('local')->put('lesson-slideshow-uploads/deck.pdf', 'fake pdf bytes');
-
-        $slideshow = LessonSlideshow::factory()->pending()->create();
-
-        (new PushLessonSlideshowToBunnyJob($slideshow, 'local', 'lesson-slideshow-uploads/deck.pdf'))->handle();
-
-        $slideshow->refresh();
-        $this->assertNotNull($slideshow->file_path);
-        Storage::disk('bunny')->assertExists($slideshow->file_path);
-        Storage::disk('local')->assertMissing('lesson-slideshow-uploads/deck.pdf');
-    }
-
-    public function test_the_conversion_job_converts_a_pptx_upload_via_cloudconvert_then_pushes_to_bunny(): void
-    {
-        Storage::fake('local');
-        Storage::fake('bunny');
-        Storage::disk('local')->put('lesson-slideshow-uploads/deck.pptx', 'fake pptx bytes');
-
-        $slideshow = LessonSlideshow::factory()->pending()->create();
-
-        $pdfStream = fopen('php://temp', 'r+');
-        fwrite($pdfStream, 'converted pdf bytes');
-        rewind($pdfStream);
-
-        $cloudConvert = $this->createMock(CloudConvertClient::class);
-        $cloudConvert->expects($this->once())
-            ->method('convertToPdf')
-            ->willReturn($pdfStream);
-        $this->app->instance(CloudConvertClient::class, $cloudConvert);
-
-        (new ConvertLessonSlideshowToPdfJob($slideshow, 'local', 'lesson-slideshow-uploads/deck.pptx'))
-            ->handle($this->app->make(CloudConvertClient::class));
-
-        $slideshow->refresh();
-        $this->assertNotNull($slideshow->file_path);
-        Storage::disk('bunny')->assertExists($slideshow->file_path);
-        $this->assertSame('converted pdf bytes', Storage::disk('bunny')->get($slideshow->file_path));
-        Storage::disk('local')->assertMissing('lesson-slideshow-uploads/deck.pptx');
-    }
-
-    public function test_admin_uploading_a_pdf_dispatches_the_direct_push_job(): void
-    {
-        Storage::fake('local');
-        Queue::fake();
-
         $admin = User::factory()->admin()->create();
         $lesson = Lesson::factory()->create();
 
         $this->actingAs($admin);
 
         Livewire::test(EditLesson::class, ['record' => $lesson->getRouteKey()])
-            ->callAction('uploadSlideshow', data: [
-                'file' => UploadedFile::fake()->create('deck.pdf', 500, 'application/pdf'),
-            ])
-            ->assertHasNoActionErrors();
+            ->fillForm(['slideshow_google_url' => 'https://docs.google.com/presentation/d/abc123XYZ/edit'])
+            ->call('save')
+            ->assertHasNoFormErrors();
 
-        $this->assertDatabaseHas('lesson_slideshows', ['lesson_id' => $lesson->id, 'locale' => 'en']);
-        Queue::assertPushed(PushLessonSlideshowToBunnyJob::class);
-        Queue::assertNotPushed(ConvertLessonSlideshowToPdfJob::class);
+        $this->assertDatabaseHas('lesson_slideshows', [
+            'lesson_id' => $lesson->id,
+            'locale' => 'en',
+            'google_slides_url' => 'https://docs.google.com/presentation/d/abc123XYZ/edit',
+            'google_slides_id' => 'abc123XYZ',
+        ]);
     }
 
-    public function test_admin_uploading_a_pptx_dispatches_the_conversion_job(): void
+    public function test_admin_saving_an_invalid_google_slides_url_fails_validation(): void
     {
-        Storage::fake('local');
-        Queue::fake();
-
         $admin = User::factory()->admin()->create();
         $lesson = Lesson::factory()->create();
 
         $this->actingAs($admin);
 
         Livewire::test(EditLesson::class, ['record' => $lesson->getRouteKey()])
-            ->callAction('uploadSlideshow', data: [
-                'file' => UploadedFile::fake()->create(
-                    'deck.pptx',
-                    500,
-                    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                ),
-            ])
-            ->assertHasNoActionErrors();
+            ->fillForm(['slideshow_google_url' => 'https://example.com/not-a-slideshow'])
+            ->call('save')
+            ->assertHasFormErrors(['slideshow_google_url']);
 
-        Queue::assertPushed(ConvertLessonSlideshowToPdfJob::class);
-        Queue::assertNotPushed(PushLessonSlideshowToBunnyJob::class);
+        $this->assertDatabaseMissing('lesson_slideshows', ['lesson_id' => $lesson->id]);
     }
 
-    public function test_the_lms_course_detail_reports_slideshow_readiness(): void
+    public function test_admin_blanking_the_url_deletes_the_slideshow(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $lesson = Lesson::factory()->create();
+        LessonSlideshow::factory()->for($lesson)->create();
+
+        $this->actingAs($admin);
+
+        Livewire::test(EditLesson::class, ['record' => $lesson->getRouteKey()])
+            ->fillForm(['slideshow_google_url' => null])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertDatabaseMissing('lesson_slideshows', ['lesson_id' => $lesson->id]);
+    }
+
+    public function test_the_lms_course_detail_exposes_the_slideshow_embed_id(): void
     {
         $teacher = User::factory()->teacher()->create();
         $module = Module::factory()->create();
-        $lessonReady = Lesson::factory()->for($module)->create();
-        $lessonPending = Lesson::factory()->for($module)->create();
+        $lessonWithSlideshow = Lesson::factory()->for($module)->create();
+        $lessonWithoutSlideshow = Lesson::factory()->for($module)->create();
 
-        LessonSlideshow::factory()->for($lessonReady)->create();
-        LessonSlideshow::factory()->pending()->for($lessonPending)->create();
+        LessonSlideshow::factory()->for($lessonWithSlideshow)->create(['google_slides_id' => 'abc123XYZ']);
 
         $this->actingAs($teacher)
             ->get(route('lms.show', $module->course))
             ->assertInertia(fn ($page) => $page->component('teacher/Lms/Show')
-                ->where('course.modules.0.lessons.0.has_slideshow', true)
-                ->where('course.modules.0.lessons.1.has_slideshow', false)
+                ->where('course.modules.0.lessons.0.slideshow.google_slides_id', 'abc123XYZ')
+                ->where('course.modules.0.lessons.1.slideshow', null)
             );
     }
 }

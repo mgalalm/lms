@@ -8,10 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * Admin-authored slideshow (PowerPoint-style, PDF-backed) for a lesson.
+ * Admin-authored slideshow for a lesson, embedded from Google Slides.
  * Distinct from LessonVideo, LessonTutorGuide, and a ClassSession's recap.
- * No draft/published state (unlike LessonVideo) — file_path being set is
- * the only readiness signal, matching this model's minimal schema.
+ * No draft/published state (unlike LessonVideo) — google_slides_id being
+ * set is the only readiness signal, matching this model's minimal schema.
  */
 class LessonSlideshow extends Model
 {
@@ -26,7 +26,8 @@ class LessonSlideshow extends Model
     protected $fillable = [
         'lesson_id',
         'locale',
-        'file_path',
+        'google_slides_url',
+        'google_slides_id',
     ];
 
     public function lesson(): BelongsTo
@@ -35,11 +36,28 @@ class LessonSlideshow extends Model
     }
 
     /**
-     * Whether the PDF is ready to view — false while a PPTX upload is
-     * still being converted.
+     * Extract the presentation ID from a docs.google.com/presentation/d/{id}/...
+     * URL. Returns null for anything that isn't a well-formed Google Slides
+     * presentation URL, mirroring NotionSyncService::extractPageId()'s shape.
      */
-    public function isReady(): bool
+    public static function extractPresentationId(?string $url): ?string
     {
-        return $this->file_path !== null;
+        if (blank($url)) {
+            return null;
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+
+        if (! $host || ! preg_match('/(^|\.)docs\.google\.com$/', $host)) {
+            return null;
+        }
+
+        $path = parse_url($url, PHP_URL_PATH);
+
+        if (! $path || ! preg_match('#^/presentation/d/([a-zA-Z0-9_-]+)#', $path, $matches)) {
+            return null;
+        }
+
+        return $matches[1];
     }
 }

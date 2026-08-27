@@ -18,15 +18,21 @@ class LessonSlideshowFactory extends Factory
      */
     public function definition(): array
     {
+        $id = fake()->regexify('[a-zA-Z0-9_-]{44}');
+
         return [
             'lesson_id' => Lesson::factory(),
             'locale' => 'en',
-            'file_path' => 'lesson-slideshows/'.fake()->uuid().'.pdf',
+            'google_slides_url' => "https://docs.google.com/presentation/d/{$id}/edit",
+            'google_slides_id' => $id,
         ];
     }
 
-    public function pending(): static
+    public function empty(): static
     {
-        return $this->state(fn (array $attributes) => ['file_path' => null]);
+        return $this->state(fn (array $attributes) => [
+            'google_slides_url' => null,
+            'google_slides_id' => null,
+        ]);
     }
 }

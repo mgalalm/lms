@@ -4,10 +4,9 @@ namespace App\Filament\Resources\Lessons\Pages;
 
 use App\Enums\LessonVideoStatus;
 use App\Filament\Resources\Lessons\LessonResource;
-use App\Jobs\ConvertLessonSlideshowToPdfJob;
-use App\Jobs\PushLessonSlideshowToBunnyJob;
 use App\Jobs\PushLessonVideoToBunnyJob;
 use App\Jobs\SyncNotionContentJob;
+use App\Models\LessonSlideshow;
 use App\Services\Notion\NotionSyncService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -39,6 +38,8 @@ class EditLesson extends EditRecord
         $data['project_title'] = $project?->title;
         $data['project_brief'] = $project?->brief;
         $data['project_is_required'] = $project?->is_required ?? false;
+
+        $data['slideshow_google_url'] = $this->record->slideshow?->google_slides_url;
 
         return $data;
     }
@@ -77,6 +78,22 @@ class EditLesson extends EditRecord
         }
 
         $this->record->unsetRelation('project');
+
+        $slideshowUrl = $this->data['slideshow_google_url'] ?? null;
+
+        if (filled($slideshowUrl)) {
+            $this->record->slideshow()->updateOrCreate(
+                ['locale' => 'en'],
+                [
+                    'google_slides_url' => $slideshowUrl,
+                    'google_slides_id' => LessonSlideshow::extractPresentationId($slideshowUrl),
+                ],
+            );
+        } else {
+            $this->record->slideshow()->delete();
+        }
+
+        $this->record->unsetRelation('slideshow');
     }
 
     protected function getHeaderActions(): array
@@ -120,41 +137,10 @@ class EditLesson extends EditRecord
                 ->disabled(fn () => $this->record->video?->status !== LessonVideoStatus::Draft)
                 ->requiresConfirmation()
                 ->action(fn () => $this->record->video->publish()),
-            Action::make('uploadSlideshow')
-                ->label(fn () => $this->record->slideshow ? 'Replace Slideshow' : 'Upload Slideshow')
-                ->icon(Heroicon::OutlinedPresentationChartBar)
-                ->schema([
-                    FileUpload::make('file')
-                        ->label('Slideshow File (PPTX or PDF)')
-                        ->disk('local')
-                        ->directory('lesson-slideshow-uploads')
-                        ->visibility('private')
-                        ->acceptedFileTypes([
-                            'application/pdf',
-                            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                        ])
-                        ->maxSize(512000)
-                        ->required(),
-                ])
-                ->action(function (array $data) {
-                    $slideshow = $this->record->slideshow()->updateOrCreate(
-                        ['locale' => 'en'],
-                        ['file_path' => null],
-                    );
-
-                    if (strtolower(pathinfo($data['file'], PATHINFO_EXTENSION)) === 'pdf') {
-                        PushLessonSlideshowToBunnyJob::dispatch($slideshow, 'local', $data['file']);
-                    } else {
-                        ConvertLessonSlideshowToPdfJob::dispatch($slideshow, 'local', $data['file']);
-                    }
-
-                    $this->record->unsetRelation('slideshow');
-                }),
-            // Grouped rather than two standalone buttons — the tutor
-            // guide's video/slideshow/delete actions already fill the
-            // header, and a labeled dropdown keeps both Notion actions
-            // reachable without squeezing the page title into a narrow
-            // wrapping column.
+            // Grouped rather than two standalone buttons — the video/
+            // delete actions already fill the header, and a labeled
+            // dropdown keeps both Notion actions reachable without
+            // squeezing the page title into a narrow wrapping column.
             ActionGroup::make([
                 Action::make('syncFromNotion')
                     ->label('Sync from Notion')
