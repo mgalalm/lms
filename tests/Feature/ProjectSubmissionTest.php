@@ -73,6 +73,47 @@ class ProjectSubmissionTest extends TestCase
         $this->assertSame(2, ProjectSubmission::where('lesson_project_id', $project->id)->where('student_id', $student->id)->count());
     }
 
+    public function test_a_student_can_view_their_own_submission_screenshot(): void
+    {
+        Storage::fake('bunny');
+
+        $student = User::factory()->student()->create();
+        $submission = ProjectSubmission::factory()->create(['student_id' => $student->id]);
+        $media = $submission->addMedia(UploadedFile::fake()->image('shot.png'))->toMediaCollection('screenshots');
+
+        $this->actingAs($student)
+            ->get(route('project-submissions.media', ['projectSubmission' => $submission, 'media' => $media]))
+            ->assertOk()
+            ->assertHeader('content-type', 'image/png');
+    }
+
+    public function test_a_teacher_not_assigned_cannot_view_a_screenshot(): void
+    {
+        Storage::fake('bunny');
+
+        $teacher = User::factory()->teacher()->create();
+        $submission = ProjectSubmission::factory()->create();
+        $media = $submission->addMedia(UploadedFile::fake()->image('shot.png'))->toMediaCollection('screenshots');
+
+        $this->actingAs($teacher)
+            ->get(route('project-submissions.media', ['projectSubmission' => $submission, 'media' => $media]))
+            ->assertForbidden();
+    }
+
+    public function test_a_screenshot_must_belong_to_the_requested_submission(): void
+    {
+        Storage::fake('bunny');
+
+        $student = User::factory()->student()->create();
+        $submission = ProjectSubmission::factory()->create(['student_id' => $student->id]);
+        $otherSubmission = ProjectSubmission::factory()->create();
+        $media = $otherSubmission->addMedia(UploadedFile::fake()->image('shot.png'))->toMediaCollection('screenshots');
+
+        $this->actingAs($student)
+            ->get(route('project-submissions.media', ['projectSubmission' => $submission, 'media' => $media]))
+            ->assertNotFound();
+    }
+
     public function test_a_teacher_can_view_a_submission_from_a_student_assigned_to_them(): void
     {
         $teacher = User::factory()->teacher()->create();

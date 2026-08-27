@@ -21,9 +21,13 @@ class ProjectSubmissionResource extends JsonResource
             'live_url' => $this->live_url,
             'status' => $this->status->value,
             'submitted_at' => $this->submitted_at->toIso8601String(),
+            // Not $media->getUrl() — the 'bunny' disk has no public CDN
+            // hostname configured, so that never resolves to a working
+            // URL (same reason LessonTutorGuide's images are served via
+            // their own controller route instead of linked directly).
             'screenshots' => $this->getMedia('screenshots')->map(fn ($media) => [
                 'id' => $media->id,
-                'url' => $media->getUrl(),
+                'url' => route('project-submissions.media', ['projectSubmission' => $this->id, 'media' => $media->id]),
             ])->values(),
             'feedback' => $this->whenLoaded('feedback', fn () => $this->feedback ? new ProjectFeedbackResource($this->feedback) : null),
             'lesson_project' => $this->whenLoaded('lessonProject', fn () => new LessonProjectResource($this->lessonProject)),

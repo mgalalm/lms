@@ -1,17 +1,10 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import type { FeedbackSentiment, FeedbackTemplate, ProjectSubmission } from '@/types';
 import { useForm } from '@inertiajs/vue3';
+import { onClickOutside } from '@vueuse/core';
 import { ChevronDown, Star } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
@@ -57,7 +50,15 @@ const templatesBySentiment = computed(() => {
 
 function applyTemplate(body: string): void {
     form.comment = form.comment ? `${form.comment}\n\n${body}` : body;
+    templateMenuOpen.value = false;
 }
+
+// A plain toggled panel rather than the Radix DropdownMenu component —
+// nested inside this form's parent Dialog (also a Radix portal/focus-trap
+// primitive), the dropdown's own portal never actually opened.
+const templateMenuOpen = ref(false);
+const templateMenuRef = ref<HTMLElement | null>(null);
+onClickOutside(templateMenuRef, () => (templateMenuOpen.value = false));
 
 function submit(): void {
     form.post(route('teaching.projects.feedback', props.submission.id), {
@@ -99,23 +100,29 @@ function submit(): void {
         <div>
             <div class="mb-1 flex items-center justify-between">
                 <label class="text-xs font-medium text-muted-foreground" for="feedback-comment">Comment</label>
-                <DropdownMenu>
-                    <DropdownMenuTrigger as-child>
-                        <Button type="button" variant="ghost" size="sm" class="h-6 text-xs">
-                            Use a template
-                            <ChevronDown class="ml-1 size-3" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" class="w-72">
+                <div ref="templateMenuRef" class="relative">
+                    <Button type="button" variant="ghost" size="sm" class="h-6 text-xs" @click="templateMenuOpen = !templateMenuOpen">
+                        Use a template
+                        <ChevronDown class="ml-1 size-3" />
+                    </Button>
+                    <div
+                        v-if="templateMenuOpen"
+                        class="absolute right-0 z-50 mt-1 max-h-80 w-72 overflow-y-auto rounded-md border border-sidebar-border/70 bg-popover p-1 shadow-md dark:border-sidebar-border"
+                    >
                         <template v-for="(group, sentiment) in templatesBySentiment" :key="sentiment">
-                            <DropdownMenuLabel class="text-xs text-muted-foreground">{{ SENTIMENT_LABELS[sentiment] }}</DropdownMenuLabel>
-                            <DropdownMenuItem v-for="template in group" :key="template.id" @click="applyTemplate(template.body)">
+                            <p class="px-2 py-1.5 text-xs font-medium text-muted-foreground">{{ SENTIMENT_LABELS[sentiment] }}</p>
+                            <button
+                                v-for="template in group"
+                                :key="template.id"
+                                type="button"
+                                class="block w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
+                                @click="applyTemplate(template.body)"
+                            >
                                 {{ template.label }}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
+                            </button>
                         </template>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                    </div>
+                </div>
             </div>
             <textarea
                 id="feedback-comment"
