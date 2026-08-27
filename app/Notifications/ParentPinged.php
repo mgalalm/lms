@@ -14,6 +14,7 @@ class ParentPinged extends Notification implements ShouldQueue
 
     public function __construct(
         public ClassSession $classSession,
+        public string $message,
     ) {}
 
     /**
@@ -41,9 +42,10 @@ class ParentPinged extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject('A note from '.$teacher->name.' about '.$student->name)
             ->greeting('Hi'.($parentName ? ' '.$parentName : '').',')
-            ->line($teacher->name.', '.$student->name."'s tutor, wanted to reach you about an upcoming session.")
+            ->line($teacher->name.', '.$student->name."'s tutor, wanted to reach out about a session.")
             ->line($this->lessonPath())
             ->line('Scheduled for: '.$scheduledAt->format('l, M j, Y \a\t g:i A T'))
+            ->line($this->message)
             ->line('If you have any questions, please reply to this email or contact us via the support channel in the app.');
     }
 

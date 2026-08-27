@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import EmptyState from '@/components/EmptyState.vue';
 import LessonMaterialsMenu from '@/components/teacher/LessonMaterialsMenu.vue';
+import PingParentDialog from '@/components/teacher/PingParentDialog.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCountdown } from '@/composables/useCountdown';
 import { withDisplayName } from '@/composables/zoomJoinUrl';
 import type { ClassSession, SharedData } from '@/types';
-import { router, usePage } from '@inertiajs/vue3';
+import { usePage } from '@inertiajs/vue3';
 import { CalendarClock } from 'lucide-vue-next';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 const props = withDefaults(
     defineProps<{
@@ -41,13 +42,7 @@ const lessonPath = computed(() => {
     return [lesson.module?.course?.title, lesson.module?.title, lesson.title].filter(Boolean).join(' / ');
 });
 
-function pingParent(): void {
-    if (!props.session) {
-        return;
-    }
-
-    router.post(route('teaching.sessions.ping-parent', props.session.id), {}, { preserveScroll: true });
-}
+const pingParentDialogOpen = ref(false);
 
 const scheduledLabel = computed(() => {
     if (!props.session) {
@@ -122,10 +117,19 @@ const scheduledLabel = computed(() => {
                     </Button>
                     <Button v-else disabled class="w-fit">{{ joinLabel }}</Button>
 
-                    <Button v-if="viewerRole === 'teacher'" variant="outline" class="w-fit" @click="pingParent">Ping Parent</Button>
+                    <Button v-if="viewerRole === 'teacher'" variant="outline" class="w-fit" @click="pingParentDialogOpen = true">
+                        Ping Parent
+                    </Button>
                     <LessonMaterialsMenu v-if="viewerRole === 'teacher'" :lesson="session.lesson" />
                 </div>
             </div>
         </CardContent>
+
+        <PingParentDialog
+            v-if="session && viewerRole === 'teacher'"
+            v-model:open="pingParentDialogOpen"
+            :class-session-id="session.id"
+            :student-name="participant?.name ?? 'the parent'"
+        />
     </Card>
 </template>

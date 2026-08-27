@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import Pagination from '@/components/Pagination.vue';
 import LessonMaterialsMenu from '@/components/teacher/LessonMaterialsMenu.vue';
+import PingParentDialog from '@/components/teacher/PingParentDialog.vue';
 import SupportTicketDialog from '@/components/teacher/SupportTicketDialog.vue';
 import { Button } from '@/components/ui/button';
 import { withDisplayName } from '@/composables/zoomJoinUrl';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem, ClassSession, Paginated, SharedData } from '@/types';
-import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
 import { computed, onBeforeUnmount, ref } from 'vue';
 
 const props = defineProps<{
@@ -63,11 +64,8 @@ function isJoinable(session: ClassSession): boolean {
 
 const hasSessions = computed(() => props.sessions.data.length > 0);
 
-function pingParent(session: ClassSession): void {
-    router.post(route('teaching.sessions.ping-parent', session.id), {}, { preserveScroll: true });
-}
-
 const supportDialogSessionId = ref<number | null>(null);
+const pingParentDialog = ref<{ classSessionId: number; studentName: string } | null>(null);
 </script>
 
 <template>
@@ -129,7 +127,13 @@ const supportDialogSessionId = ref<number | null>(null);
                         </Link>
                         <Button v-else variant="outline" size="sm" @click="supportDialogSessionId = session.id">Support</Button>
 
-                        <Button variant="outline" size="sm" @click="pingParent(session)">Ping Parent</Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            @click="pingParentDialog = { classSessionId: session.id, studentName: session.student?.name ?? 'the parent' }"
+                        >
+                            Ping Parent
+                        </Button>
 
                         <LessonMaterialsMenu :lesson="session.lesson" />
                     </div>
@@ -144,6 +148,14 @@ const supportDialogSessionId = ref<number | null>(null);
             :open="true"
             :class-session-id="supportDialogSessionId"
             @update:open="(value) => !value && (supportDialogSessionId = null)"
+        />
+
+        <PingParentDialog
+            v-if="pingParentDialog"
+            :open="true"
+            :class-session-id="pingParentDialog.classSessionId"
+            :student-name="pingParentDialog.studentName"
+            @update:open="(value) => !value && (pingParentDialog = null)"
         />
     </AppLayout>
 </template>

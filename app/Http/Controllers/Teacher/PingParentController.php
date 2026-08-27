@@ -21,6 +21,10 @@ class PingParentController extends Controller
     {
         abort_unless($classSession->teacher_id === $request->user()->id, 403);
 
+        $data = $request->validate([
+            'message' => ['required', 'string', 'max:2000'],
+        ]);
+
         $classSession->loadMissing('student.studentProfile');
 
         $parentEmail = $classSession->student->studentProfile?->parent_email;
@@ -29,8 +33,8 @@ class PingParentController extends Controller
             return back()->with('error', "No parent email on file for {$classSession->student->name}.");
         }
 
-        Notification::route('mail', $parentEmail)->notify(new ParentPinged($classSession));
+        Notification::route('mail', $parentEmail)->notify(new ParentPinged($classSession, $data['message']));
 
-        return back()->with('success', "Parent notified about {$classSession->student->name}'s upcoming session.");
+        return back()->with('success', "Parent notified about {$classSession->student->name}'s session.");
     }
 }

@@ -37,7 +37,7 @@ class PingParentTest extends TestCase
             ->create(['type' => SessionType::Physical]);
 
         $this->actingAs($teacher)
-            ->post(route('teaching.sessions.ping-parent', $session))
+            ->post(route('teaching.sessions.ping-parent', $session), ['message' => 'Please make sure they log in a bit earlier next time.'])
             ->assertRedirect()
             ->assertSessionHas('success');
 
@@ -45,7 +45,27 @@ class PingParentTest extends TestCase
             ParentPinged::class,
             fn (ParentPinged $notification, array $channels, AnonymousNotifiable $notifiable) => $notifiable->routes['mail'] === 'parent@example.com'
                 && $notification->classSession->is($session)
+                && $notification->message === 'Please make sure they log in a bit earlier next time.'
         );
+    }
+
+    public function test_pinging_without_a_message_fails_validation(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $student = User::factory()->student()->create();
+
+        $session = ClassSession::factory()
+            ->for($teacher, 'teacher')
+            ->for($student, 'student')
+            ->create(['type' => SessionType::Physical]);
+
+        Notification::fake();
+
+        $this->actingAs($teacher)
+            ->post(route('teaching.sessions.ping-parent', $session), ['message' => ''])
+            ->assertSessionHasErrors('message');
+
+        Notification::assertNothingSent();
     }
 
     public function test_pinging_a_student_with_no_parent_email_on_file_flashes_an_error(): void
@@ -61,7 +81,7 @@ class PingParentTest extends TestCase
         Notification::fake();
 
         $this->actingAs($teacher)
-            ->post(route('teaching.sessions.ping-parent', $session))
+            ->post(route('teaching.sessions.ping-parent', $session), ['message' => 'Just checking in.'])
             ->assertRedirect()
             ->assertSessionHas('error');
 
