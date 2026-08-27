@@ -166,7 +166,7 @@ class LessonForm
                                     return null;
                                 }
 
-                                $url = "https://docs.google.com/presentation/d/{$id}/embed?rm=minimal";
+                                $url = "https://docs.google.com/presentation/d/{$id}/embed";
 
                                 return new HtmlString(
                                     '<iframe src="'.e($url).'" class="aspect-video w-full max-w-xl rounded-lg" allowfullscreen></iframe>'

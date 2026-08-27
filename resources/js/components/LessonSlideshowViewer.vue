@@ -43,7 +43,7 @@ onUnmounted(() => {
         >
             <div class="aspect-video w-full overflow-hidden rounded-lg border border-sidebar-border/70 dark:border-sidebar-border">
                 <iframe
-                    :src="`https://docs.google.com/presentation/d/${googleSlidesId}/embed?rm=minimal`"
+                    :src="`https://docs.google.com/presentation/d/${googleSlidesId}/embed`"
                     class="h-full w-full"
                     allowfullscreen
                 ></iframe>
