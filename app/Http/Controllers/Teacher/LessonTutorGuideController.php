@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Teacher;
 
+use App\Enums\TeacherTaskType;
 use App\Http\Controllers\Controller;
 use App\Models\Lesson;
 use App\Models\LessonTutorGuide;
+use App\Models\TeacherTask;
 use App\Support\Markdown\TutorGuideMarkdownRenderer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -23,6 +25,13 @@ class LessonTutorGuideController extends Controller
         $guide = $lesson->tutorGuide;
 
         Gate::authorize('view', $guide ?? LessonTutorGuide::make(['lesson_id' => $lesson->id]));
+
+        // Prepping resolves the reminder — no manual checkbox needed.
+        TeacherTask::where('teacher_id', $request->user()->id)
+            ->where('lesson_id', $lesson->id)
+            ->where('type', TeacherTaskType::SessionPrep)
+            ->whereNull('completed_at')
+            ->update(['completed_at' => now()]);
 
         $introMarkdown = $guide?->introMarkdown();
 

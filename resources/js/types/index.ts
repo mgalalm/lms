@@ -365,6 +365,21 @@ export interface FeedbackTemplate {
     sentiment: FeedbackSentiment;
 }
 
+export type TeacherTaskType = 'session_prep' | 'session_review' | 'manual';
+
+export interface TeacherTask {
+    id: number;
+    title: string;
+    description: string | null;
+    type: TeacherTaskType;
+    due_at: string;
+    completed_at: string | null;
+    is_overdue: boolean;
+    class_session_id: number | null;
+    lesson_id: number | null;
+    lesson?: { id: number; title: string } | null;
+}
+
 export interface LessonProgress {
     module_title: string | null;
     completed: number;

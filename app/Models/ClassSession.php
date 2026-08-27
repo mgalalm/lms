@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\SessionStatus;
 use App\Enums\SessionType;
+use App\Enums\TeacherTaskType;
 use App\Observers\ClassSessionObserver;
 use Database\Factories\ClassSessionFactory;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -107,6 +108,15 @@ class ClassSession extends Model
     public function latestSupportTicket(): HasOne
     {
         return $this->hasOne(SupportTicket::class)->latestOfMany();
+    }
+
+    /**
+     * This session's session_prep TeacherTask, if one has been generated
+     * (see GenerateSessionPrepTasksCommand).
+     */
+    public function prepTask(): HasOne
+    {
+        return $this->hasOne(TeacherTask::class)->where('type', TeacherTaskType::SessionPrep);
     }
 
     /**

@@ -31,7 +31,17 @@ function toggleVideo(lessonId: number): void {
 }
 
 function toggleSlideshow(lessonId: number): void {
+    const opening = !expandedSlideshowLessonIds.value.has(lessonId);
+
     expandedSlideshowLessonIds.value = toggleExpanded(expandedSlideshowLessonIds.value, lessonId);
+
+    if (opening) {
+        // Resolves the lesson's session_prep task(s) — see
+        // LessonSlideshowViewedController. Fire-and-forget: the embed
+        // itself is a plain client-side iframe with no backend hit of
+        // its own, so this is the only signal the teacher opened it.
+        router.post(route('lessons.slideshow.viewed', lessonId), {}, { preserveScroll: true, preserveState: true });
+    }
 }
 
 const breadcrumbs: BreadcrumbItem[] = [

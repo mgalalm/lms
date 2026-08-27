@@ -235,7 +235,8 @@ class RoleDashboardTest extends TestCase
 
         $this->actingAs($teacher)
             ->get(route('teaching.sessions-schedule'))
-            ->assertInertia(fn (Assert $page) => $page->component('teacher/SessionsSchedule')
+            ->assertInertia(fn (Assert $page) => $page->component('teacher/Teaching')
+                ->where('activeTab', 'sessions')
                 ->where('filter', 'upcoming')
                 ->count('sessions.data', 3)
             );

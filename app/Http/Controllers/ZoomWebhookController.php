@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Enums\SessionStatus;
+use App\Enums\TeacherTaskType;
 use App\Models\ClassSession;
+use App\Models\TeacherTask;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -70,6 +72,17 @@ class ZoomWebhookController extends Controller
                 'status' => SessionStatus::Completed,
                 'ended_at' => now(),
             ]);
+
+            TeacherTask::firstOrCreate(
+                ['class_session_id' => $session->id, 'type' => TeacherTaskType::SessionReview],
+                [
+                    'teacher_id' => $session->teacher_id,
+                    'title' => "Review Session – {$session->lesson->title}",
+                    'description' => "Log notes/feedback for {$session->student->name}'s completed session on \"{$session->lesson->title}\".",
+                    'lesson_id' => $session->lesson_id,
+                    'due_at' => now()->addHours((int) config('teaching.task_review_due_hours')),
+                ],
+            );
         }
 
         return response()->noContent();
@@ -101,6 +114,6 @@ class ZoomWebhookController extends Controller
             return null;
         }
 
-        return ClassSession::where('zoom_meeting_id', $meetingId)->first();
+        return ClassSession::where('zoom_meeting_id', $meetingId)->with(['lesson', 'student'])->first();
     }
 }
