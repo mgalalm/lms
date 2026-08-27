@@ -21,6 +21,7 @@ class ClassSessionResource extends JsonResource
             'scheduled_at' => $this->scheduled_at->toIso8601String(),
             'join_url' => $this->when($request->user()?->id === $this->student_id, $this->zoom_join_url),
             'start_url' => $this->when($request->user()?->id === $this->teacher_id, $this->zoom_start_url),
+            'recap_url' => $this->when($request->user()?->id === $this->teacher_id, $this->zoom_recap_url),
             'lesson' => new LessonResource($this->whenLoaded('lesson')),
             'teacher' => $this->whenLoaded('teacher', fn () => [
                 'id' => $this->teacher->id,

@@ -182,6 +182,33 @@ class RoleDashboardTest extends TestCase
             );
     }
 
+    public function test_the_student_dashboard_never_exposes_a_recap_url(): void
+    {
+        // Recaps are for teacher review, not student rewatch (see
+        // ClassSessionPolicy::viewRecap()) — the resource must never leak
+        // the URL to a student regardless of viewer identity.
+        $student = User::factory()->student()->create();
+        ClassSession::factory()
+            ->for($student, 'student')
+            ->create(['zoom_meeting_id' => 'test-meeting', 'zoom_recap_url' => 'https://zoom.us/rec/play/abc123']);
+
+        $this->actingAs($student)
+            ->get('/dashboard')
+            ->assertInertia(fn (Assert $page) => $page->missing('nextSession.recap_url'));
+    }
+
+    public function test_sessions_schedule_exposes_the_recap_url_to_the_teacher(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        ClassSession::factory()
+            ->for($teacher, 'teacher')
+            ->create(['zoom_meeting_id' => 'test-meeting', 'zoom_recap_url' => 'https://zoom.us/rec/play/abc123']);
+
+        $this->actingAs($teacher)
+            ->get(route('teaching.sessions-schedule'))
+            ->assertInertia(fn (Assert $page) => $page->where('sessions.data.0.recap_url', 'https://zoom.us/rec/play/abc123'));
+    }
+
     public function test_users_without_a_student_or_teacher_role_see_the_generic_dashboard(): void
     {
         $user = User::factory()->create();

@@ -103,7 +103,6 @@ class DashboardController extends Controller
                 'reading_content' => $currentLesson->reading_content,
                 'module_title' => $currentLesson->module?->title,
                 'course_title' => $currentLesson->module?->course?->title,
-                'recap' => $currentSession?->zoom_recap_url ? ['class_session_id' => $currentSession->id] : null,
                 'video' => $currentLesson->video?->status === LessonVideoStatus::Published
                     ? ['duration_seconds' => $currentLesson->video->duration_seconds]
                     : null,

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { CurrentLesson, ProjectSubmission } from '@/types';
-import { BookOpen, HelpCircle, Loader2, PackagePlus, Play, Video } from 'lucide-vue-next';
+import { BookOpen, HelpCircle, Loader2, PackagePlus, Video } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
 const props = defineProps<{
@@ -15,7 +15,7 @@ const props = defineProps<{
 
 const lessonPath = computed(() => [props.lesson?.course_title, props.lesson?.module_title].filter(Boolean).join(' / '));
 
-const activeTab = ref('recap');
+const activeTab = ref('video');
 const videoPlaybackUrl = ref<string | null>(null);
 const videoTokenLoading = ref(false);
 const videoTokenError = ref(false);
@@ -80,33 +80,11 @@ watch(
 
                 <Tabs v-model="activeTab">
                     <TabsList>
-                        <TabsTrigger value="recap">Recap</TabsTrigger>
                         <TabsTrigger value="video">Video</TabsTrigger>
                         <TabsTrigger value="reading">Reading</TabsTrigger>
                         <TabsTrigger value="quiz">Quiz</TabsTrigger>
                         <TabsTrigger v-if="lesson.project" value="project">Project</TabsTrigger>
                     </TabsList>
-
-                    <TabsContent value="recap">
-                        <div class="flex aspect-video flex-col items-center justify-center gap-3 rounded-lg bg-muted">
-                            <div class="flex size-12 items-center justify-center rounded-full bg-background/80 text-primary">
-                                <Play class="size-6" />
-                            </div>
-                            <p class="text-xs text-muted-foreground">Session recap video</p>
-                        </div>
-                        <Button
-                            v-if="lesson.recap"
-                            as="a"
-                            :href="route('sessions.recap', lesson.recap.class_session_id)"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="mt-3 w-fit"
-                            size="sm"
-                        >
-                            Watch Recap
-                        </Button>
-                        <Button v-else disabled class="mt-3 w-fit" size="sm">Recap not available yet</Button>
-                    </TabsContent>
 
                     <TabsContent value="video">
                         <div v-if="!lesson.video">

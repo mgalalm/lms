@@ -9,13 +9,13 @@ use App\Models\User;
 class ClassSessionPolicy
 {
     /**
-     * Determine whether the user can watch this session's recording — the
-     * student who attended, the teacher who taught it, or an admin.
+     * Determine whether the user can watch this session's recording —
+     * the teacher who taught it, or an admin. Not the student: recaps
+     * are for teacher review, not student rewatch.
      */
     public function viewRecap(User $user, ClassSession $classSession): bool
     {
-        return $user->id === $classSession->student_id
-            || $user->id === $classSession->teacher_id
+        return $user->id === $classSession->teacher_id
             || $user->hasRole(UserRole::Admin->value);
     }
 }

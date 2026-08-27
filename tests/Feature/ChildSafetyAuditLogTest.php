@@ -46,6 +46,25 @@ class ChildSafetyAuditLogTest extends TestCase
         $this->assertSame('127.0.0.1', $activity->properties['ip'] ?? null);
     }
 
+    public function test_a_student_cannot_view_their_own_recording(): void
+    {
+        // Recaps are for teacher review, not student rewatch — this is a
+        // deliberate policy change (see ClassSessionPolicy::viewRecap()),
+        // not an oversight.
+        $teacher = User::factory()->teacher()->create();
+        $student = User::factory()->student()->create();
+        $session = ClassSession::factory()
+            ->for($teacher, 'teacher')
+            ->for($student, 'student')
+            ->create(['type' => SessionType::Physical, 'zoom_recap_url' => 'https://zoom.us/rec/play/abc123']);
+
+        $this->actingAs($student)
+            ->get(route('sessions.recap', $session))
+            ->assertForbidden();
+
+        $this->assertNull(Activity::first());
+    }
+
     public function test_a_student_cannot_view_another_students_recording(): void
     {
         $teacher = User::factory()->teacher()->create();
@@ -72,7 +91,7 @@ class ChildSafetyAuditLogTest extends TestCase
             ->for($student, 'student')
             ->create(['type' => SessionType::Physical, 'zoom_recap_url' => null]);
 
-        $this->actingAs($student)
+        $this->actingAs($teacher)
             ->get(route('sessions.recap', $session))
             ->assertNotFound();
 

@@ -110,6 +110,18 @@ const supportDialogSessionId = ref<number | null>(null);
                         </Button>
                         <Button v-else disabled size="sm">Join</Button>
 
+                        <Button
+                            v-if="session.recap_url"
+                            as="a"
+                            :href="route('sessions.recap', session.id)"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            variant="outline"
+                            size="sm"
+                        >
+                            Watch Recap
+                        </Button>
+
                         <Link v-if="session.latest_support_ticket" :href="route('teaching.support-tickets.show', session.latest_support_ticket.id)">
                             <Button variant="outline" size="sm">
                                 {{ session.latest_support_ticket.status === 'resolved' ? 'Ticket Resolved' : 'View Ticket' }}
