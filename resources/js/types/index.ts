@@ -380,6 +380,24 @@ export interface TeacherTask {
     lesson?: { id: number; title: string } | null;
 }
 
+export type TeachingFeedItemType = 'session' | 'project' | 'task';
+
+export interface TeachingFeedItem {
+    id: string;
+    type: TeachingFeedItemType;
+    is_overdue: boolean;
+    at: string;
+    session: ClassSession | null;
+    project: ProjectSubmission | null;
+    task: TeacherTask | null;
+}
+
+export interface TeachingFeedGroup {
+    key: 'needs_attention' | 'today' | 'awaiting_review' | 'this_week';
+    label: string;
+    items: TeachingFeedItem[];
+}
+
 export interface LessonProgress {
     module_title: string | null;
     completed: number;

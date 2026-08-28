@@ -24,7 +24,7 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/dashboard' 
             <NextSessionCard :session="nextSession" viewer-role="teacher" :timezone="timezone" />
 
             <Button as-child variant="outline" class="w-fit">
-                <Link :href="route('teaching.sessions-schedule')">View Sessions Schedule</Link>
+                <Link :href="route('teaching.index')">Go to Teaching</Link>
             </Button>
 
             <div class="rounded-xl border border-sidebar-border/70 bg-card p-4 dark:border-sidebar-border">

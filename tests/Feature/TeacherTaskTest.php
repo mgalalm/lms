@@ -138,7 +138,7 @@ class TeacherTaskTest extends TestCase
         $this->assertNotNull($task->fresh()->completed_at);
     }
 
-    public function test_a_teacher_only_sees_their_own_tasks_in_the_tasks_tab(): void
+    public function test_a_teacher_only_sees_their_own_tasks_in_the_teaching_feed(): void
     {
         $teacher = User::factory()->teacher()->create();
         $otherTeacher = User::factory()->teacher()->create();
@@ -146,8 +146,8 @@ class TeacherTaskTest extends TestCase
         TeacherTask::factory()->for($otherTeacher, 'teacher')->create();
 
         $this->actingAs($teacher)
-            ->get(route('teaching.tasks.index'))
-            ->assertInertia(fn ($page) => $page->count('tasks.data', 1));
+            ->get(route('teaching.index'))
+            ->assertInertia(fn ($page) => $page->where('chipCounts.tasks', 1));
     }
 
     public function test_the_meeting_ended_webhook_creates_a_review_task(): void

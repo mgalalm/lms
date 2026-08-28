@@ -80,6 +80,6 @@ class ClassSessionScheduled extends Notification implements ShouldQueue
 
     private function url(): string
     {
-        return $this->viewerRole === 'teacher' ? route('teaching.sessions-schedule') : route('dashboard');
+        return $this->viewerRole === 'teacher' ? route('teaching.index') : route('dashboard');
     }
 }

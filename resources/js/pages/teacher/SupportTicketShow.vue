@@ -18,7 +18,7 @@ const viewerId = computed(() => page.props.auth.user.id);
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/dashboard' },
-    { title: 'Sessions Schedule', href: route('teaching.sessions-schedule') },
+    { title: 'Teaching', href: route('teaching.index') },
     { title: props.ticket.code, href: route('teaching.support-tickets.show', props.ticket.id) },
 ];
 

@@ -12,175 +12,226 @@ use App\Models\FeedbackTemplate;
 use App\Models\ProjectSubmission;
 use App\Models\TeacherProfile;
 use App\Models\TeacherTask;
-use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * The teacher-facing /teaching page — Sessions Schedule, Projects, and
- * Tasks as tabs of one page rather than three standalone routes, so
- * teachers have a single place to see what needs their attention. Each
- * tab is still its own real route (deep-linkable, working back button);
- * only the active tab's data is fetched per request.
+ * The teacher-facing /teaching page — a single urgency-grouped feed of
+ * sessions, projects awaiting review, and tasks, rather than separate
+ * tabbed views. Everything a teacher needs to act on lives at one route;
+ * type "chips" filter the already-loaded feed client-side instead of
+ * navigating. Already-handled items (past sessions, reviewed projects)
+ * aren't part of this feed at all — see history() for those.
  */
 class TeachingController extends Controller
 {
     /**
-     * Sessions Schedule tab. Relocated from the now-deleted
-     * SessionsScheduleController — same query, same behavior.
+     * Fixed group order — groups with no items are simply absent from the
+     * response, never sent as an empty header.
+     *
+     * @var array<int, string>
      */
-    public function sessions(Request $request): Response
-    {
-        $filter = $request->string('filter', 'upcoming')->value();
+    private const GROUP_ORDER = ['needs_attention', 'today', 'awaiting_review', 'this_week'];
 
-        $query = $request->user()->sessionsAsTeacher()
-            ->with(['lesson.module.course', 'student.studentProfile', 'latestSupportTicket']);
+    private const GROUP_LABELS = [
+        'needs_attention' => 'Needs Attention',
+        'today' => 'Today',
+        'awaiting_review' => 'Awaiting Your Review',
+        'this_week' => 'This Week',
+    ];
 
-        $sessions = (match ($filter) {
-            'today' => $query->today()->orderBy('scheduled_at'),
-            'past' => $query->past(),
-            default => $query->upcoming(),
-        })->paginate(15)->withQueryString();
-
-        return Inertia::render('teacher/Teaching', [
-            ...$this->headerProps($request->user()),
-            ...$this->tabCounts($request->user()),
-            'activeTab' => 'sessions',
-            'sessions' => ClassSessionResource::collection($sessions)->response()->getData(true),
-            'filter' => $filter,
-        ]);
-    }
-
-    /**
-     * Projects tab. Relocated from Teacher\ProjectsController::index()
-     * (that controller keeps show()/feedback() — those are unrelated to
-     * which page hosts the index).
-     */
-    public function projects(Request $request): Response
+    public function index(Request $request): Response
     {
         $user = $request->user();
-        $status = $request->string('status', 'pending')->value() === 'reviewed'
-            ? ProjectSubmissionStatus::Reviewed
-            : ProjectSubmissionStatus::Submitted;
+        $search = $request->string('search')->value();
 
         $to = $request->filled('to') ? Carbon::parse($request->string('to')->value())->endOfDay() : now()->endOfDay();
         $from = $request->filled('from') ? Carbon::parse($request->string('from')->value())->startOfDay() : $to->copy()->subDays(29)->startOfDay();
-
-        $search = $request->string('search')->value();
         $featuredOnly = $request->boolean('featured');
+        $showCompleted = $request->boolean('show_completed');
+
+        $weekEnd = now()->addDays(7)->endOfDay();
+        $overdueProjectCutoff = now()->subDays((int) config('teaching.project_review_overdue_days'));
+
+        $sessions = $user->sessionsAsTeacher()
+            ->with(['lesson.module.course', 'student.studentProfile', 'latestSupportTicket'])
+            ->upcoming()
+            ->where('scheduled_at', '<=', $weekEnd)
+            ->get();
 
         $assignedStudentIds = ClassSession::where('teacher_id', $user->id)->distinct()->pluck('student_id');
 
-        $baseQuery = ProjectSubmission::query()
+        $projects = ProjectSubmission::query()
             ->whereIn('student_id', $assignedStudentIds)
+            ->where('status', ProjectSubmissionStatus::Submitted)
             ->whereBetween('submitted_at', [$from, $to])
             ->when($featuredOnly, fn ($query) => $query->whereHas('feedback', fn ($q) => $q->where('is_featured', true)))
-            ->with(['lessonProject.lesson.module.course', 'student.studentProfile', 'feedback.teacher']);
+            ->with(['lessonProject.lesson.module.course', 'student.studentProfile', 'feedback.teacher'])
+            ->get();
 
-        $pendingCount = (clone $baseQuery)->where('status', ProjectSubmissionStatus::Submitted)->count();
-        $reviewedCount = (clone $baseQuery)->where('status', ProjectSubmissionStatus::Reviewed)->count();
+        $tasks = TeacherTask::where('teacher_id', $user->id)
+            ->with('lesson')
+            ->when(! $showCompleted, fn ($query) => $query->pending())
+            ->where(function ($query) use ($weekEnd) {
+                // Pending + overdue tasks stay visible no matter how old —
+                // they still need attention. Everything else (due soon, or
+                // completed when show_completed is on) is bounded to a
+                // recent window — without this, "due_at <= $weekEnd" would
+                // trivially match every completed task ever, since any
+                // past date is "before" a future cutoff.
+                $query->where(fn ($q) => $q->whereNull('completed_at')->where('due_at', '<', now()))
+                    ->orWhereBetween('due_at', [now()->subDays(7), $weekEnd]);
+            })
+            ->get();
 
-        $statusQuery = (clone $baseQuery)->where('status', $status)->orderByDesc('submitted_at');
+        // Intermediate items keep the raw model for search matching —
+        // student.name is encrypted, so it can't be matched with a SQL
+        // LIKE (same technique as Teacher\InsightsController); these
+        // sources are already bounded to a small "active backlog" window,
+        // so filtering in PHP after decryption is safe.
+        $items = collect()
+            ->concat($sessions->map(fn (ClassSession $session) => [
+                'type' => 'session',
+                'model' => $session,
+                'sort_at' => $session->scheduled_at,
+                'is_overdue' => false,
+                'group' => $session->scheduled_at->isToday() ? 'today' : 'this_week',
+            ]))
+            ->concat($projects->map(function (ProjectSubmission $project) use ($overdueProjectCutoff) {
+                $isOverdue = $project->submitted_at->lt($overdueProjectCutoff);
 
-        if ($search === '') {
-            $submissions = $statusQuery->paginate(12)->withQueryString();
-        } else {
-            // student.name is encrypted, so it can't be matched with a SQL
-            // LIKE — same technique as Teacher\InsightsController: this
-            // query is already scoped to one teacher's assigned students
-            // within a date range (a small, bounded set), so filtering the
-            // fetched results in PHP after decryption is safe.
+                return [
+                    'type' => 'project',
+                    'model' => $project,
+                    'sort_at' => $project->submitted_at,
+                    'is_overdue' => $isOverdue,
+                    'group' => $isOverdue ? 'needs_attention' : 'awaiting_review',
+                ];
+            }))
+            ->concat($tasks->map(function (TeacherTask $task) {
+                $isOverdue = $task->completed_at === null && $task->due_at->isPast();
+
+                return [
+                    'type' => 'task',
+                    'model' => $task,
+                    'sort_at' => $task->due_at,
+                    'is_overdue' => $isOverdue,
+                    'group' => $isOverdue ? 'needs_attention' : ($task->due_at->isToday() ? 'today' : 'this_week'),
+                ];
+            }));
+
+        if ($search !== '') {
             $needle = mb_strtolower($search);
-
-            $matches = $statusQuery->get()
-                ->filter(fn (ProjectSubmission $submission) => str_contains(mb_strtolower($submission->student->name), $needle)
-                    || str_contains(mb_strtolower($submission->student->studentProfile?->code ?? ''), $needle)
-                    || str_contains(mb_strtolower($submission->title), $needle))
-                ->values();
-
-            $page = LengthAwarePaginator::resolveCurrentPage();
-            $perPage = 12;
-
-            $submissions = new LengthAwarePaginator(
-                $matches->forPage($page, $perPage)->values(),
-                $matches->count(),
-                $perPage,
-                $page,
-                ['path' => $request->url(), 'query' => $request->query()],
-            );
+            $items = $items->filter(fn (array $item) => str_contains($this->searchableText($item), $needle))->values();
         }
 
+        $chipCounts = [
+            'all' => $items->count(),
+            'sessions' => $items->where('type', 'session')->count(),
+            'projects' => $items->where('type', 'project')->count(),
+            'tasks' => $items->where('type', 'task')->count(),
+        ];
+
+        $feed = collect(self::GROUP_ORDER)
+            ->map(fn (string $group) => [
+                'key' => $group,
+                'label' => self::GROUP_LABELS[$group],
+                'items' => $items->where('group', $group)->sortBy('sort_at')->values()->map($this->toEnvelope(...)),
+            ])
+            ->filter(fn (array $group) => $group['items']->isNotEmpty())
+            ->values();
+
         return Inertia::render('teacher/Teaching', [
-            ...$this->headerProps($user),
-            ...$this->tabCounts($user),
-            'activeTab' => 'projects',
-            'submissions' => ProjectSubmissionResource::collection($submissions)->response()->getData(true),
-            'status' => $status->value,
-            'projectCounts' => ['pending' => $pendingCount, 'reviewed' => $reviewedCount],
-            'filters' => ['from' => $from->toDateString(), 'to' => $to->toDateString(), 'search' => $search, 'featured' => $featuredOnly],
+            'today' => now()->toDateString(),
+            'timezone' => $user->teacherProfile?->resolvedTimezone() ?? TeacherProfile::DEFAULT_TIMEZONE,
+            'summary' => [
+                'overdue' => $items->where('group', 'needs_attention')->count(),
+                'sessionsToday' => $items->where('type', 'session')->where('group', 'today')->count(),
+                'projectsAwaitingReview' => $items->where('type', 'project')->where('group', 'awaiting_review')->count(),
+            ],
+            'chipCounts' => $chipCounts,
+            'feed' => $feed,
+            'filters' => [
+                'search' => $search,
+                'from' => $from->toDateString(),
+                'to' => $to->toDateString(),
+                'featured' => $featuredOnly,
+                'show_completed' => $showCompleted,
+            ],
             'feedbackTemplates' => FeedbackTemplate::active()->get(['id', 'label', 'body', 'sentiment']),
         ]);
     }
 
     /**
-     * Tasks tab.
+     * A lightweight, read-only view of already-handled items that don't
+     * belong in the priority feed — past sessions and reviewed projects.
+     * Deliberately minimal: no filter toolbar, just two paginated lists.
      */
-    public function tasks(Request $request): Response
+    public function history(Request $request): Response
     {
         $user = $request->user();
-        $showCompleted = $request->boolean('show_completed');
 
-        $query = TeacherTask::where('teacher_id', $user->id)
-            ->with('lesson')
-            ->when(! $showCompleted, fn ($query) => $query->pending())
-            ->orderByRaw('(completed_at IS NULL AND due_at < ?) DESC', [now()->toDateTimeString()])
-            ->orderBy('due_at');
+        $pastSessions = $user->sessionsAsTeacher()
+            ->with(['lesson.module.course', 'student.studentProfile'])
+            ->past()
+            ->paginate(10, ['*'], 'sessions_page')
+            ->withQueryString();
 
-        $tasks = $query->paginate(15)->withQueryString();
+        $assignedStudentIds = ClassSession::where('teacher_id', $user->id)->distinct()->pluck('student_id');
 
-        return Inertia::render('teacher/Teaching', [
-            ...$this->headerProps($user),
-            ...$this->tabCounts($user),
-            'activeTab' => 'tasks',
-            'tasks' => TeacherTaskResource::collection($tasks)->response()->getData(true),
-            'showCompleted' => $showCompleted,
+        $reviewedProjects = ProjectSubmission::query()
+            ->whereIn('student_id', $assignedStudentIds)
+            ->where('status', ProjectSubmissionStatus::Reviewed)
+            ->with(['lessonProject.lesson.module.course', 'student.studentProfile', 'feedback.teacher'])
+            ->orderByDesc('submitted_at')
+            ->paginate(12, ['*'], 'projects_page')
+            ->withQueryString();
+
+        return Inertia::render('teacher/TeachingHistory', [
+            'pastSessions' => ClassSessionResource::collection($pastSessions)->response()->getData(true),
+            'reviewedProjects' => ProjectSubmissionResource::collection($reviewedProjects)->response()->getData(true),
+            'feedbackTemplates' => FeedbackTemplate::active()->get(['id', 'label', 'body', 'sentiment']),
         ]);
     }
 
-    /**
-     * @return array{today: string, nextSession: ?ClassSessionResource, timezone: string}
-     */
-    private function headerProps(User $teacher): array
+    private function toEnvelope(array $item): array
     {
-        $nextSession = $teacher->sessionsAsTeacher()
-            ->with(['lesson.module.course', 'student.studentProfile'])
-            ->currentOrUpcoming()
-            ->first();
-
         return [
-            'today' => now()->toDateString(),
-            'nextSession' => $nextSession ? new ClassSessionResource($nextSession) : null,
-            'timezone' => $teacher->teacherProfile?->resolvedTimezone() ?? TeacherProfile::DEFAULT_TIMEZONE,
+            'id' => "{$item['type']}-{$item['model']->id}",
+            'type' => $item['type'],
+            'is_overdue' => $item['is_overdue'],
+            'at' => $item['sort_at']->toIso8601String(),
+            'session' => $item['type'] === 'session' ? new ClassSessionResource($item['model']) : null,
+            'project' => $item['type'] === 'project' ? new ProjectSubmissionResource($item['model']) : null,
+            'task' => $item['type'] === 'task' ? new TeacherTaskResource($item['model']) : null,
         ];
     }
 
-    /**
-     * @return array{tabCounts: array{pendingProjects: int, pendingTasks: int}}
-     */
-    private function tabCounts(User $teacher): array
+    private function searchableText(array $item): string
     {
-        $assignedStudentIds = ClassSession::where('teacher_id', $teacher->id)->distinct()->pluck('student_id');
+        $model = $item['model'];
 
-        return [
-            'tabCounts' => [
-                'pendingProjects' => ProjectSubmission::whereIn('student_id', $assignedStudentIds)
-                    ->where('status', ProjectSubmissionStatus::Submitted)
-                    ->count(),
-                'pendingTasks' => TeacherTask::where('teacher_id', $teacher->id)->pending()->count(),
+        $parts = match ($item['type']) {
+            'session' => [
+                $model->lesson->title,
+                $model->student->name,
+                $model->student->studentProfile?->code,
             ],
-        ];
+            'project' => [
+                $model->title,
+                $model->lessonProject?->lesson?->title,
+                $model->student->name,
+                $model->student->studentProfile?->code,
+            ],
+            'task' => [
+                $model->title,
+                $model->description,
+                $model->lesson?->title,
+            ],
+        };
+
+        return mb_strtolower(collect($parts)->filter()->join(' '));
     }
 }

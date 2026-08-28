@@ -91,7 +91,7 @@ class ClassSessionNotificationTest extends TestCase
 
         $this->actingAs($teacher)
             ->post(route('notifications.read', $notification->id))
-            ->assertRedirect(route('teaching.sessions-schedule'));
+            ->assertRedirect(route('teaching.index'));
 
         $this->assertNotNull($notification->fresh()->read_at);
     }

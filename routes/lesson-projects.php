@@ -17,9 +17,8 @@ Route::get('project-submissions/{projectSubmission}/media/{media}', ProjectSubmi
     ->middleware(['auth', 'verified'])
     ->name('project-submissions.media');
 
-// The index route lives in web.php (TeachingController::projects) as part
-// of the tabbed /teaching page — these two are unrelated to which page
-// hosts the index.
+// The index route lives in web.php (TeachingController::index, part of the
+// unified /teaching feed) — these two are unrelated to which page hosts it.
 Route::middleware(['auth', 'verified', 'role:teacher'])->prefix('teaching')->name('teaching.')->group(function () {
     Route::get('projects/{projectSubmission}', [ProjectsController::class, 'show'])->name('projects.show');
     Route::post('projects/{projectSubmission}/feedback', [ProjectsController::class, 'feedback'])->name('projects.feedback');

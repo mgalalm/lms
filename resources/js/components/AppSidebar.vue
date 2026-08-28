@@ -28,7 +28,7 @@ const mainNavItems = computed<NavItem[]>(() => {
     if (roles.value.includes('teacher')) {
         items.push({
             title: 'Teaching',
-            href: route('teaching.sessions-schedule'),
+            href: route('teaching.index'),
             icon: CalendarClock,
         });
         items.push({

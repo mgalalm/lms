@@ -197,16 +197,20 @@ class RoleDashboardTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->missing('nextSession.recap_url'));
     }
 
-    public function test_sessions_schedule_exposes_the_recap_url_to_the_teacher(): void
+    public function test_the_teaching_feed_exposes_the_recap_url_to_the_teacher(): void
     {
         $teacher = User::factory()->teacher()->create();
         ClassSession::factory()
             ->for($teacher, 'teacher')
-            ->create(['zoom_meeting_id' => 'test-meeting', 'zoom_recap_url' => 'https://zoom.us/rec/play/abc123']);
+            ->create([
+                'zoom_meeting_id' => 'test-meeting',
+                'zoom_recap_url' => 'https://zoom.us/rec/play/abc123',
+                'scheduled_at' => now()->addHours(2),
+            ]);
 
         $this->actingAs($teacher)
-            ->get(route('teaching.sessions-schedule'))
-            ->assertInertia(fn (Assert $page) => $page->where('sessions.data.0.recap_url', 'https://zoom.us/rec/play/abc123'));
+            ->get(route('teaching.index'))
+            ->assertInertia(fn (Assert $page) => $page->where('feed.0.items.0.session.recap_url', 'https://zoom.us/rec/play/abc123'));
     }
 
     public function test_users_without_a_student_or_teacher_role_see_the_generic_dashboard(): void
@@ -228,21 +232,19 @@ class RoleDashboardTest extends TestCase
             ->assertRedirect(route('filament.admin.pages.dashboard'));
     }
 
-    public function test_teacher_can_view_the_sessions_schedule(): void
+    public function test_teacher_can_view_the_teaching_feed(): void
     {
         $teacher = User::factory()->teacher()->create();
         ClassSession::factory()->for($teacher, 'teacher')->count(3)->create(['zoom_meeting_id' => 'test-meeting']);
 
         $this->actingAs($teacher)
-            ->get(route('teaching.sessions-schedule'))
+            ->get(route('teaching.index'))
             ->assertInertia(fn (Assert $page) => $page->component('teacher/Teaching')
-                ->where('activeTab', 'sessions')
-                ->where('filter', 'upcoming')
-                ->count('sessions.data', 3)
+                ->where('chipCounts.sessions', 3)
             );
     }
 
-    public function test_sessions_schedule_only_includes_the_teachers_own_sessions(): void
+    public function test_the_teaching_feed_only_includes_the_teachers_own_sessions(): void
     {
         $teacher = User::factory()->teacher()->create();
         $otherTeacher = User::factory()->teacher()->create();
@@ -250,36 +252,22 @@ class RoleDashboardTest extends TestCase
         ClassSession::factory()->for($otherTeacher, 'teacher')->create(['zoom_meeting_id' => 'test-meeting-2']);
 
         $this->actingAs($teacher)
-            ->get(route('teaching.sessions-schedule'))
-            ->assertInertia(fn (Assert $page) => $page->count('sessions.data', 1));
+            ->get(route('teaching.index'))
+            ->assertInertia(fn (Assert $page) => $page->where('chipCounts.sessions', 1));
     }
 
-    public function test_sessions_schedule_past_filter_only_returns_completed_or_elapsed_sessions(): void
-    {
-        $teacher = User::factory()->teacher()->create();
-        ClassSession::factory()->for($teacher, 'teacher')->completed()->create(['zoom_meeting_id' => 'test-meeting-1']);
-        ClassSession::factory()->for($teacher, 'teacher')->create([
-            'status' => SessionStatus::Scheduled,
-            'zoom_meeting_id' => 'test-meeting-2',
-        ]);
-
-        $this->actingAs($teacher)
-            ->get(route('teaching.sessions-schedule', ['filter' => 'past']))
-            ->assertInertia(fn (Assert $page) => $page->count('sessions.data', 1));
-    }
-
-    public function test_students_cannot_view_the_teacher_sessions_schedule(): void
+    public function test_students_cannot_view_the_teaching_feed(): void
     {
         $student = User::factory()->student()->create();
 
         $this->actingAs($student)
-            ->get(route('teaching.sessions-schedule'))
+            ->get(route('teaching.index'))
             ->assertForbidden();
     }
 
-    public function test_guests_are_redirected_away_from_the_sessions_schedule(): void
+    public function test_guests_are_redirected_away_from_the_teaching_feed(): void
     {
-        $this->get(route('teaching.sessions-schedule'))
+        $this->get(route('teaching.index'))
             ->assertRedirect('/login');
     }
 }

@@ -20,15 +20,17 @@ Route::get('dashboard', DashboardController::class)
     ->name('dashboard');
 
 Route::middleware(['auth', 'verified', 'role:teacher'])->prefix('teaching')->name('teaching.')->group(function () {
-    Route::get('/', [TeachingController::class, 'sessions'])->name('sessions-schedule');
-    Route::get('projects', [TeachingController::class, 'projects'])->name('projects.index');
-    Route::get('tasks', [TeachingController::class, 'tasks'])->name('tasks.index');
+    Route::get('/', [TeachingController::class, 'index'])->name('index');
+    Route::get('history', [TeachingController::class, 'history'])->name('history');
     Route::patch('tasks/{teacherTask}/complete', [TeacherTaskController::class, 'complete'])->name('tasks.complete');
     Route::post('sessions/{classSession}/ping-parent', PingParentController::class)->name('sessions.ping-parent');
 });
 
-// Old standalone URL, kept working for anyone with it bookmarked.
+// Old tabbed-page URLs, kept working for anyone with them bookmarked —
+// everything now lives at one unified /teaching feed.
 Route::redirect('teaching/sessions-schedule', '/teaching');
+Route::redirect('teaching/projects', '/teaching');
+Route::redirect('teaching/tasks', '/teaching');
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
