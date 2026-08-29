@@ -132,7 +132,14 @@ class TeachingPageTest extends TestCase
 
         $teacher = User::factory()->teacher()->create();
         $student = User::factory()->student()->create();
-        TeacherTask::factory()->for($teacher, 'teacher')->overdue()->create(['type' => TeacherTaskType::Manual]);
+        // Not the factory's overdue() state — that uses Faker's
+        // dateTimeBetween(), which is anchored to the real wall clock, not
+        // the frozen now() above. Depending on the real time-of-day, that
+        // could land after our frozen "now" and stop looking overdue.
+        TeacherTask::factory()->for($teacher, 'teacher')->create([
+            'type' => TeacherTaskType::Manual,
+            'due_at' => now()->subDay(),
+        ]);
         ClassSession::factory()->for($teacher, 'teacher')->for($student, 'student')->create([
             'zoom_meeting_id' => 'test-meeting',
             'scheduled_at' => now()->addHours(1),
