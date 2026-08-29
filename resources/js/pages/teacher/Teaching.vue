@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { onClickOutside } from '@vueuse/core';
 import type { BreadcrumbItem, FeedbackTemplate, TeachingFeedGroup, TeachingFeedItemType } from '@/types';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { CalendarCheck2, Filter as FilterIcon } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -178,14 +178,11 @@ function markTaskComplete(taskId: number): void {
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 p-4">
-            <div class="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                    <h1 class="text-xl font-semibold">Teaching</h1>
-                    <p class="text-sm text-muted-foreground">
-                        {{ todayLabel() }}<template v-if="summaryLine"> · {{ summaryLine }}</template>
-                    </p>
-                </div>
-                <Link :href="route('teaching.archive')" class="text-sm text-primary hover:underline">Archived</Link>
+            <div>
+                <h1 class="text-xl font-semibold">Teaching</h1>
+                <p class="text-sm text-muted-foreground">
+                    {{ todayLabel() }}<template v-if="summaryLine"> · {{ summaryLine }}</template>
+                </p>
             </div>
 
             <div class="flex flex-wrap items-center gap-3">

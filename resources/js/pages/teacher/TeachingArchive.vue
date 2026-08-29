@@ -3,13 +3,14 @@ import EmptyState from '@/components/EmptyState.vue';
 import Pagination from '@/components/Pagination.vue';
 import ProjectCard from '@/components/teacher/ProjectCard.vue';
 import ProjectDetailDialog from '@/components/teacher/ProjectDetailDialog.vue';
+import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem, ClassSession, FeedbackTemplate, Paginated, ProjectSubmission } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
 import { CalendarClock, FolderCheck } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 
-defineProps<{
+const props = defineProps<{
     pastSessions: Paginated<ClassSession>;
     reviewedProjects: Paginated<ProjectSubmission>;
     feedbackTemplates: FeedbackTemplate[];
@@ -19,6 +20,37 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Teaching', href: route('teaching.index') },
     { title: 'Archived', href: route('teaching.archive') },
 ];
+
+// Both sections' data already arrive together (each independently
+// paginated via its own query-string page name), so switching tabs is
+// a pure client-side toggle — no extra round trip needed. The choice
+// still lands in the URL (shallow, no navigation) so a tab is
+// shareable/refreshable, matching the pattern already used for the
+// Teaching feed's type chips.
+type ArchiveTab = 'sessions' | 'projects';
+
+const TABS: { key: ArchiveTab; label: string; count: number }[] = [
+    { key: 'sessions', label: 'Sessions', count: props.pastSessions.meta.total },
+    { key: 'projects', label: 'Projects', count: props.reviewedProjects.meta.total },
+];
+
+const activeTab = ref<ArchiveTab>('sessions');
+
+onMounted(() => {
+    const tabParam = new URLSearchParams(window.location.search).get('tab');
+
+    if (tabParam === 'sessions' || tabParam === 'projects') {
+        activeTab.value = tabParam;
+    }
+});
+
+function selectTab(tab: ArchiveTab): void {
+    activeTab.value = tab;
+
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', tab);
+    window.history.replaceState(window.history.state, '', url);
+}
 
 function lessonPath(session: ClassSession): string {
     return [session.lesson.module?.course?.title, session.lesson.module?.title, session.lesson.title].filter(Boolean).join(' / ');
@@ -35,10 +67,22 @@ const openSubmissionId = ref<number | null>(null);
     <Head title="Archived" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-8 p-4">
-            <section class="space-y-3">
-                <h2 class="text-sm font-semibold text-muted-foreground">Past Sessions</h2>
+        <div class="flex h-full flex-1 flex-col gap-4 p-4">
+            <h1 class="text-xl font-semibold">Archived</h1>
 
+            <div class="flex flex-wrap items-center gap-2">
+                <Button
+                    v-for="tab in TABS"
+                    :key="tab.key"
+                    :variant="activeTab === tab.key ? 'default' : 'outline'"
+                    size="sm"
+                    @click="selectTab(tab.key)"
+                >
+                    {{ tab.label }} ({{ tab.count }})
+                </Button>
+            </div>
+
+            <section v-if="activeTab === 'sessions'" class="space-y-3">
                 <EmptyState v-if="!pastSessions.data.length" :icon="CalendarClock" heading="No past sessions yet" description="" />
 
                 <div
@@ -60,9 +104,7 @@ const openSubmissionId = ref<number | null>(null);
                 <Pagination :links="pastSessions.meta.links" />
             </section>
 
-            <section class="space-y-3">
-                <h2 class="text-sm font-semibold text-muted-foreground">Reviewed Projects</h2>
-
+            <section v-else class="space-y-3">
                 <EmptyState v-if="!reviewedProjects.data.length" :icon="FolderCheck" heading="No reviewed projects yet" description="" />
 
                 <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
