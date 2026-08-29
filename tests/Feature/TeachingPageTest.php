@@ -198,18 +198,20 @@ class TeachingPageTest extends TestCase
         $this->actingAs($teacher)->get('/teaching/history')->assertRedirect('/teaching/archive');
     }
 
-    public function test_the_archive_page_lists_past_sessions_and_reviewed_projects(): void
+    public function test_the_archive_page_lists_past_sessions_reviewed_projects_and_completed_tasks(): void
     {
         $teacher = User::factory()->teacher()->create();
         $student = User::factory()->student()->create();
         ClassSession::factory()->for($teacher, 'teacher')->for($student, 'student')->completed()->create(['zoom_meeting_id' => 'test-meeting']);
         ProjectSubmission::factory()->for($student, 'student')->reviewed()->create();
+        TeacherTask::factory()->for($teacher, 'teacher')->completed()->create(['type' => TeacherTaskType::Manual]);
 
         $this->actingAs($teacher)
             ->get(route('teaching.archive'))
             ->assertInertia(fn (Assert $page) => $page->component('teacher/TeachingArchive')
                 ->count('pastSessions.data', 1)
                 ->count('reviewedProjects.data', 1)
+                ->count('completedTasks.data', 1)
             );
     }
 

@@ -5,14 +5,15 @@ import ProjectCard from '@/components/teacher/ProjectCard.vue';
 import ProjectDetailDialog from '@/components/teacher/ProjectDetailDialog.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
-import type { BreadcrumbItem, ClassSession, FeedbackTemplate, Paginated, ProjectSubmission } from '@/types';
+import type { BreadcrumbItem, ClassSession, FeedbackTemplate, Paginated, ProjectSubmission, TeacherTask } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
-import { CalendarClock, FolderCheck } from 'lucide-vue-next';
+import { CalendarClock, CheckCircle2, FolderCheck } from 'lucide-vue-next';
 import { onMounted, ref } from 'vue';
 
 const props = defineProps<{
     pastSessions: Paginated<ClassSession>;
     reviewedProjects: Paginated<ProjectSubmission>;
+    completedTasks: Paginated<TeacherTask>;
     feedbackTemplates: FeedbackTemplate[];
 }>();
 
@@ -21,17 +22,18 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Archived', href: route('teaching.archive') },
 ];
 
-// Both sections' data already arrive together (each independently
+// All three sections' data already arrive together (each independently
 // paginated via its own query-string page name), so switching tabs is
 // a pure client-side toggle — no extra round trip needed. The choice
 // still lands in the URL (shallow, no navigation) so a tab is
 // shareable/refreshable, matching the pattern already used for the
 // Teaching feed's type chips.
-type ArchiveTab = 'sessions' | 'projects';
+type ArchiveTab = 'sessions' | 'projects' | 'tasks';
 
 const TABS: { key: ArchiveTab; label: string; count: number }[] = [
     { key: 'sessions', label: 'Sessions', count: props.pastSessions.meta.total },
     { key: 'projects', label: 'Projects', count: props.reviewedProjects.meta.total },
+    { key: 'tasks', label: 'Tasks', count: props.completedTasks.meta.total },
 ];
 
 const activeTab = ref<ArchiveTab>('sessions');
@@ -39,7 +41,7 @@ const activeTab = ref<ArchiveTab>('sessions');
 onMounted(() => {
     const tabParam = new URLSearchParams(window.location.search).get('tab');
 
-    if (tabParam === 'sessions' || tabParam === 'projects') {
+    if (tabParam === 'sessions' || tabParam === 'projects' || tabParam === 'tasks') {
         activeTab.value = tabParam;
     }
 });
@@ -58,6 +60,12 @@ function lessonPath(session: ClassSession): string {
 
 function scheduledLabel(session: ClassSession): string {
     return new Date(session.scheduled_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function completedLabel(task: TeacherTask): string {
+    return task.completed_at
+        ? new Date(task.completed_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+        : '';
 }
 
 const openSubmissionId = ref<number | null>(null);
@@ -104,7 +112,7 @@ const openSubmissionId = ref<number | null>(null);
                 <Pagination :links="pastSessions.meta.links" />
             </section>
 
-            <section v-else class="space-y-3">
+            <section v-else-if="activeTab === 'projects'" class="space-y-3">
                 <EmptyState v-if="!reviewedProjects.data.length" :icon="FolderCheck" heading="No reviewed projects yet" description="" />
 
                 <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -117,6 +125,25 @@ const openSubmissionId = ref<number | null>(null);
                 </div>
 
                 <Pagination :links="reviewedProjects.meta.links" />
+            </section>
+
+            <section v-else class="space-y-3">
+                <EmptyState v-if="!completedTasks.data.length" :icon="CheckCircle2" heading="No completed tasks yet" description="" />
+
+                <div
+                    v-else
+                    class="divide-y divide-sidebar-border/70 rounded-xl border border-sidebar-border/70 bg-card dark:divide-sidebar-border dark:border-sidebar-border"
+                >
+                    <div v-for="task in completedTasks.data" :key="task.id" class="flex items-center justify-between gap-4 p-4">
+                        <div>
+                            <div class="font-medium">{{ task.title }}</div>
+                            <div v-if="task.description" class="text-sm text-muted-foreground">{{ task.description }}</div>
+                        </div>
+                        <span class="shrink-0 text-sm text-muted-foreground">Completed {{ completedLabel(task) }}</span>
+                    </div>
+                </div>
+
+                <Pagination :links="completedTasks.meta.links" />
             </section>
         </div>
 

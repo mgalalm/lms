@@ -166,8 +166,9 @@ class TeachingController extends Controller
 
     /**
      * A lightweight, read-only view of already-handled items that don't
-     * belong in the priority feed — past sessions and reviewed projects.
-     * Deliberately minimal: no filter toolbar, just two paginated lists.
+     * belong in the priority feed — past sessions, reviewed projects, and
+     * completed tasks. Deliberately minimal: no filter toolbar, just
+     * paginated lists.
      */
     public function archive(Request $request): Response
     {
@@ -189,9 +190,17 @@ class TeachingController extends Controller
             ->paginate(12, ['*'], 'projects_page')
             ->withQueryString();
 
+        $completedTasks = TeacherTask::where('teacher_id', $user->id)
+            ->whereNotNull('completed_at')
+            ->with('lesson')
+            ->orderByDesc('completed_at')
+            ->paginate(15, ['*'], 'tasks_page')
+            ->withQueryString();
+
         return Inertia::render('teacher/TeachingArchive', [
             'pastSessions' => ClassSessionResource::collection($pastSessions)->response()->getData(true),
             'reviewedProjects' => ProjectSubmissionResource::collection($reviewedProjects)->response()->getData(true),
+            'completedTasks' => TeacherTaskResource::collection($completedTasks)->response()->getData(true),
             'feedbackTemplates' => FeedbackTemplate::active()->get(['id', 'label', 'body', 'sentiment']),
         ]);
     }

@@ -32,11 +32,6 @@ const mainNavItems = computed<NavItem[]>(() => {
             icon: CalendarClock,
         });
         items.push({
-            title: 'Archived',
-            href: route('teaching.archive'),
-            icon: Archive,
-        });
-        items.push({
             title: 'LMS',
             href: route('lms.index'),
             icon: GraduationCap,
@@ -68,6 +63,14 @@ const mainNavItems = computed<NavItem[]>(() => {
             title: 'Achievements',
             href: route('achievements.index'),
             icon: Trophy,
+        });
+    }
+
+    if (roles.value.includes('teacher')) {
+        items.push({
+            title: 'Archived',
+            href: route('teaching.archive'),
+            icon: Archive,
         });
     }
 
