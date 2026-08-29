@@ -21,7 +21,7 @@ Route::get('dashboard', DashboardController::class)
 
 Route::middleware(['auth', 'verified', 'role:teacher'])->prefix('teaching')->name('teaching.')->group(function () {
     Route::get('/', [TeachingController::class, 'index'])->name('index');
-    Route::get('history', [TeachingController::class, 'history'])->name('history');
+    Route::get('archive', [TeachingController::class, 'archive'])->name('archive');
     Route::patch('tasks/{teacherTask}/complete', [TeacherTaskController::class, 'complete'])->name('tasks.complete');
     Route::post('sessions/{classSession}/ping-parent', PingParentController::class)->name('sessions.ping-parent');
 });
@@ -31,6 +31,7 @@ Route::middleware(['auth', 'verified', 'role:teacher'])->prefix('teaching')->nam
 Route::redirect('teaching/sessions-schedule', '/teaching');
 Route::redirect('teaching/projects', '/teaching');
 Route::redirect('teaching/tasks', '/teaching');
+Route::redirect('teaching/history', '/teaching/archive');
 
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

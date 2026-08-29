@@ -49,6 +49,10 @@ class TeachingPageTest extends TestCase
 
     public function test_a_session_scheduled_today_appears_in_the_today_group(): void
     {
+        // Anchored mid-day — "+2 hours" near midnight could otherwise
+        // roll into tomorrow and flip this into the this_week group.
+        $this->travelTo(now()->setTime(10, 0));
+
         $teacher = User::factory()->teacher()->create();
         ClassSession::factory()->for($teacher, 'teacher')->create([
             'type' => SessionType::Physical,
@@ -122,6 +126,10 @@ class TeachingPageTest extends TestCase
 
     public function test_summary_counts_reflect_overdue_and_today_items(): void
     {
+        // Anchored mid-day — "+1 hour" near midnight could otherwise roll
+        // into tomorrow and drop the session out of "today".
+        $this->travelTo(now()->setTime(10, 0));
+
         $teacher = User::factory()->teacher()->create();
         $student = User::factory()->student()->create();
         TeacherTask::factory()->for($teacher, 'teacher')->overdue()->create(['type' => TeacherTaskType::Manual]);
@@ -180,9 +188,10 @@ class TeachingPageTest extends TestCase
         $this->actingAs($teacher)->get('/teaching/sessions-schedule')->assertRedirect('/teaching');
         $this->actingAs($teacher)->get('/teaching/projects')->assertRedirect('/teaching');
         $this->actingAs($teacher)->get('/teaching/tasks')->assertRedirect('/teaching');
+        $this->actingAs($teacher)->get('/teaching/history')->assertRedirect('/teaching/archive');
     }
 
-    public function test_the_history_page_lists_past_sessions_and_reviewed_projects(): void
+    public function test_the_archive_page_lists_past_sessions_and_reviewed_projects(): void
     {
         $teacher = User::factory()->teacher()->create();
         $student = User::factory()->student()->create();
@@ -190,19 +199,19 @@ class TeachingPageTest extends TestCase
         ProjectSubmission::factory()->for($student, 'student')->reviewed()->create();
 
         $this->actingAs($teacher)
-            ->get(route('teaching.history'))
-            ->assertInertia(fn (Assert $page) => $page->component('teacher/TeachingHistory')
+            ->get(route('teaching.archive'))
+            ->assertInertia(fn (Assert $page) => $page->component('teacher/TeachingArchive')
                 ->count('pastSessions.data', 1)
                 ->count('reviewedProjects.data', 1)
             );
     }
 
-    public function test_students_cannot_view_the_history_page(): void
+    public function test_students_cannot_view_the_archive_page(): void
     {
         $student = User::factory()->student()->create();
 
         $this->actingAs($student)
-            ->get(route('teaching.history'))
+            ->get(route('teaching.archive'))
             ->assertForbidden();
     }
 }

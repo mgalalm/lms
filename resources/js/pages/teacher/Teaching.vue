@@ -88,15 +88,11 @@ function selectAll(): void {
 }
 
 function toggleType(type: TeachingFeedItemType): void {
-    const next = new Set(selectedTypes.value);
+    // Single-select: picking a type shows only that type, deselecting any
+    // other. Picking the already-selected type toggles back to "All".
+    const isOnlySelected = selectedTypes.value.size === 1 && selectedTypes.value.has(type);
 
-    if (next.has(type)) {
-        next.delete(type);
-    } else {
-        next.add(type);
-    }
-
-    selectedTypes.value = next;
+    selectedTypes.value = isOnlySelected ? new Set() : new Set([type]);
     writeTypesToUrl();
 }
 
@@ -189,7 +185,7 @@ function markTaskComplete(taskId: number): void {
                         {{ todayLabel() }}<template v-if="summaryLine"> · {{ summaryLine }}</template>
                     </p>
                 </div>
-                <Link :href="route('teaching.history')" class="text-sm text-primary hover:underline">History</Link>
+                <Link :href="route('teaching.archive')" class="text-sm text-primary hover:underline">Archived</Link>
             </div>
 
             <div class="flex flex-wrap items-center gap-3">

@@ -17,7 +17,7 @@ defineProps<{
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Teaching', href: route('teaching.index') },
-    { title: 'History', href: route('teaching.history') },
+    { title: 'Archived', href: route('teaching.archive') },
 ];
 
 function lessonPath(session: ClassSession): string {
@@ -32,7 +32,7 @@ const openSubmissionId = ref<number | null>(null);
 </script>
 
 <template>
-    <Head title="Teaching History" />
+    <Head title="Archived" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-8 p-4">

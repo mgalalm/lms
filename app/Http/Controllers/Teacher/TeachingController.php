@@ -169,7 +169,7 @@ class TeachingController extends Controller
      * belong in the priority feed — past sessions and reviewed projects.
      * Deliberately minimal: no filter toolbar, just two paginated lists.
      */
-    public function history(Request $request): Response
+    public function archive(Request $request): Response
     {
         $user = $request->user();
 
@@ -189,7 +189,7 @@ class TeachingController extends Controller
             ->paginate(12, ['*'], 'projects_page')
             ->withQueryString();
 
-        return Inertia::render('teacher/TeachingHistory', [
+        return Inertia::render('teacher/TeachingArchive', [
             'pastSessions' => ClassSessionResource::collection($pastSessions)->response()->getData(true),
             'reviewedProjects' => ProjectSubmissionResource::collection($reviewedProjects)->response()->getData(true),
             'feedbackTemplates' => FeedbackTemplate::active()->get(['id', 'label', 'body', 'sentiment']),
