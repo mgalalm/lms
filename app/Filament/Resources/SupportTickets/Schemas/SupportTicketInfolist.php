@@ -35,6 +35,19 @@ class SupportTicketInfolist
                             ->html()
                             ->columnSpanFull(),
                     ]),
+
+                Section::make('Teacher Feedback')
+                    ->columns(2)
+                    ->visible(fn (SupportTicket $record) => $record->rating !== null)
+                    ->schema([
+                        TextEntry::make('rating')
+                            ->label('Rating')
+                            ->formatStateUsing(fn (?int $state) => $state ? str_repeat('★', $state).str_repeat('☆', 5 - $state) : '—'),
+                        TextEntry::make('comment')
+                            ->label('Comment')
+                            ->placeholder('—')
+                            ->columnSpanFull(),
+                    ]),
             ]);
     }
 

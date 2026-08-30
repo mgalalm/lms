@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { withDisplayName } from '@/composables/zoomJoinUrl';
 import type { SharedData, TeachingFeedItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { CalendarClock, CheckCircle2, FolderCheck, ImageOff } from 'lucide-vue-next';
+import { CalendarClock, CheckCircle2, FolderCheck, ImageOff, LifeBuoy } from 'lucide-vue-next';
 import { computed } from 'vue';
 
 const props = defineProps<{
@@ -27,6 +27,7 @@ const TYPE_META = {
     session: { icon: CalendarClock, color: 'text-blue-600 dark:text-blue-400', label: 'Session' },
     project: { icon: FolderCheck, color: 'text-violet-600 dark:text-violet-400', label: 'Project' },
     task: { icon: CheckCircle2, color: 'text-amber-600 dark:text-amber-500', label: 'Task' },
+    ticket: { icon: LifeBuoy, color: 'text-rose-600 dark:text-rose-400', label: 'Ticket' },
 } as const;
 
 const TASK_TYPE_LABELS: Record<string, string> = {
@@ -88,6 +89,10 @@ const kicker = computed(() => {
         return `Project · submitted ${relativePast(at)}`;
     }
 
+    if (type === 'ticket') {
+        return `Ticket · opened ${relativePast(at)}`;
+    }
+
     const task = props.item.task!;
 
     return `Task · ${TASK_TYPE_LABELS[task.type] ?? task.type}`;
@@ -103,6 +108,10 @@ const title = computed(() => {
         return props.item.project!.title;
     }
 
+    if (props.item.type === 'ticket') {
+        return props.item.ticket!.subject;
+    }
+
     return props.item.task!.title;
 });
 
@@ -115,6 +124,10 @@ const secondaryLine = computed(() => {
     if (props.item.type === 'project') {
         const lesson = props.item.project!.lesson_project?.lesson;
         return lesson ? [lesson.module?.course?.title, lesson.module?.title, lesson.title].filter(Boolean).join(' / ') : null;
+    }
+
+    if (props.item.type === 'ticket') {
+        return props.item.ticket!.class_session?.lesson_title ?? props.item.ticket!.description;
     }
 
     return props.item.task!.description;
@@ -250,7 +263,7 @@ const extraScreenshotCount = computed(() =>
                     <Button size="sm" @click="emit('openProject', item.project!.id)">Review</Button>
                 </template>
 
-                <template v-else>
+                <template v-else-if="item.type === 'task'">
                     <span
                         v-if="item.task!.type === 'session_prep'"
                         class="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground"
@@ -262,6 +275,12 @@ const extraScreenshotCount = computed(() =>
                         Mark done
                     </Button>
                     <span v-else class="text-sm text-muted-foreground">Completed</span>
+                </template>
+
+                <template v-else>
+                    <Link :href="route('teaching.support-tickets.show', item.ticket!.id)">
+                        <Button size="sm">View Ticket</Button>
+                    </Link>
                 </template>
             </div>
         </div>

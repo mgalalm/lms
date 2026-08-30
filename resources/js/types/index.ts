@@ -111,6 +111,8 @@ export interface SupportTicket {
     channel_id: number;
     created_at: string;
     resolved_at: string | null;
+    rating: number | null;
+    comment: string | null;
     class_session: { id: number; lesson_title: string | null } | null;
 }
 
@@ -380,7 +382,7 @@ export interface TeacherTask {
     lesson?: { id: number; title: string } | null;
 }
 
-export type TeachingFeedItemType = 'session' | 'project' | 'task';
+export type TeachingFeedItemType = 'session' | 'project' | 'task' | 'ticket';
 
 export interface TeachingFeedItem {
     id: string;
@@ -390,6 +392,7 @@ export interface TeachingFeedItem {
     session: ClassSession | null;
     project: ProjectSubmission | null;
     task: TeacherTask | null;
+    ticket: SupportTicket | null;
 }
 
 export interface TeachingFeedGroup {

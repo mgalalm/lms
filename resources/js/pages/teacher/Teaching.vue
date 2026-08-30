@@ -18,7 +18,7 @@ const props = defineProps<{
     today: string;
     timezone: string;
     summary: { overdue: number; sessionsToday: number; projectsAwaitingReview: number };
-    chipCounts: { all: number; sessions: number; projects: number; tasks: number };
+    chipCounts: { all: number; sessions: number; projects: number; tasks: number; tickets: number };
     feed: TeachingFeedGroup[];
     filters: { search: string; from: string; to: string; featured: boolean; show_completed: boolean };
     feedbackTemplates: FeedbackTemplate[];
@@ -58,6 +58,7 @@ const CHIP_TYPES: { key: TeachingFeedItemType; label: string; countKey: keyof ty
     { key: 'session', label: 'Sessions', countKey: 'sessions' },
     { key: 'project', label: 'Projects', countKey: 'projects' },
     { key: 'task', label: 'Tasks', countKey: 'tasks' },
+    { key: 'ticket', label: 'Tickets', countKey: 'tickets' },
 ];
 
 const selectedTypes = ref<Set<TeachingFeedItemType>>(new Set());
@@ -66,7 +67,9 @@ onMounted(() => {
     const typesParam = new URLSearchParams(window.location.search).get('types');
 
     if (typesParam) {
-        selectedTypes.value = new Set(typesParam.split(',').filter((t): t is TeachingFeedItemType => ['session', 'project', 'task'].includes(t)));
+        selectedTypes.value = new Set(
+            typesParam.split(',').filter((t): t is TeachingFeedItemType => ['session', 'project', 'task', 'ticket'].includes(t)),
+        );
     }
 });
 

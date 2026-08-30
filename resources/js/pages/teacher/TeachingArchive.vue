@@ -5,15 +5,16 @@ import ProjectCard from '@/components/teacher/ProjectCard.vue';
 import ProjectDetailDialog from '@/components/teacher/ProjectDetailDialog.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
-import type { BreadcrumbItem, ClassSession, FeedbackTemplate, Paginated, ProjectSubmission, TeacherTask } from '@/types';
-import { Head, router } from '@inertiajs/vue3';
-import { CalendarClock, CheckCircle2, FolderCheck } from 'lucide-vue-next';
+import type { BreadcrumbItem, ClassSession, FeedbackTemplate, Paginated, ProjectSubmission, SupportTicket, TeacherTask } from '@/types';
+import { Head, Link, router } from '@inertiajs/vue3';
+import { CalendarClock, CheckCircle2, FolderCheck, LifeBuoy } from 'lucide-vue-next';
 import { onMounted, ref } from 'vue';
 
 const props = defineProps<{
     pastSessions: Paginated<ClassSession>;
     reviewedProjects: Paginated<ProjectSubmission>;
     completedTasks: Paginated<TeacherTask>;
+    resolvedTickets: Paginated<SupportTicket>;
     feedbackTemplates: FeedbackTemplate[];
 }>();
 
@@ -22,18 +23,19 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Archived', href: route('teaching.archive') },
 ];
 
-// All three sections' data already arrive together (each independently
+// All sections' data already arrive together (each independently
 // paginated via its own query-string page name), so switching tabs is
 // a pure client-side toggle — no extra round trip needed. The choice
 // still lands in the URL (shallow, no navigation) so a tab is
 // shareable/refreshable, matching the pattern already used for the
 // Teaching feed's type chips.
-type ArchiveTab = 'sessions' | 'projects' | 'tasks';
+type ArchiveTab = 'sessions' | 'projects' | 'tasks' | 'tickets';
 
 const TABS: { key: ArchiveTab; label: string; count: number }[] = [
     { key: 'sessions', label: 'Sessions', count: props.pastSessions.meta.total },
     { key: 'projects', label: 'Projects', count: props.reviewedProjects.meta.total },
     { key: 'tasks', label: 'Tasks', count: props.completedTasks.meta.total },
+    { key: 'tickets', label: 'Tickets', count: props.resolvedTickets.meta.total },
 ];
 
 const activeTab = ref<ArchiveTab>('sessions');
@@ -41,7 +43,7 @@ const activeTab = ref<ArchiveTab>('sessions');
 onMounted(() => {
     const tabParam = new URLSearchParams(window.location.search).get('tab');
 
-    if (tabParam === 'sessions' || tabParam === 'projects' || tabParam === 'tasks') {
+    if (tabParam === 'sessions' || tabParam === 'projects' || tabParam === 'tasks' || tabParam === 'tickets') {
         activeTab.value = tabParam;
     }
 });
@@ -65,6 +67,12 @@ function scheduledLabel(session: ClassSession): string {
 function completedLabel(task: TeacherTask): string {
     return task.completed_at
         ? new Date(task.completed_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+        : '';
+}
+
+function resolvedLabel(ticket: SupportTicket): string {
+    return ticket.resolved_at
+        ? new Date(ticket.resolved_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
         : '';
 }
 
@@ -127,7 +135,7 @@ const openSubmissionId = ref<number | null>(null);
                 <Pagination :links="reviewedProjects.meta.links" />
             </section>
 
-            <section v-else class="space-y-3">
+            <section v-else-if="activeTab === 'tasks'" class="space-y-3">
                 <EmptyState v-if="!completedTasks.data.length" :icon="CheckCircle2" heading="No completed tasks yet" description="" />
 
                 <div
@@ -144,6 +152,33 @@ const openSubmissionId = ref<number | null>(null);
                 </div>
 
                 <Pagination :links="completedTasks.meta.links" />
+            </section>
+
+            <section v-else class="space-y-3">
+                <EmptyState v-if="!resolvedTickets.data.length" :icon="LifeBuoy" heading="No resolved tickets yet" description="" />
+
+                <div
+                    v-else
+                    class="divide-y divide-sidebar-border/70 rounded-xl border border-sidebar-border/70 bg-card dark:divide-sidebar-border dark:border-sidebar-border"
+                >
+                    <Link
+                        v-for="ticket in resolvedTickets.data"
+                        :key="ticket.id"
+                        :href="route('teaching.support-tickets.show', ticket.id)"
+                        class="flex items-center justify-between gap-4 p-4 hover:bg-accent"
+                    >
+                        <div>
+                            <div class="font-medium">{{ ticket.subject }}</div>
+                            <div class="text-sm text-muted-foreground">
+                                {{ ticket.code }}
+                                <span v-if="ticket.class_session?.lesson_title">&middot; {{ ticket.class_session.lesson_title }}</span>
+                            </div>
+                        </div>
+                        <span class="shrink-0 text-sm text-muted-foreground">Resolved {{ resolvedLabel(ticket) }}</span>
+                    </Link>
+                </div>
+
+                <Pagination :links="resolvedTickets.meta.links" />
             </section>
         </div>
 

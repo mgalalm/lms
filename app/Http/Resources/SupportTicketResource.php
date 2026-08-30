@@ -23,6 +23,8 @@ class SupportTicketResource extends JsonResource
             'channel_id' => $this->channel_id,
             'created_at' => $this->created_at->toIso8601String(),
             'resolved_at' => $this->resolved_at?->toIso8601String(),
+            'rating' => $this->rating,
+            'comment' => $this->comment,
             'class_session' => $this->whenLoaded('classSession', fn () => $this->classSession ? [
                 'id' => $this->classSession->id,
                 'lesson_title' => $this->classSession->lesson?->title,

@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import MessageBubble from '@/components/community/MessageBubble.vue';
 import MessageComposer from '@/components/community/MessageComposer.vue';
+import SupportTicketFeedbackModal from '@/components/SupportTicketFeedbackModal.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem, Message, SharedData, SupportTicket } from '@/types';
 import { Head, router, usePage } from '@inertiajs/vue3';
 import { useEcho } from '@laravel/echo-vue';
+import { Star } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
 
 const props = defineProps<{
@@ -77,9 +79,22 @@ function resolve(): void {
             </div>
 
             <MessageComposer v-if="ticket.status === 'open'" :channel-id="ticket.channel_id" @sent="() => {}" />
-            <p v-else class="border-t border-sidebar-border/70 p-4 text-center text-sm text-muted-foreground dark:border-sidebar-border">
-                This ticket has been resolved.
-            </p>
+            <div v-else class="border-t border-sidebar-border/70 p-4 text-center dark:border-sidebar-border">
+                <p class="text-sm text-muted-foreground">This ticket has been resolved.</p>
+                <div v-if="ticket.rating" class="mt-2 flex flex-col items-center gap-1">
+                    <div class="flex gap-0.5">
+                        <Star
+                            v-for="value in [1, 2, 3, 4, 5]"
+                            :key="value"
+                            class="size-4"
+                            :class="value <= ticket.rating ? 'fill-primary text-primary' : 'text-muted-foreground'"
+                        />
+                    </div>
+                    <p v-if="ticket.comment" class="text-sm text-muted-foreground italic">“{{ ticket.comment }}”</p>
+                </div>
+            </div>
         </div>
+
+        <SupportTicketFeedbackModal v-if="ticket.status === 'resolved' && !ticket.rating" :key="ticket.id" :ticket="ticket" />
     </AppLayout>
 </template>

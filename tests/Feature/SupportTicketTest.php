@@ -107,6 +107,61 @@ class SupportTicketTest extends TestCase
         $this->assertNotNull($ticket->resolved_at);
     }
 
+    public function test_teacher_can_rate_their_own_resolved_ticket(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $ticket = SupportTicket::factory()->for($teacher, 'teacher')->resolved()->create();
+
+        $this->actingAs($teacher)
+            ->post(route('teaching.support-tickets.feedback', $ticket), [
+                'rating' => 4,
+                'comment' => 'Handled quickly, thanks!',
+            ])
+            ->assertRedirect();
+
+        $ticket->refresh();
+        $this->assertSame(4, $ticket->rating);
+        $this->assertSame('Handled quickly, thanks!', $ticket->comment);
+        $this->assertNotNull($ticket->rated_at);
+    }
+
+    public function test_a_rating_is_required_to_submit_ticket_feedback(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $ticket = SupportTicket::factory()->for($teacher, 'teacher')->resolved()->create();
+
+        $this->actingAs($teacher)
+            ->post(route('teaching.support-tickets.feedback', $ticket), ['comment' => 'No rating given.'])
+            ->assertSessionHasErrors('rating');
+
+        $this->assertNull($ticket->refresh()->rating);
+    }
+
+    public function test_a_teacher_cannot_rate_an_open_ticket(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $ticket = SupportTicket::factory()->for($teacher, 'teacher')->create();
+
+        $this->actingAs($teacher)
+            ->post(route('teaching.support-tickets.feedback', $ticket), ['rating' => 5])
+            ->assertStatus(422);
+
+        $this->assertNull($ticket->refresh()->rating);
+    }
+
+    public function test_a_teacher_cannot_rate_someone_elses_ticket(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $otherTeacher = User::factory()->teacher()->create();
+        $ticket = SupportTicket::factory()->for($otherTeacher, 'teacher')->resolved()->create();
+
+        $this->actingAs($teacher)
+            ->post(route('teaching.support-tickets.feedback', $ticket), ['rating' => 5])
+            ->assertForbidden();
+
+        $this->assertNull($ticket->refresh()->rating);
+    }
+
     public function test_teacher_can_reply_in_their_ticket_thread_via_the_community_message_route(): void
     {
         $teacher = User::factory()->teacher()->create();

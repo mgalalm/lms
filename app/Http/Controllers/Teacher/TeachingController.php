@@ -3,13 +3,16 @@
 namespace App\Http\Controllers\Teacher;
 
 use App\Enums\ProjectSubmissionStatus;
+use App\Enums\SupportTicketStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ClassSessionResource;
 use App\Http\Resources\ProjectSubmissionResource;
+use App\Http\Resources\SupportTicketResource;
 use App\Http\Resources\TeacherTaskResource;
 use App\Models\ClassSession;
 use App\Models\FeedbackTemplate;
 use App\Models\ProjectSubmission;
+use App\Models\SupportTicket;
 use App\Models\TeacherProfile;
 use App\Models\TeacherTask;
 use Illuminate\Http\Request;
@@ -19,11 +22,12 @@ use Inertia\Response;
 
 /**
  * The teacher-facing /teaching page — a single urgency-grouped feed of
- * sessions, projects awaiting review, and tasks, rather than separate
- * tabbed views. Everything a teacher needs to act on lives at one route;
- * type "chips" filter the already-loaded feed client-side instead of
- * navigating. Already-handled items (past sessions, reviewed projects)
- * aren't part of this feed at all — see history() for those.
+ * sessions, projects awaiting review, tasks, and open support tickets,
+ * rather than separate tabbed views. Everything a teacher needs to act on
+ * lives at one route; type "chips" filter the already-loaded feed
+ * client-side instead of navigating. Already-handled items (past
+ * sessions, reviewed projects, completed tasks, resolved tickets) aren't
+ * part of this feed at all — see archive() for those.
  */
 class TeachingController extends Controller
 {
@@ -69,6 +73,11 @@ class TeachingController extends Controller
             ->whereBetween('submitted_at', [$from, $to])
             ->when($featuredOnly, fn ($query) => $query->whereHas('feedback', fn ($q) => $q->where('is_featured', true)))
             ->with(['lessonProject.lesson.module.course', 'student.studentProfile', 'feedback.teacher'])
+            ->get();
+
+        $openTickets = SupportTicket::where('teacher_id', $user->id)
+            ->where('status', SupportTicketStatus::Open)
+            ->with('classSession.lesson')
             ->get();
 
         $tasks = TeacherTask::where('teacher_id', $user->id)
@@ -120,7 +129,17 @@ class TeachingController extends Controller
                     'is_overdue' => $isOverdue,
                     'group' => $isOverdue ? 'needs_attention' : ($task->due_at->isToday() ? 'today' : 'this_week'),
                 ];
-            }));
+            }))
+            // Every open ticket is, by definition, an active issue still
+            // being tracked — always Needs Attention, but not flagged
+            // "overdue" (that styling implies lateness, not just openness).
+            ->concat($openTickets->map(fn (SupportTicket $ticket) => [
+                'type' => 'ticket',
+                'model' => $ticket,
+                'sort_at' => $ticket->created_at,
+                'is_overdue' => false,
+                'group' => 'needs_attention',
+            ]));
 
         if ($search !== '') {
             $needle = mb_strtolower($search);
@@ -132,6 +151,7 @@ class TeachingController extends Controller
             'sessions' => $items->where('type', 'session')->count(),
             'projects' => $items->where('type', 'project')->count(),
             'tasks' => $items->where('type', 'task')->count(),
+            'tickets' => $items->where('type', 'ticket')->count(),
         ];
 
         $feed = collect(self::GROUP_ORDER)
@@ -166,9 +186,9 @@ class TeachingController extends Controller
 
     /**
      * A lightweight, read-only view of already-handled items that don't
-     * belong in the priority feed — past sessions, reviewed projects, and
-     * completed tasks. Deliberately minimal: no filter toolbar, just
-     * paginated lists.
+     * belong in the priority feed — past sessions, reviewed projects,
+     * completed tasks, and resolved support tickets. Deliberately
+     * minimal: no filter toolbar, just paginated lists.
      */
     public function archive(Request $request): Response
     {
@@ -197,10 +217,18 @@ class TeachingController extends Controller
             ->paginate(15, ['*'], 'tasks_page')
             ->withQueryString();
 
+        $resolvedTickets = SupportTicket::where('teacher_id', $user->id)
+            ->where('status', SupportTicketStatus::Resolved)
+            ->with('classSession.lesson')
+            ->orderByDesc('resolved_at')
+            ->paginate(15, ['*'], 'tickets_page')
+            ->withQueryString();
+
         return Inertia::render('teacher/TeachingArchive', [
             'pastSessions' => ClassSessionResource::collection($pastSessions)->response()->getData(true),
             'reviewedProjects' => ProjectSubmissionResource::collection($reviewedProjects)->response()->getData(true),
             'completedTasks' => TeacherTaskResource::collection($completedTasks)->response()->getData(true),
+            'resolvedTickets' => SupportTicketResource::collection($resolvedTickets)->response()->getData(true),
             'feedbackTemplates' => FeedbackTemplate::active()->get(['id', 'label', 'body', 'sentiment']),
         ]);
     }
@@ -215,6 +243,7 @@ class TeachingController extends Controller
             'session' => $item['type'] === 'session' ? new ClassSessionResource($item['model']) : null,
             'project' => $item['type'] === 'project' ? new ProjectSubmissionResource($item['model']) : null,
             'task' => $item['type'] === 'task' ? new TeacherTaskResource($item['model']) : null,
+            'ticket' => $item['type'] === 'ticket' ? new SupportTicketResource($item['model']) : null,
         ];
     }
 
@@ -238,6 +267,12 @@ class TeachingController extends Controller
                 $model->title,
                 $model->description,
                 $model->lesson?->title,
+            ],
+            'ticket' => [
+                $model->subject,
+                $model->description,
+                $model->code,
+                $model->classSession?->lesson?->title,
             ],
         };
 

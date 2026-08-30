@@ -28,6 +28,9 @@ class SupportTicket extends Model
         'status',
         'resolved_by',
         'resolved_at',
+        'rating',
+        'comment',
+        'rated_at',
     ];
 
     /**
@@ -40,6 +43,8 @@ class SupportTicket extends Model
         return [
             'status' => SupportTicketStatus::class,
             'resolved_at' => 'datetime',
+            'rating' => 'integer',
+            'rated_at' => 'datetime',
         ];
     }
 

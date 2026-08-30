@@ -7,6 +7,7 @@ use App\Enums\TeacherTaskType;
 use App\Models\ClassSession;
 use App\Models\Lesson;
 use App\Models\ProjectSubmission;
+use App\Models\SupportTicket;
 use App\Models\TeacherTask;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
@@ -112,6 +113,39 @@ class TeachingPageTest extends TestCase
             });
     }
 
+    public function test_an_open_ticket_appears_in_the_needs_attention_group(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        SupportTicket::factory()->for($teacher, 'teacher')->create();
+
+        $this->actingAs($teacher)
+            ->get(route('teaching.index'))
+            ->assertInertia(function (Assert $page) {
+                $this->assertContains('needs_attention', $this->groupKeys($page));
+            });
+    }
+
+    public function test_a_resolved_ticket_does_not_appear_in_the_feed(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        SupportTicket::factory()->for($teacher, 'teacher')->resolved()->create();
+
+        $this->actingAs($teacher)
+            ->get(route('teaching.index'))
+            ->assertInertia(fn (Assert $page) => $page->where('chipCounts.tickets', 0));
+    }
+
+    public function test_search_matches_a_ticket_by_subject(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        SupportTicket::factory()->for($teacher, 'teacher')->create(['subject' => 'Unique Frozen Screen Issue']);
+        SupportTicket::factory()->for($teacher, 'teacher')->create(['subject' => 'Something else entirely']);
+
+        $this->actingAs($teacher)
+            ->get(route('teaching.index', ['search' => 'frozen screen']))
+            ->assertInertia(fn (Assert $page) => $page->where('chipCounts.tickets', 1));
+    }
+
     public function test_empty_groups_are_omitted_from_the_feed(): void
     {
         $teacher = User::factory()->teacher()->create();
@@ -198,13 +232,14 @@ class TeachingPageTest extends TestCase
         $this->actingAs($teacher)->get('/teaching/history')->assertRedirect('/teaching/archive');
     }
 
-    public function test_the_archive_page_lists_past_sessions_reviewed_projects_and_completed_tasks(): void
+    public function test_the_archive_page_lists_past_sessions_reviewed_projects_completed_tasks_and_resolved_tickets(): void
     {
         $teacher = User::factory()->teacher()->create();
         $student = User::factory()->student()->create();
         ClassSession::factory()->for($teacher, 'teacher')->for($student, 'student')->completed()->create(['zoom_meeting_id' => 'test-meeting']);
         ProjectSubmission::factory()->for($student, 'student')->reviewed()->create();
         TeacherTask::factory()->for($teacher, 'teacher')->completed()->create(['type' => TeacherTaskType::Manual]);
+        SupportTicket::factory()->for($teacher, 'teacher')->resolved()->create();
 
         $this->actingAs($teacher)
             ->get(route('teaching.archive'))
@@ -212,6 +247,7 @@ class TeachingPageTest extends TestCase
                 ->count('pastSessions.data', 1)
                 ->count('reviewedProjects.data', 1)
                 ->count('completedTasks.data', 1)
+                ->count('resolvedTickets.data', 1)
             );
     }
 

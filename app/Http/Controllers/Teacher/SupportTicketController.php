@@ -100,4 +100,27 @@ class SupportTicketController extends Controller
 
         return back();
     }
+
+    /**
+     * Rate how a resolved ticket was handled — optional, one-time (the
+     * teacher who opened it only), prompted automatically once resolved.
+     */
+    public function feedback(Request $request, SupportTicket $supportTicket): RedirectResponse
+    {
+        abort_unless($supportTicket->teacher_id === $request->user()->id, 403);
+        abort_unless($supportTicket->status === SupportTicketStatus::Resolved, 422);
+
+        $data = $request->validate([
+            'rating' => ['required', 'integer', 'min:1', 'max:5'],
+            'comment' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $supportTicket->update([
+            'rating' => $data['rating'],
+            'comment' => $data['comment'] ?? null,
+            'rated_at' => now(),
+        ]);
+
+        return back();
+    }
 }
