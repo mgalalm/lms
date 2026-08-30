@@ -20,7 +20,7 @@ const requestTypes: { key: TeacherRequestType; label: string; description: strin
     { key: 'leave', label: 'Leave Request', description: 'Planned or emergency leave request.', icon: CalendarClock },
     { key: 'excused_time', label: 'Excused Time', description: 'Absence for valid reasons.', icon: FileText },
     { key: 'hr_request', label: 'HR Request', description: 'Raise and manage HR tickets.', icon: UserCog },
-    { key: 'support', label: 'Support', description: 'Submit a ticket, inquiry, or recommendation.', icon: LifeBuoy },
+    { key: 'support', label: 'General Inquiry', description: 'Submit a ticket, inquiry, or recommendation.', icon: LifeBuoy },
     { key: 'resignation', label: 'Resignation', description: 'Stepping down from position.', icon: LogOut },
 ];
 

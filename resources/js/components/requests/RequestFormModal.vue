@@ -18,7 +18,7 @@ const typeLabels: Record<TeacherRequestType, string> = {
     leave: 'Leave Request',
     excused_time: 'Excused Time',
     hr_request: 'HR Request',
-    support: 'Support',
+    support: 'General Inquiry',
     resignation: 'Resignation',
 };
 

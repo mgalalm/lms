@@ -18,7 +18,7 @@ enum TeacherRequestType: string implements HasLabel
             self::Leave => 'Leave Request',
             self::ExcusedTime => 'Excused Time',
             self::HrRequest => 'HR Request',
-            self::Support => 'Support',
+            self::Support => 'General Inquiry',
             self::Resignation => 'Resignation',
         };
     }
