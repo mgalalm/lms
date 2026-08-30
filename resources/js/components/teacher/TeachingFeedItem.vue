@@ -264,13 +264,15 @@ const extraScreenshotCount = computed(() =>
                 </template>
 
                 <template v-else-if="item.type === 'task'">
-                    <span
-                        v-if="item.task!.type === 'session_prep'"
-                        class="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground"
-                        title="Resolves automatically when you open this lesson's guide or slides"
-                    >
-                        Auto
-                    </span>
+                    <template v-if="item.task!.type === 'session_prep'">
+                        <LessonMaterialsMenu v-if="item.task!.lesson" :lesson="item.task!.lesson" />
+                        <span
+                            class="rounded-full bg-muted px-2 py-1 text-xs text-muted-foreground"
+                            title="Resolves automatically when you open this lesson's guide or slides"
+                        >
+                            Auto
+                        </span>
+                    </template>
                     <Button v-else-if="!item.task!.completed_at" size="sm" variant="outline" @click="emit('markTaskComplete', item.task!.id)">
                         Mark done
                     </Button>

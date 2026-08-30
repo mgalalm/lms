@@ -199,6 +199,25 @@ class TeachingPageTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->where('chipCounts.tasks', 1));
     }
 
+    public function test_a_session_prep_tasks_lesson_includes_course_context_for_the_materials_menu(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $lesson = Lesson::factory()->create(['title' => 'Sprites and the Stage']);
+        $lesson->load('module.course');
+
+        TeacherTask::factory()->for($teacher, 'teacher')->for($lesson)->create([
+            'type' => TeacherTaskType::SessionPrep,
+            'due_at' => now()->addHour(),
+        ]);
+
+        $this->actingAs($teacher)
+            ->get(route('teaching.index'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('feed.0.items.0.task.lesson.id', $lesson->id)
+                ->where('feed.0.items.0.task.lesson.module.course.id', $lesson->module->course->id)
+            );
+    }
+
     public function test_search_matches_a_project_by_title(): void
     {
         $teacher = User::factory()->teacher()->create();

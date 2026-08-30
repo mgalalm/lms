@@ -81,7 +81,7 @@ class TeachingController extends Controller
             ->get();
 
         $tasks = TeacherTask::where('teacher_id', $user->id)
-            ->with('lesson')
+            ->with('lesson.module.course')
             ->when(! $showCompleted, fn ($query) => $query->pending())
             ->where(function ($query) use ($weekEnd) {
                 // Pending + overdue tasks stay visible no matter how old —

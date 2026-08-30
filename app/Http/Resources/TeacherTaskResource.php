@@ -24,10 +24,7 @@ class TeacherTaskResource extends JsonResource
             'is_overdue' => $this->isOverdue(),
             'class_session_id' => $this->class_session_id,
             'lesson_id' => $this->lesson_id,
-            'lesson' => $this->whenLoaded('lesson', fn () => $this->lesson ? [
-                'id' => $this->lesson->id,
-                'title' => $this->lesson->title,
-            ] : null),
+            'lesson' => $this->whenLoaded('lesson', fn () => $this->lesson ? new LessonResource($this->lesson) : null),
         ];
     }
 }

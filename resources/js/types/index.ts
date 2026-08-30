@@ -379,7 +379,7 @@ export interface TeacherTask {
     is_overdue: boolean;
     class_session_id: number | null;
     lesson_id: number | null;
-    lesson?: { id: number; title: string } | null;
+    lesson?: Lesson | null;
 }
 
 export type TeachingFeedItemType = 'session' | 'project' | 'task' | 'ticket';
