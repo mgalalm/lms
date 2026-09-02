@@ -5,9 +5,11 @@ namespace Tests\Feature\Filament;
 use App\Filament\Resources\Courses\Pages\EditCourse;
 use App\Filament\Resources\Courses\Pages\ListCourses;
 use App\Filament\Resources\Courses\RelationManagers\ModulesRelationManager;
+use App\Filament\Resources\Lessons\LessonResource;
 use App\Filament\Resources\Modules\Pages\EditModule;
 use App\Filament\Resources\Modules\RelationManagers\LessonsRelationManager;
 use App\Models\Course;
+use App\Models\Lesson;
 use App\Models\Module;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
@@ -101,6 +103,20 @@ class CurriculumAdminTest extends TestCase
             'course_id' => $course->id,
             'title' => 'M2: Chatbot Development',
         ]);
+    }
+
+    public function test_editing_a_lesson_via_the_relation_manager_links_to_the_full_lesson_edit_page(): void
+    {
+        $admin = $this->admin();
+        $module = Module::factory()->create();
+        $lesson = Lesson::factory()->for($module, 'module')->create();
+        $this->actingAs($admin);
+
+        Livewire::test(LessonsRelationManager::class, [
+            'ownerRecord' => $module,
+            'pageClass' => EditModule::class,
+        ])
+            ->assertTableActionHasUrl('edit', LessonResource::getUrl('edit', ['record' => $lesson]), record: $lesson);
     }
 
     public function test_admin_can_add_a_lesson_to_a_module_via_the_relation_manager(): void
