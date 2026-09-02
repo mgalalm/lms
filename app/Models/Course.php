@@ -20,10 +20,20 @@ class Course extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'title',
         'grade_band',
         'thumbnail_path',
+        'sort_order',
     ];
+
+    /**
+     * Display label — a course IS a grade band in this model (no parallel
+     * tracks within a grade), so this is a drop-in for any code that
+     * wants a generic "name" rather than the raw grade_band field.
+     */
+    public function getNameAttribute(): string
+    {
+        return $this->grade_band;
+    }
 
     /**
      * Get the modules belonging to this course.

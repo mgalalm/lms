@@ -101,7 +101,7 @@ const kicker = computed(() => {
 const title = computed(() => {
     if (props.item.type === 'session') {
         const lesson = props.item.session!.lesson;
-        return [lesson.module?.course?.title, lesson.module?.title, lesson.title].filter(Boolean).join(' / ');
+        return [lesson.module?.course?.grade_band, lesson.module?.title, lesson.title].filter(Boolean).join(' / ');
     }
 
     if (props.item.type === 'project') {
@@ -123,7 +123,7 @@ const secondaryLine = computed(() => {
 
     if (props.item.type === 'project') {
         const lesson = props.item.project!.lesson_project?.lesson;
-        return lesson ? [lesson.module?.course?.title, lesson.module?.title, lesson.title].filter(Boolean).join(' / ') : null;
+        return lesson ? [lesson.module?.course?.grade_band, lesson.module?.title, lesson.title].filter(Boolean).join(' / ') : null;
     }
 
     if (props.item.type === 'ticket') {

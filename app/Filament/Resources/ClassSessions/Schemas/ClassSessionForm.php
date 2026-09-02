@@ -38,7 +38,7 @@ class ClassSessionForm
                             $teacherProfile = User::find($value)?->teacherProfile;
 
                             if (! $teacherProfile || ! $teacherProfile->isCertifiedForCourse($course)) {
-                                $fail("This teacher hasn't completed \"{$course->title}\" (including its quiz) and can't be assigned to teach it yet.");
+                                $fail("This teacher hasn't completed \"{$course->name}\" (including its quiz) and can't be assigned to teach it yet.");
                             }
                         },
                     ]),
@@ -73,7 +73,7 @@ class ClassSessionForm
                     ->label('Lesson')
                     ->options(fn () => Lesson::with('module.course')->get()
                         ->mapWithKeys(fn (Lesson $lesson) => [
-                            $lesson->id => "{$lesson->module?->course?->title} / {$lesson->module?->title} / {$lesson->title}",
+                            $lesson->id => "{$lesson->module?->course?->name} / {$lesson->module?->title} / {$lesson->title}",
                         ]))
                     ->searchable()
                     ->live()

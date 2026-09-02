@@ -2,8 +2,6 @@
 
 namespace App\Filament\Resources\Courses\Tables;
 
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -14,14 +12,16 @@ class CoursesTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->defaultSort('sort_order')
             ->columns([
                 ImageColumn::make('thumbnail_path')
                     ->label('')
                     ->disk('public'),
-                TextColumn::make('title')
-                    ->searchable(),
                 TextColumn::make('grade_band')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('sort_order')
+                    ->sortable(),
                 TextColumn::make('modules_count')
                     ->label('Modules')
                     ->counts('modules'),
@@ -39,11 +39,6 @@ class CoursesTable
             ])
             ->recordActions([
                 EditAction::make(),
-            ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
             ]);
     }
 }

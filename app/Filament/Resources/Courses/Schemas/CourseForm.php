@@ -12,10 +12,14 @@ class CourseForm
     {
         return $schema
             ->components([
-                TextInput::make('title')
-                    ->required(),
                 TextInput::make('grade_band')
-                    ->placeholder('e.g. Grade 5-6'),
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->helperText('Grade bands come from the seeder, not editable here — only thumbnail and order.'),
+                TextInput::make('sort_order')
+                    ->numeric()
+                    ->default(0)
+                    ->required(),
                 FileUpload::make('thumbnail_path')
                     ->label('Thumbnail')
                     ->image()

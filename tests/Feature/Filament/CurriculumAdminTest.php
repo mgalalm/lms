@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Filament;
 
-use App\Filament\Resources\Courses\Pages\CreateCourse;
 use App\Filament\Resources\Courses\Pages\EditCourse;
 use App\Filament\Resources\Courses\Pages\ListCourses;
 use App\Filament\Resources\Courses\RelationManagers\ModulesRelationManager;
@@ -52,30 +51,33 @@ class CurriculumAdminTest extends TestCase
     public function test_admin_can_list_courses(): void
     {
         $admin = $this->admin();
-        Course::factory()->count(3)->create();
+        Course::factory()->sequence(
+            ['grade_band' => 'Grade 5 - 6'],
+            ['grade_band' => 'Grade 7 - 8'],
+            ['grade_band' => 'Grade 9 - 10'],
+        )->count(3)->create();
 
         $this->actingAs($admin);
 
         Livewire::test(ListCourses::class)->assertOk();
     }
 
-    public function test_admin_can_create_a_course(): void
+    public function test_admin_cannot_create_a_course(): void
     {
         $admin = $this->admin();
         $this->actingAs($admin);
 
-        Livewire::test(CreateCourse::class)
-            ->fillForm([
-                'title' => 'M4: Space Exploration with Minecraft',
-                'grade_band' => 'Grade 1-2',
-            ])
-            ->call('create')
-            ->assertHasNoFormErrors();
+        $this->get(route('filament.admin.resources.courses.create'))->assertForbidden();
+    }
 
-        $this->assertDatabaseHas('courses', [
-            'title' => 'M4: Space Exploration with Minecraft',
-            'grade_band' => 'Grade 1-2',
-        ]);
+    public function test_admin_cannot_delete_a_course(): void
+    {
+        $admin = $this->admin();
+        $course = Course::factory()->create();
+        $this->actingAs($admin);
+
+        Livewire::test(EditCourse::class, ['record' => $course->getRouteKey()])
+            ->assertActionDoesNotExist('delete');
     }
 
     public function test_admin_can_add_a_module_to_a_course_via_the_relation_manager(): void

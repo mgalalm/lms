@@ -22,7 +22,6 @@ class LmsCourseCardResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'title' => $this->title,
             'grade_band' => $this->grade_band,
             'thumbnail_url' => $this->thumbnail_path ? Storage::disk('public')->url($this->thumbnail_path) : null,
             'lessons_count' => $this->lessons_count,

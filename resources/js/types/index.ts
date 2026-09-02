@@ -61,8 +61,7 @@ export type BreadcrumbItemType = BreadcrumbItem;
 
 export interface Course {
     id: number;
-    title: string;
-    grade_band: string | null;
+    grade_band: string;
 }
 
 export interface Module {
@@ -187,8 +186,7 @@ export type LmsFilter = 'all' | 'not_started' | 'in_progress' | 'completed';
 
 export interface LmsCourseCard {
     id: number;
-    title: string;
-    grade_band: string | null;
+    grade_band: string;
     thumbnail_url: string | null;
     lessons_count: number;
     completed_lessons_count: number;
@@ -230,8 +228,7 @@ export interface LmsQuiz {
 
 export interface LmsCourseDetail {
     id: number;
-    title: string;
-    grade_band: string | null;
+    grade_band: string;
     thumbnail_url: string | null;
     progress_percentage: number;
     is_certified: boolean;

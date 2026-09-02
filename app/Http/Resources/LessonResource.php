@@ -22,7 +22,6 @@ class LessonResource extends JsonResource
                 'title' => $this->module->title,
                 'course' => $this->module->relationLoaded('course') ? [
                     'id' => $this->module->course->id,
-                    'title' => $this->module->course->title,
                     'grade_band' => $this->module->course->grade_band,
                 ] : null,
             ]),

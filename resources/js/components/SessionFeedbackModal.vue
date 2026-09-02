@@ -27,7 +27,7 @@ const emoji = computed(() => {
 });
 
 function lessonPath(session: ClassSession): string {
-    return [session.lesson.module?.course?.title, session.lesson.module?.title, session.lesson.title].filter(Boolean).join(' / ');
+    return [session.lesson.module?.course?.grade_band, session.lesson.module?.title, session.lesson.title].filter(Boolean).join(' / ');
 }
 
 function submit(): void {

@@ -18,8 +18,9 @@ class CourseFactory extends Factory
     public function definition(): array
     {
         return [
-            'title' => 'M'.fake()->numberBetween(1, 12).': '.fake()->words(3, true),
-            'grade_band' => fake()->randomElement(['Grade 1-2', 'Grade 3-4', 'Grade 5-6', 'Grade 7-8']),
+            // Not ->unique() — only 4 possible values, would throw
+            // OverflowException once exhausted across the whole suite run.
+            'grade_band' => fake()->randomElement(['Grade 5 - 6', 'Grade 7 - 8', 'Grade 9 - 10', 'Grade 11 - 12']),
         ];
     }
 }

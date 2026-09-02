@@ -13,7 +13,7 @@ class ModuleForm
         return $schema
             ->components([
                 Select::make('course_id')
-                    ->relationship('course', 'title')
+                    ->relationship('course', 'grade_band')
                     ->required(),
                 TextInput::make('title')
                     ->required(),

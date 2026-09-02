@@ -52,13 +52,18 @@ const hasCourses = props.gradeBands.some((band) => band.courses.length > 0);
                         class="flex flex-col overflow-hidden rounded-xl border border-sidebar-border/70 bg-card transition-colors hover:border-sidebar-border dark:border-sidebar-border"
                     >
                         <div class="flex h-32 items-center justify-center bg-muted">
-                            <img v-if="course.thumbnail_url" :src="course.thumbnail_url" :alt="course.title" class="h-full w-full object-cover" />
+                            <img
+                                v-if="course.thumbnail_url"
+                                :src="course.thumbnail_url"
+                                :alt="course.grade_band"
+                                class="h-full w-full object-cover"
+                            />
                             <span v-else class="text-xs text-muted-foreground">No thumbnail</span>
                         </div>
 
                         <div class="flex flex-1 flex-col gap-2 p-4">
                             <div class="flex items-start justify-between gap-2">
-                                <h3 class="font-medium">{{ course.title }}</h3>
+                                <h3 class="font-medium">{{ course.grade_band }}</h3>
                                 <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium" :class="statusPillClasses[course.status]">
                                     {{ course.status_label }}
                                 </span>

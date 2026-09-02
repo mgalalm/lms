@@ -120,10 +120,10 @@
 
 ### LMS (Nav Tab)
 - **Status filter tabs** — In Progress / Not Started / Completed
-- **Content organized by grade band** — e.g. "Grade 1 - 2," with course cards underneath each heading
-- **Course card** — thumbnail image, title (e.g. "M4: Space Exploration with Minecraft"), completion percentage (e.g. "75% Completed"), lesson count (e.g. "12 Lessons"), a progress bar, and a status pill (e.g. "Quiz Pending")
+- **A course IS a grade band** — there's no separate course title or a grid of multiple course cards within a grade band; each grade band (e.g. "Grade 5 - 6") is itself one course card. The four grade bands are fixed reference data (seeded, not admin-created ad hoc).
+- **Course card** — thumbnail image, the grade band as the heading (e.g. "Grade 5 - 6"), completion percentage (e.g. "75% Completed"), lesson count (e.g. "12 Lessons"), a progress bar, and a status pill (e.g. "Quiz Pending")
 - **Resources** — top-right link/button, likely a shared library of teaching materials
-- Confirms course content is built around **modules with a Minecraft/game-based theme** for younger grades (mirrors the "M4: Space Exploration" and earlier-seen Minecraft credential)
+- Course content is built around **modules** with their own titles (e.g. "M4: Space Exploration with Minecraft") — a Minecraft/game-based theme for younger grades (mirrors the earlier-seen Minecraft credential). Module/lesson titles live one level below the course now, not on the course itself.
 - This is distinct from **Teaching → Materials** (session-specific) — the LMS tab appears to be the teacher's view of the full curriculum library across their assigned grades/modules, tracked by completion status
 - **Certification requirement**: teachers must complete a module/curriculum themselves (as a learner, including its quiz) before they're allowed to teach it to students. Completing it awards a **certificate**, which is what the **Certificates** stat tile on the Insights page counts (e.g. "19"). This turns the LMS tab into a prerequisite gate for teaching eligibility, not just a reference library — a teacher's course-completion status here likely determines which sessions/grades they can be assigned to in Teaching → Sessions Schedule
 
@@ -132,9 +132,9 @@
   - **Leave Request** — planned or emergency leave request
   - **Excused Time** — absence for valid reasons
   - **HR Request** — raise and manage HR tickets
-  - **Support** — submit a ticket, inquiry, or recommendation
+  - **General Inquiry** — submit a ticket, inquiry, or recommendation (renamed from "Support" — that name collided with the unrelated, session-tied support ticket feature in Teaching)
   - **Resignation** — stepping down from position
-- **History section** — below the request cards, tabbed by type (Leave Request, Excused Time, HR Request, Support, Resignation)
+- **History section** — below the request cards, tabbed by type (Leave Request, Excused Time, HR Request, General Inquiry, Resignation)
 - **History list (Leave Request example)** — each entry shows:
   - Request type/subtype and duration (e.g. "Planned Leaves · 1 Day(S)" or "Sick · 1 Day(S)")
   - The date the leave covers (in parentheses)

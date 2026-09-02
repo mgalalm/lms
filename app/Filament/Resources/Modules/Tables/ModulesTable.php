@@ -14,7 +14,7 @@ class ModulesTable
     {
         return $table
             ->columns([
-                TextColumn::make('course.title')
+                TextColumn::make('course.grade_band')
                     ->searchable(),
                 TextColumn::make('title')
                     ->searchable(),

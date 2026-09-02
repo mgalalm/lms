@@ -39,7 +39,7 @@ const lessonPath = computed(() => {
         return '';
     }
 
-    return [lesson.module?.course?.title, lesson.module?.title, lesson.title].filter(Boolean).join(' / ');
+    return [lesson.module?.course?.grade_band, lesson.module?.title, lesson.title].filter(Boolean).join(' / ');
 });
 
 const pingParentDialogOpen = ref(false);

@@ -57,7 +57,7 @@ function selectTab(tab: ArchiveTab): void {
 }
 
 function lessonPath(session: ClassSession): string {
-    return [session.lesson.module?.course?.title, session.lesson.module?.title, session.lesson.title].filter(Boolean).join(' / ');
+    return [session.lesson.module?.course?.grade_band, session.lesson.module?.title, session.lesson.title].filter(Boolean).join(' / ');
 }
 
 function scheduledLabel(session: ClassSession): string {

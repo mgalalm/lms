@@ -22,7 +22,7 @@ class LmsController extends Controller
         $filter = $request->string('filter', 'all')->value();
         $teacherProfile = $request->user()->teacherProfile;
 
-        $courses = Course::query()->withCount('lessons')->orderBy('grade_band')->orderBy('title')->get();
+        $courses = Course::query()->withCount('lessons')->orderBy('sort_order')->get();
 
         $completedCounts = $teacherProfile->completedLessonCountsByCourse();
         $completions = $teacherProfile->courseCompletions()->get()->keyBy('course_id');

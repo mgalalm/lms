@@ -46,7 +46,7 @@ function toggleSlideshow(lessonId: number): void {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'LMS', href: route('lms.index') },
-    { title: props.course.title, href: route('lms.show', props.course.id) },
+    { title: props.course.grade_band, href: route('lms.show', props.course.id) },
 ];
 
 const page = usePage<SharedData>();
@@ -110,13 +110,13 @@ onMounted(async () => {
 </script>
 
 <template>
-    <Head :title="course.title" />
+    <Head :title="course.grade_band" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-6 p-4">
             <div>
                 <div class="flex items-center justify-between gap-2">
-                    <h1 class="text-lg font-semibold">{{ course.title }}</h1>
+                    <h1 class="text-lg font-semibold">{{ course.grade_band }}</h1>
                     <span
                         v-if="course.is_certified"
                         class="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-950 dark:text-green-300"

@@ -8,7 +8,7 @@ Core entities inferred from the documented feature set (see [Student Dashboard](
 - **StudentProfile** — grade level, language, points/coins balance
 
 ## Learning content
-- **Course** → **Module** → **Lesson** (with Recap video, Reading, Quiz relations)
+- **Course** → **Module** → **Lesson** (with Recap video, Reading, Quiz relations). A course IS a grade band — no separate title, no parallel tracks within a grade. `grade_band` is unique and non-nullable; the four bands (Grade 5 - 6, 7 - 8, 9 - 10, 11 - 12) are fixed reference data seeded once, not admin-creatable. Modules/lessons still have their own titles.
 - **TeacherCourseCompletion** — pivot linking TeacherProfile ↔ Course, tracking whether the teacher has completed the course themselves and passed its quiz
   - Gates whether a teacher can be assigned to teach that course/module (see Teacher Dashboard → LMS certification requirement)
   - Completion triggers certificate generation (PDF) and increments the teacher's Certificates stat in Insights
@@ -23,7 +23,7 @@ Core entities inferred from the documented feature set (see [Student Dashboard](
 - **Task** — homework sent in-chat to students; also used for the teacher's own internal task list (same model, different `assignable_type`)
 
 ## HR / operations
-- **Request** — polymorphic model with a `type` enum (Leave, Excused Time, HR Request, Support, Resignation) + JSON payload, since they all share submit → review → approve/reject
+- **Request** — polymorphic model with a `type` enum (Leave, Excused Time, HR Request, General Inquiry, Resignation) + JSON payload, since they all share submit → review → approve/reject. ("General Inquiry" — the underlying enum value is still `support`, only the display label changed to avoid colliding with the unrelated, session-tied support ticket feature.)
 - **PolicyDocument** — versioned, category-tagged (Leaves, Meetings, HR Requests, Schedule Change, Sessions, Community, Support, Resignation), with sub-categories for Leaves specifically (Annual, Umrah/Hajj, Paternity, Maternity, Marriage, Sick, Excused Time, Emergency, Death/Condolence, No Show, Public Holidays)
 - **LeaveCredit** — live balance tracker per teacher (monthly limit, annual allotment)
 - **PayrollEntry** — monthly, per teacher: basic salary, bonus/deduction (with detail breakdown), net amount, status, bank info, completed date

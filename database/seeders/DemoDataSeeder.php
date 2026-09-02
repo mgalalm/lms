@@ -79,20 +79,14 @@ class DemoDataSeeder extends Seeder
      */
     private function seedCurriculumAndCertifications(User $teacher, User $teacherTwo): array
     {
-        $courseOne = Course::factory()->create([
-            'title' => 'M1: Intro to Scratch',
-            'grade_band' => 'Grade 3-4',
-        ]);
+        $courseOne = Course::where('grade_band', 'Grade 5 - 6')->firstOrFail();
         $moduleOne = $courseOne->modules()->create(['title' => 'Getting Started', 'order' => 1]);
         $lessonOne = Lesson::factory()->for($moduleOne, 'module')->create([
             'title' => 'L1: Sprites and the Stage',
             'order' => 1,
         ]);
 
-        $courseTwo = Course::factory()->create([
-            'title' => 'M2: Chatbot Development',
-            'grade_band' => 'Grade 5-6',
-        ]);
+        $courseTwo = Course::where('grade_band', 'Grade 7 - 8')->firstOrFail();
         $moduleTwo = $courseTwo->modules()->create(['title' => 'Building a Bot', 'order' => 1]);
         $lessonTwoA = Lesson::factory()->for($moduleTwo, 'module')->create([
             'title' => 'L1: Intents and Responses',

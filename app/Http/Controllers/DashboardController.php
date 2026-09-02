@@ -102,7 +102,7 @@ class DashboardController extends Controller
                 'title' => $currentLesson->title,
                 'reading_content' => $currentLesson->reading_content,
                 'module_title' => $currentLesson->module?->title,
-                'course_title' => $currentLesson->module?->course?->title,
+                'course_title' => $currentLesson->module?->course?->name,
                 'video' => $currentLesson->video?->status === LessonVideoStatus::Published
                     ? ['duration_seconds' => $currentLesson->video->duration_seconds]
                     : null,

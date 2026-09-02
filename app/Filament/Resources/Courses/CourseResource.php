@@ -15,6 +15,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 class CourseResource extends Resource
@@ -27,7 +28,27 @@ class CourseResource extends Resource
 
     protected static ?int $navigationSort = 30;
 
-    protected static ?string $recordTitleAttribute = 'title';
+    protected static ?string $recordTitleAttribute = 'grade_band';
+
+    /**
+     * Grade bands are fixed reference data from CourseSeeder, not
+     * ad-hoc-creatable/deletable — admins can only edit a row's
+     * thumbnail and sort_order.
+     */
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return false;
+    }
+
+    public static function canDeleteAny(): bool
+    {
+        return false;
+    }
 
     public static function form(Schema $schema): Schema
     {

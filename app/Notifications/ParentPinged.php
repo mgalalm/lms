@@ -53,7 +53,7 @@ class ParentPinged extends Notification implements ShouldQueue
     {
         $lesson = $this->classSession->lesson;
 
-        return collect([$lesson->module?->course?->title, $lesson->module?->title, $lesson->title])
+        return collect([$lesson->module?->course?->name, $lesson->module?->title, $lesson->title])
             ->filter()
             ->join(' / ');
     }
