@@ -53,6 +53,21 @@ class ZoomClient
     }
 
     /**
+     * Disable the "Co-host" permission on the given Zoom user's account, so
+     * a host running a meeting under it can no longer promote any
+     * participant (including a student) to co-host — a co-host gets the
+     * same in-meeting controls as the host. Idempotent, safe to re-run.
+     */
+    public function disableCoHost(string $zoomUserId): void
+    {
+        Http::withToken($this->getAccessToken())
+            ->patch(self::API_BASE_URL."/users/{$zoomUserId}/settings", [
+                'in_meeting' => ['co_host' => false],
+            ])
+            ->throw();
+    }
+
+    /**
      * Look up a past meeting's recap play URL directly, for backfilling
      * sessions whose recording.completed webhook was never captured (or
      * was captured before zoom_recap_url existed). Returns null if Zoom

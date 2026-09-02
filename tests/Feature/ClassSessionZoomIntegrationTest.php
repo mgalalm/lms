@@ -130,6 +130,27 @@ class ClassSessionZoomIntegrationTest extends TestCase
         Http::assertSent(fn ($request) => $request->url() === 'https://api.zoom.us/v2/users/host@example.com/meetings');
     }
 
+    public function test_disable_co_host_command_disables_co_host_on_the_configured_zoom_host(): void
+    {
+        Http::fake([
+            'zoom.us/oauth/token' => Http::response(['access_token' => 'fake-token', 'expires_in' => 3600]),
+            'api.zoom.us/v2/users/*/settings' => Http::response([]),
+        ]);
+
+        $this->artisan('zoom:disable-co-host')->assertSuccessful();
+
+        Http::assertSent(fn ($request) => $request->url() === 'https://api.zoom.us/v2/users/host@example.com/settings'
+            && $request->method() === 'PATCH'
+            && $request['in_meeting']['co_host'] === false);
+    }
+
+    public function test_disable_co_host_command_fails_without_a_configured_zoom_host(): void
+    {
+        config(['services.zoom.host_user_id' => null]);
+
+        $this->artisan('zoom:disable-co-host')->assertFailed();
+    }
+
     public function test_url_validation_handshake_is_answered_without_requiring_a_signature(): void
     {
         $response = $this->postJson('/webhooks/zoom', [
