@@ -3,8 +3,9 @@ import NextSessionCard from '@/components/NextSessionCard.vue';
 import LeaderboardList from '@/components/gamification/LeaderboardList.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
-import type { BreadcrumbItem, ClassSession, LeaderboardEntry } from '@/types';
-import { Head, Link } from '@inertiajs/vue3';
+import type { BreadcrumbItem, ClassSession, LeaderboardEntry, SharedData } from '@/types';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { useEchoNotification } from '@laravel/echo-vue';
 
 defineProps<{
     nextSession: ClassSession | null;
@@ -14,6 +15,16 @@ defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/dashboard' }];
+
+const page = usePage<SharedData>();
+
+// A newly scheduled session may become the next session shown here —
+// re-fetch it without requiring a manual refresh.
+useEchoNotification(
+    `App.Models.User.${page.props.auth.user.id}`,
+    () => router.reload({ only: ['nextSession'] }),
+    'class-session.scheduled',
+);
 </script>
 
 <template>

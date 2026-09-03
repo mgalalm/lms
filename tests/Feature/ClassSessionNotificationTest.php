@@ -74,6 +74,23 @@ class ClassSessionNotificationTest extends TestCase
         $this->assertSame(route('dashboard'), $data['url']);
     }
 
+    public function test_notification_broadcasts_for_realtime_delivery(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $student = User::factory()->student()->create();
+
+        $session = ClassSession::factory()
+            ->for($teacher, 'teacher')
+            ->for($student, 'student')
+            ->create(['type' => SessionType::Physical]);
+
+        $notification = new ClassSessionScheduled($session, 'teacher');
+
+        $this->assertContains('broadcast', $notification->via($teacher));
+        $this->assertSame('class-session.scheduled', $notification->broadcastType());
+        $this->assertSame($notification->toArray($teacher), $notification->toBroadcast($teacher)->data);
+    }
+
     public function test_a_user_can_mark_their_own_notification_as_read(): void
     {
         $teacher = User::factory()->teacher()->create();

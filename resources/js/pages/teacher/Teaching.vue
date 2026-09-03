@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { onClickOutside } from '@vueuse/core';
-import type { BreadcrumbItem, FeedbackTemplate, TeachingFeedGroup, TeachingFeedItemType } from '@/types';
-import { Head, router } from '@inertiajs/vue3';
+import type { BreadcrumbItem, FeedbackTemplate, SharedData, TeachingFeedGroup, TeachingFeedItemType } from '@/types';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import { useEchoNotification } from '@laravel/echo-vue';
 import { CalendarCheck2, Filter as FilterIcon } from 'lucide-vue-next';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
@@ -25,6 +26,16 @@ const props = defineProps<{
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Teaching', href: route('teaching.index') }];
+
+const page = usePage<SharedData>();
+
+// A newly scheduled session should show up here without a manual refresh —
+// re-fetch the same feed data ping-parent/project-review already reload.
+useEchoNotification(
+    `App.Models.User.${page.props.auth.user.id}`,
+    () => router.reload({ only: ['feed', 'summary', 'chipCounts'] }),
+    'class-session.scheduled',
+);
 
 const now = ref(Date.now());
 const interval = setInterval(() => (now.value = Date.now()), 30_000);
