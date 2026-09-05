@@ -217,11 +217,11 @@ export interface LmsModuleQuiz {
     certified: boolean;
     lessons_complete: boolean;
     can_attempt: boolean;
-    /** An open attempt stays finishable even at zero attempts remaining. */
-    has_open_attempt: boolean;
+/** True only on the render right after Start; leaving the page clears it. */
+    is_active: boolean;
     attempts_remaining: number;
     passing_score: number;
-    /** Only populated while an attempt is open — drawn fresh per attempt. */
+    /** Only populated while is_active — drawn fresh on each Start. */
     questions: { id: number; question_text: string; options: string[] }[];
 }
 

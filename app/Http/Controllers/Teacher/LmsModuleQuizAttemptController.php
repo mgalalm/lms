@@ -67,7 +67,12 @@ class LmsModuleQuizAttemptController extends Controller
             $teacherProfile->moduleQuizAttempts()->create($payload);
         }
 
-        return back();
+        // The draw is only shown for the render this redirect produces.
+        // Navigating away and coming back drops the flash, so the module
+        // shows a bare "Start Quiz" again rather than the old questions —
+        // the attempt row survives only so a submit can be graded against
+        // what was drawn.
+        return back()->with('moduleQuizStarted', $module->id);
     }
 
     /**

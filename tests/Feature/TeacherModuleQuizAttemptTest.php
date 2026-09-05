@@ -178,22 +178,50 @@ class TeacherModuleQuizAttemptTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_the_lms_page_only_exposes_questions_while_an_attempt_is_open(): void
+    public function test_questions_appear_only_on_the_render_right_after_starting(): void
     {
         [$teacher, $module] = $this->readyModule();
 
+        // Before starting: no questions, just the Start affordance.
         $this->actingAs($teacher)
             ->get(route('lms.show', $module->course))
             ->assertInertia(fn ($page) => $page
                 ->where('course.modules.0.quiz.can_attempt', true)
+                ->where('course.modules.0.quiz.is_active', false)
                 ->where('course.modules.0.quiz.questions', [])
             );
 
-        $this->actingAs($teacher)->post(route('lms.modules.quiz.start', [$module->course, $module]));
+        // Pressing Start lands back on the module with the draw visible.
+        $this->actingAs($teacher)
+            ->followingRedirects()
+            ->post(route('lms.modules.quiz.start', [$module->course, $module]))
+            ->assertInertia(fn ($page) => $page
+                ->where('course.modules.0.quiz.is_active', true)
+                ->has('course.modules.0.quiz.questions', 4)
+            );
+    }
 
+    public function test_navigating_back_to_the_module_hides_the_quiz_again(): void
+    {
+        [$teacher, $module] = $this->readyModule();
+
+        // followingRedirects mirrors the browser: Inertia follows the
+        // redirect straight away, so the flash is consumed by that render.
+        $this->actingAs($teacher)
+            ->followingRedirects()
+            ->post(route('lms.modules.quiz.start', [$module->course, $module]));
+
+        // Coming back later: the draw is gone and only Start remains, so
+        // the teacher can't sit on a stale set of questions.
         $this->actingAs($teacher)
             ->get(route('lms.show', $module->course))
-            ->assertInertia(fn ($page) => $page->has('course.modules.0.quiz.questions', 4));
+            ->assertInertia(fn ($page) => $page
+                ->where('course.modules.0.quiz.is_active', false)
+                ->where('course.modules.0.quiz.questions', [])
+            );
+
+        // The attempt itself survives — it's what a submit is graded on.
+        $this->assertSame(1, TeacherModuleQuizAttempt::whereNull('submitted_at')->count());
     }
 
     public function test_an_open_final_attempt_can_still_be_resumed_and_submitted(): void
@@ -206,6 +234,10 @@ class TeacherModuleQuizAttemptTest extends TestCase
         TeacherModuleQuizAttempt::factory()->count(2)
             ->for($teacher->teacherProfile)->for($module)->create();
 
+        // Visit the module first so the controller's back() has somewhere
+        // to return to, as it would in a browser.
+        $this->actingAs($teacher)->get(route('lms.show', $module->course));
+
         $this->actingAs($teacher)
             ->post(route('lms.modules.quiz.start', [$module->course, $module]))
             ->assertRedirect();
@@ -213,18 +245,15 @@ class TeacherModuleQuizAttemptTest extends TestCase
         $this->assertSame(3, TeacherModuleQuizAttempt::count());
         $this->assertNull(TeacherModuleQuizAttempt::latest('id')->first()->submitted_at);
 
-        // Teacher navigates away and comes back to finish it.
+        // Teacher navigates away and comes back. Pressing Start again must
+        // still offer the quiz rather than the out-of-attempts message,
+        // even though the cap is spent.
         $this->actingAs($teacher)
+            ->followingRedirects()
             ->post(route('lms.modules.quiz.start', [$module->course, $module]))
-            ->assertRedirect();
-
-        // The page must still offer the open attempt rather than the
-        // out-of-attempts message.
-        $this->actingAs($teacher)
-            ->get(route('lms.show', $module->course))
             ->assertInertia(fn ($page) => $page
                 ->where('course.modules.0.quiz.attempts_remaining', 0)
-                ->where('course.modules.0.quiz.has_open_attempt', true)
+                ->where('course.modules.0.quiz.is_active', true)
                 ->has('course.modules.0.quiz.questions', 4)
             );
 

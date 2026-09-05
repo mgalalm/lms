@@ -48,10 +48,20 @@ unlocks.
   skipped, not blocking.
 - Drawn `question_ids` are stored on the attempt so grading scores what
   was actually shown.
-- **"Start Quiz" always redraws** — it doubles as the refresh control
-  (user's explicit call: "I need just to refresh the questions by
-  clicking on the start quiz button"). The button stays visible while
-  questions are on screen, labelled "Start Quiz (new questions)".
+- **"Start Quiz" always redraws**, and a draw is only visible on the
+  render right after pressing it. Navigating back to the module shows a
+  bare Start button, never the previous questions — the user's actual
+  ask: "when the teacher move away the quiz has to be removed and only
+  Start quiz to be shown".
+  - Implemented with a `moduleQuizStarted` flash keyed to the module id;
+    the resource exposes `is_active` and withholds questions unless it's
+    set. The attempt row still persists — it's what a submit is graded
+    against.
+  - Test gotcha: the flash survives to the *next* request, so a test that
+    POSTs start without `followingRedirects()` will still see it on a
+    following GET. Use `followingRedirects()` to mirror the browser,
+    where Inertia consumes it on the redirected render. Also GET the
+    module page first, or `back()` has no previous URL to return to.
   - Redraw is **in place** on the open attempt, so refreshing never
     consumes extra attempts — an attempt is spent by existing, not per
     draw. Verified by test.

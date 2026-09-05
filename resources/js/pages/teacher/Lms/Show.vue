@@ -241,23 +241,21 @@ onMounted(async () => {
                         Complete every lesson above to unlock this module's quiz.
                     </p>
                     <p
-                        v-else-if="module.quiz.attempts_remaining === 0 && !module.quiz.has_open_attempt"
+                        v-else-if="module.quiz.attempts_remaining === 0 && !module.quiz.is_active"
                         class="text-sm text-destructive"
                     >
                         You've used all your attempts without passing. Ask an admin to reset your attempts before trying again.
                     </p>
 
-                    <template v-else-if="module.quiz.can_attempt || module.quiz.has_open_attempt">
+                    <template v-else-if="module.quiz.can_attempt || module.quiz.is_active">
                         <p class="text-sm text-muted-foreground">
                             {{ module.quiz.passing_score }}% to pass · {{ module.quiz.attempts_remaining }} attempt(s) left ·
                             questions are drawn fresh each attempt.
                         </p>
 
-                        <Button size="sm" :variant="module.quiz.questions.length ? 'outline' : 'default'" @click="startModuleQuiz(module)">
-                            {{ module.quiz.questions.length ? 'Start Quiz (new questions)' : 'Start Quiz' }}
-                        </Button>
+                        <Button v-if="!module.quiz.is_active" size="sm" @click="startModuleQuiz(module)">Start Quiz</Button>
 
-                        <div v-if="module.quiz.questions.length" class="space-y-4">
+                        <div v-else class="space-y-4">
                             <div v-for="(question, index) in module.quiz.questions" :key="question.id" class="space-y-2">
                                 <p class="text-sm font-medium">{{ index + 1 }}. {{ question.question_text }}</p>
                                 <label v-for="option in question.options" :key="option" class="flex items-center gap-2 text-sm">

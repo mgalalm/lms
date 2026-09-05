@@ -91,19 +91,27 @@ class LmsCourseDetailResource extends JsonResource
             ->whereNull('submitted_at')
             ->first();
 
+        $isActive = $openAttempt !== null
+            && session('moduleQuizStarted') === $module->id;
+
         return [
             'is_ready' => $assembler->isReady($module),
             'bank_size' => $assembler->bankSize($module),
             'certified' => $this->teacherProfile->isCertifiedForModule($module),
             'lessons_complete' => $this->teacherProfile->hasCompletedAllLessonsForModule($module),
             'can_attempt' => $this->teacherProfile->canAttemptModuleQuiz($module),
-            // An open attempt stays finishable even at zero remaining —
-            // it's already counted, so the page must offer it rather than
-            // showing the out-of-attempts message over the top of it.
-            'has_open_attempt' => $openAttempt !== null,
+            // Only true for the render immediately after "Start Quiz".
+            // Coming back to the module later drops the flash, so the
+            // questions disappear and only the Start button remains — the
+            // teacher gets a fresh draw rather than the stale one.
+            //
+            // Kept true even at zero attempts remaining: the open attempt
+            // is itself one of the counted ones, so the page must let them
+            // finish it rather than showing the out-of-attempts message.
+            'is_active' => $isActive,
             'attempts_remaining' => $this->teacherProfile->attemptsRemainingFor($module),
             'passing_score' => (int) Setting::get(SettingKey::QuizPassingScore),
-            'questions' => $openAttempt
+            'questions' => $isActive
                 ? $openAttempt->questions()->map(fn ($question) => [
                     'id' => $question->id,
                     'question_text' => $question->question_text,
