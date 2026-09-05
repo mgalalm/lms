@@ -47,15 +47,23 @@ unlocks.
   drops out and the rest redistribute. Lessons with no published quiz are
   skipped, not blocking.
 - Drawn `question_ids` are stored on the attempt so grading scores what
-  was actually shown. **Restarting resumes an open attempt** rather than
-  redrawing — otherwise a teacher could reroll for easier questions.
-- **Except when the module changed underneath them**: each attempt stores
-  a `bank_fingerprint` (sha256 of the sorted eligible question ids). If
-  lessons were added/removed or quizzes published/unpublished/regenerated
-  since the draw, the open attempt is **redrawn in place** — same row, so
-  the content change doesn't consume one of the teacher's attempts.
-  Rewording a question keeps its id and so does NOT redraw (deliberate —
-  composition changes invalidate a draw, copy edits don't).
+  was actually shown.
+- **"Start Quiz" always redraws** — it doubles as the refresh control
+  (user's explicit call: "I need just to refresh the questions by
+  clicking on the start quiz button"). The button stays visible while
+  questions are on screen, labelled "Start Quiz (new questions)".
+  - Redraw is **in place** on the open attempt, so refreshing never
+    consumes extra attempts — an attempt is spent by existing, not per
+    draw. Verified by test.
+  - **Deliberate trade**: a teacher can restart until they like the draw.
+    The user explicitly relaxed this ("doesn't need to be that restrict
+    for now so they can look around it") after I proposed a timed-sitting
+    model to close it. If exam rigour is ever wanted, the plan was:
+    `expires_at` per attempt + auto-finalise on expiry, which makes
+    previewing cost an attempt.
+  - `bank_fingerprint` is still recorded but is now **informational** —
+    it was the key for resume-vs-redraw under the old rule. Left in place
+    rather than dropped, since it's what a stricter rule would key off.
 - **Bug found and fixed while explaining the flow**: the resume lookup
   originally sat *after* the attempt-cap guard. Since an open attempt
   already counts toward the cap, a teacher who started their *final*

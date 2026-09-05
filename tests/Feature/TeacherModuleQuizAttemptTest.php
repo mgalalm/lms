@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Enums\SettingKey;
 use App\Models\Lesson;
 use App\Models\LessonQuiz;
-use App\Models\LessonQuizQuestion;
 use App\Models\Module;
 use App\Models\Setting;
 use App\Models\TeacherModuleQuizAttempt;
@@ -40,19 +39,31 @@ class TeacherModuleQuizAttemptTest extends TestCase
         $this->assertNull($attempt->submitted_at);
     }
 
-    public function test_restarting_resumes_the_open_attempt_rather_than_redrawing(): void
+    public function test_pressing_start_again_redraws_the_questions(): void
     {
         [$teacher, $module] = $this->readyModule();
 
         $this->actingAs($teacher)->post(route('lms.modules.quiz.start', [$module->course, $module]));
         $first = TeacherModuleQuizAttempt::sole()->question_ids;
 
-        // A refresh must not reroll the draw — otherwise a teacher could
-        // keep restarting until they liked the questions.
+        // "Start Quiz" is the refresh control: pressing it again hands the
+        // teacher a fresh draw rather than the previous one.
         $this->actingAs($teacher)->post(route('lms.modules.quiz.start', [$module->course, $module]));
 
+        $this->assertNotSame($first, TeacherModuleQuizAttempt::sole()->question_ids);
+    }
+
+    public function test_redrawing_does_not_consume_extra_attempts(): void
+    {
+        [$teacher, $module] = $this->readyModule();
+
+        foreach (range(1, 4) as $ignored) {
+            $this->actingAs($teacher)->post(route('lms.modules.quiz.start', [$module->course, $module]));
+        }
+
+        // Redrawn in place — four presses, still one attempt against the cap.
         $this->assertSame(1, TeacherModuleQuizAttempt::count());
-        $this->assertSame($first, TeacherModuleQuizAttempt::sole()->question_ids);
+        $this->assertSame(1, $teacher->teacherProfile->attemptsUsedFor($module));
     }
 
     public function test_passing_certifies_the_teacher_for_the_module(): void
@@ -271,7 +282,8 @@ class TeacherModuleQuizAttemptTest extends TestCase
         $after = TeacherModuleQuizAttempt::sole();
 
         // Redrawn in place — not a second attempt, so the content change
-        // doesn't cost the teacher one of their three.
+        // doesn't cost the teacher one of their three, and the recorded
+        // fingerprint tracks the module's new shape.
         $this->assertSame($before->id, $after->id);
         $this->assertNotSame($before->bank_fingerprint, $after->bank_fingerprint);
         $this->assertSame(1, $teacher->teacherProfile->attemptsUsedFor($module));
@@ -295,34 +307,6 @@ class TeacherModuleQuizAttemptTest extends TestCase
         $this->assertNotSame($before->bank_fingerprint, $after->bank_fingerprint);
         // Every drawn question must come from what still exists.
         $this->assertCount(4, $after->questions());
-    }
-
-    public function test_an_unchanged_module_still_resumes_rather_than_redrawing(): void
-    {
-        [$teacher, $module] = $this->readyModule();
-
-        $this->actingAs($teacher)->post(route('lms.modules.quiz.start', [$module->course, $module]));
-        $before = TeacherModuleQuizAttempt::sole()->question_ids;
-
-        $this->actingAs($teacher)->post(route('lms.modules.quiz.start', [$module->course, $module]));
-
-        $this->assertSame($before, TeacherModuleQuizAttempt::sole()->question_ids);
-    }
-
-    public function test_editing_a_question_in_place_does_not_redraw(): void
-    {
-        [$teacher, $module] = $this->readyModule();
-
-        $this->actingAs($teacher)->post(route('lms.modules.quiz.start', [$module->course, $module]));
-        $before = TeacherModuleQuizAttempt::sole()->question_ids;
-
-        // Rewording keeps the same question id, so the bank composition is
-        // unchanged and the in-progress attempt survives.
-        LessonQuizQuestion::find($before[0])->update(['question_text' => 'Reworded']);
-
-        $this->actingAs($teacher)->post(route('lms.modules.quiz.start', [$module->course, $module]));
-
-        $this->assertSame($before, TeacherModuleQuizAttempt::sole()->question_ids);
     }
 
     /**

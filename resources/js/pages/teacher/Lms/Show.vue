@@ -69,7 +69,18 @@ function moduleQuizAnswered(module: LmsModule): boolean {
 }
 
 function startModuleQuiz(module: LmsModule): void {
-    router.post(route('lms.modules.quiz.start', [props.course.id, module.id]), {}, { preserveScroll: true });
+    router.post(
+        route('lms.modules.quiz.start', [props.course.id, module.id]),
+        {},
+        {
+            preserveScroll: true,
+            // A fresh draw means new question ids, so anything already
+            // picked no longer refers to a question on screen.
+            onSuccess: () => {
+                moduleAnswers[module.id] = {};
+            },
+        },
+    );
 }
 
 function submitModuleQuiz(module: LmsModule): void {
@@ -242,9 +253,11 @@ onMounted(async () => {
                             questions are drawn fresh each attempt.
                         </p>
 
-                        <Button v-if="!module.quiz.questions.length" size="sm" @click="startModuleQuiz(module)">Start Quiz</Button>
+                        <Button size="sm" :variant="module.quiz.questions.length ? 'outline' : 'default'" @click="startModuleQuiz(module)">
+                            {{ module.quiz.questions.length ? 'Start Quiz (new questions)' : 'Start Quiz' }}
+                        </Button>
 
-                        <div v-else class="space-y-4">
+                        <div v-if="module.quiz.questions.length" class="space-y-4">
                             <div v-for="(question, index) in module.quiz.questions" :key="question.id" class="space-y-2">
                                 <p class="text-sm font-medium">{{ index + 1 }}. {{ question.question_text }}</p>
                                 <label v-for="option in question.options" :key="option" class="flex items-center gap-2 text-sm">

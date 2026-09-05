@@ -29,29 +29,24 @@ class LmsModuleQuizAttemptController extends Controller
 
         $fingerprint = $assembler->bankFingerprint($module);
 
-        // Resume a started-but-unsubmitted attempt rather than drawing a
-        // new one — otherwise a refresh would silently reroll the
-        // questions and let a teacher shop for an easier draw.
+        // Every press of "Start Quiz" draws a fresh set — the button is the
+        // teacher's way to refresh the questions. A deliberate trade: it
+        // means they can restart until they like the draw, which is
+        // acceptable for now in exchange for not stranding anyone on a
+        // stale set of questions.
         //
-        // Checked BEFORE the attempt cap on purpose: an open attempt
-        // already counts against the cap, so on the final attempt the cap
-        // check would otherwise refuse to let the teacher back into the
-        // very attempt they're mid-way through.
+        // The redraw replaces the open attempt in place rather than adding
+        // a row, so refreshing doesn't eat into the attempt cap; an attempt
+        // is only spent once it exists, not once per draw.
         $open = $teacherProfile->moduleQuizAttempts()
             ->counting()
             ->where('module_id', $module->id)
             ->whereNull('submitted_at')
             ->first();
 
-        // Only resume while the module still looks the way it did when the
-        // draw was made. If lessons or their quizzes have changed since,
-        // the stale draw is replaced in place — the teacher hasn't been
-        // graded on it, and it shouldn't cost them an attempt that the
-        // content change invalidated.
-        if ($open && $open->bank_fingerprint === $fingerprint) {
-            return back();
-        }
-
+        // The cap only guards opening a NEW attempt. An existing open one
+        // already counts against it, so re-checking here would lock a
+        // teacher out of refreshing their own final attempt.
         if (! $open) {
             abort_unless($teacherProfile->canAttemptModuleQuiz($module), 403);
         }
