@@ -88,6 +88,10 @@ class LessonQuizGenerationTest extends TestCase
         app(QuizGenerationService::class)->generate($lesson, 1);
 
         Http::assertSent(function ($request) {
+            if (! str_contains($request->url(), '/chat/completions')) {
+                return false;
+            }
+
             $prompt = $request->data()['messages'][1]['content'];
 
             return str_contains($prompt, 'L11: Tkinter in Python')
@@ -111,6 +115,10 @@ class LessonQuizGenerationTest extends TestCase
         app(QuizGenerationService::class)->generate($lesson, 1);
 
         Http::assertSent(function ($request) {
+            if (! str_contains($request->url(), '/chat/completions')) {
+                return false;
+            }
+
             $prompt = $request->data()['messages'][1]['content'];
 
             return str_contains($prompt, 'students in Foundation.')
@@ -147,6 +155,74 @@ class LessonQuizGenerationTest extends TestCase
         }
 
         $this->assertSame(0, LessonQuiz::count());
+    }
+
+    public function test_it_discards_generated_questions_that_moderation_flags(): void
+    {
+        $this->fakeOpenAiResponse([$this->question('Something unsuitable?', 'An answer')], flagged: true);
+
+        $lesson = Lesson::factory()->create();
+        LessonSlideshow::factory()->for($lesson)->create(['slides_text' => 'Some slide content.']);
+
+        try {
+            app(QuizGenerationService::class)->generate($lesson, 1);
+            $this->fail('Expected flagged content to fail the generation.');
+        } catch (RuntimeException $e) {
+            $this->assertStringContainsString('flagged as unsuitable for students', $e->getMessage());
+            $this->assertStringContainsString('violence', $e->getMessage());
+        }
+
+        $this->assertSame(0, LessonQuiz::count());
+        $this->assertDatabaseCount('lesson_quiz_questions', 0);
+    }
+
+    public function test_it_fails_closed_when_the_moderation_check_itself_errors(): void
+    {
+        Http::fake([
+            'api.openai.com/v1/moderations' => Http::response([], 500),
+            'api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [['message' => ['content' => json_encode(['questions' => [$this->question('Q?', 'A')]])]]],
+            ]),
+        ]);
+
+        $lesson = Lesson::factory()->create();
+        LessonSlideshow::factory()->for($lesson)->create(['slides_text' => 'Some slide content.']);
+
+        try {
+            app(QuizGenerationService::class)->generate($lesson, 1);
+            $this->fail('Expected a moderation outage to fail the generation.');
+        } catch (RuntimeException $e) {
+            $this->assertStringContainsString('Could not safety-check', $e->getMessage());
+        }
+
+        $this->assertSame(0, LessonQuiz::count());
+    }
+
+    public function test_moderation_sees_every_field_a_student_would_read(): void
+    {
+        $this->fakeOpenAiResponse([[
+            'question_text' => 'QUESTION-MARKER?',
+            'options' => ['OPTION-MARKER', 'B', 'C', 'D'],
+            'correct_answer' => 'OPTION-MARKER',
+            'explanation' => 'EXPLANATION-MARKER',
+        ]]);
+
+        $lesson = Lesson::factory()->create();
+        LessonSlideshow::factory()->for($lesson)->create(['slides_text' => 'Some slide content.']);
+
+        app(QuizGenerationService::class)->generate($lesson, 1);
+
+        Http::assertSent(function ($request) {
+            if (! str_contains($request->url(), '/moderations')) {
+                return false;
+            }
+
+            $input = $request->data()['input'];
+
+            return str_contains($input, 'QUESTION-MARKER?')
+                && str_contains($input, 'OPTION-MARKER')
+                && str_contains($input, 'EXPLANATION-MARKER');
+        });
     }
 
     public function test_regenerating_replaces_existing_questions(): void
@@ -187,12 +263,21 @@ class LessonQuizGenerationTest extends TestCase
     }
 
     /**
+     * Fakes both OpenAI endpoints this feature touches: chat completions for
+     * generation, and moderations for the safety check that follows it.
+     *
      * @param  list<array{question_text: string, options: list<string>, correct_answer: string, explanation: string}>  $questions
      */
-    private function fakeOpenAiResponse(array $questions): void
+    private function fakeOpenAiResponse(array $questions, bool $flagged = false): void
     {
         Http::fake([
-            'api.openai.com/*' => Http::response([
+            'api.openai.com/v1/moderations' => Http::response([
+                'results' => [[
+                    'flagged' => $flagged,
+                    'categories' => ['violence' => $flagged, 'sexual' => false],
+                ]],
+            ]),
+            'api.openai.com/v1/chat/completions' => Http::response([
                 'choices' => [
                     ['message' => ['content' => json_encode(['questions' => $questions])]],
                 ],

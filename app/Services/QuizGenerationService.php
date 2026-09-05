@@ -5,14 +5,20 @@ namespace App\Services;
 use App\Enums\LessonQuizStatus;
 use App\Models\Lesson;
 use App\Models\LessonQuiz;
+use App\Services\OpenAI\ModerationClient;
 use App\Services\OpenAI\QuizGenerationClient;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 use RuntimeException;
+use Throwable;
 
 class QuizGenerationService
 {
-    public function __construct(private readonly QuizGenerationClient $client) {}
+    public function __construct(
+        private readonly QuizGenerationClient $client,
+        private readonly ModerationClient $moderationClient,
+    ) {}
 
     /**
      * Generate (or regenerate) a lesson's quiz from its slide text, falling
@@ -42,6 +48,9 @@ class QuizGenerationService
         );
 
         $questions = $this->validateQuestions($raw);
+
+        $this->assertQuestionsAreSafeForMinors($questions, $lesson);
+
         $sourceHash = $this->sourceHash($lesson, $sourceText, $gradeBand);
 
         return DB::transaction(function () use ($lesson, $sourceHash, $questions) {
@@ -70,6 +79,64 @@ class QuizGenerationService
 
             return $quiz->fresh('questions');
         });
+    }
+
+    /**
+     * The prompt asks for age-appropriate content, but a request isn't a
+     * guarantee — this is the actual enforcement. Everything the student
+     * would read (questions, options, explanations) goes through the same
+     * moderation endpoint used for Community chat, and anything flagged
+     * fails the whole generation rather than landing in a draft an admin
+     * might skim past.
+     *
+     * Sent as one combined call rather than per-question: regeneration is
+     * all-or-nothing anyway, so pinpointing the offending question buys
+     * nothing, and one request keeps generation responsive.
+     *
+     * @param  list<array{question_text: string, options: list<string>, correct_answer: string, explanation: string}>  $questions
+     */
+    private function assertQuestionsAreSafeForMinors(array $questions, Lesson $lesson): void
+    {
+        $text = collect($questions)
+            ->flatMap(fn (array $question) => [
+                $question['question_text'],
+                $question['explanation'],
+                ...$question['options'],
+            ])
+            ->implode("\n");
+
+        try {
+            $result = $this->moderationClient->moderate($text);
+        } catch (Throwable $e) {
+            // Fail closed, matching ModerateMessageJob: unreviewed content
+            // for minors is not something to wave through on a transient
+            // error. The admin can simply retry.
+            Log::error('Quiz generation moderation check failed; discarding the generated questions.', [
+                'lesson_id' => $lesson->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw new RuntimeException(
+                'Could not safety-check the generated questions, so they were discarded. Please try again.',
+                previous: $e,
+            );
+        }
+
+        if ($result['flagged']) {
+            Log::warning('Quiz generation produced content flagged by moderation; discarding it.', [
+                'lesson_id' => $lesson->id,
+                'categories' => $result['categories'],
+            ]);
+
+            $categories = $result['categories'] === []
+                ? 'unspecified'
+                : implode(', ', $result['categories']);
+
+            throw new RuntimeException(
+                "The generated questions were flagged as unsuitable for students ({$categories}) and were discarded. "
+                .'Try generating again, or review the slide text for content that may have prompted this.'
+            );
+        }
     }
 
     /**

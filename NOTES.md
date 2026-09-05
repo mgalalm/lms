@@ -57,6 +57,14 @@
 - `App\Services\QuizGenerationService` + `App\Services\OpenAI\QuizGenerationClient`
   — generation + validation; throws with a clear message on empty source
   text or malformed OpenAI output (never saves malformed questions).
+  Age-appropriateness is enforced in two layers: the prompt translates the
+  grade band into a concrete age range (grade + 5) with mandatory content
+  constraints and carries the lesson/module titles as topic context, and
+  everything generated is then run through `ModerationClient` (the same
+  endpoint Community chat uses) — flagged content, or a moderation
+  outage, fails the generation closed rather than saving a draft.
+  `source_text_hash` fingerprints slide text + titles + grade band, so
+  retitling or re-banding a lesson trips the staleness warning too.
 - `App\Jobs\GenerateLessonQuizJob` — dispatched via `Bus::dispatchNow` from
   the Filament action (same pattern as `SyncNotionContentJob`), so the
   admin gets an immediate success/failure notification.
@@ -74,7 +82,12 @@
 - `tests/Feature/LessonQuizGenerationTest.php` — service-level: generates
   from slides_text, falls back to reading_content, throws on empty
   source, fails loudly on malformed AI output, regeneration replaces
-  questions.
+  questions, prompt carries titles + age range (and omits the age for an
+  unrecognised band), moderation-flagged content and moderation outages
+  both discard the generation, moderation sees every student-visible
+  field. Note its `fakeOpenAiResponse()` helper fakes both OpenAI
+  endpoints — an `api.openai.com/*` catch-all would silently answer the
+  moderation call with a chat-shaped body.
 - `tests/Feature/Filament/LessonQuizAdminTest.php` — admin generate
   (mocked OpenAI via `Http::fake`), generate action disabled + blocked
   server-side when no slide text, manual edits survive a save, publish
