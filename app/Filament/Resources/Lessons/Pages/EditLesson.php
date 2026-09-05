@@ -2,8 +2,10 @@
 
 namespace App\Filament\Resources\Lessons\Pages;
 
+use App\Enums\LessonQuizStatus;
 use App\Enums\LessonVideoStatus;
 use App\Filament\Resources\Lessons\LessonResource;
+use App\Jobs\GenerateLessonQuizJob;
 use App\Jobs\PushLessonVideoToBunnyJob;
 use App\Jobs\SyncNotionContentJob;
 use App\Models\LessonSlideshow;
@@ -12,6 +14,7 @@ use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
@@ -40,6 +43,19 @@ class EditLesson extends EditRecord
         $data['project_is_required'] = $project?->is_required ?? false;
 
         $data['slideshow_google_url'] = $this->record->slideshow?->google_slides_url;
+        $data['slides_text'] = $this->record->slideshow?->slides_text;
+
+        $data['quiz_questions'] = $this->record->quiz?->questions
+            ->map(fn ($question) => [
+                'question_text' => $question->question_text,
+                'type' => $question->type->value,
+                'options' => $question->options,
+                'correct_answer' => $question->correct_answer,
+                'explanation' => $question->explanation,
+                'is_ai_generated' => $question->is_ai_generated,
+            ])
+            ->values()
+            ->all() ?? [];
 
         return $data;
     }
@@ -80,13 +96,19 @@ class EditLesson extends EditRecord
         $this->record->unsetRelation('project');
 
         $slideshowUrl = $this->data['slideshow_google_url'] ?? null;
+        $slidesText = $this->data['slides_text'] ?? null;
+        $existingSlideshow = $this->record->slideshow;
 
-        if (filled($slideshowUrl)) {
+        if (filled($slideshowUrl) || filled($slidesText)) {
+            $slidesTextChanged = $existingSlideshow?->slides_text !== $slidesText;
+
             $this->record->slideshow()->updateOrCreate(
                 ['locale' => 'en'],
                 [
                     'google_slides_url' => $slideshowUrl,
                     'google_slides_id' => LessonSlideshow::extractPresentationId($slideshowUrl),
+                    'slides_text' => $slidesText,
+                    'slides_text_updated_at' => $slidesTextChanged ? now() : $existingSlideshow?->slides_text_updated_at,
                 ],
             );
         } else {
@@ -94,6 +116,33 @@ class EditLesson extends EditRecord
         }
 
         $this->record->unsetRelation('slideshow');
+
+        $questionsData = $this->data['quiz_questions'] ?? [];
+
+        if (filled($questionsData)) {
+            $quiz = $this->record->quiz()->firstOrCreate(
+                ['locale' => 'en'],
+                ['status' => LessonQuizStatus::Draft],
+            );
+
+            $quiz->questions()->delete();
+
+            foreach ($questionsData as $index => $question) {
+                $quiz->questions()->create([
+                    'question_text' => $question['question_text'],
+                    'type' => $question['type'],
+                    'options' => array_values($question['options'] ?? []),
+                    'correct_answer' => $question['correct_answer'],
+                    'explanation' => $question['explanation'] ?? null,
+                    'is_ai_generated' => $question['is_ai_generated'] ?? false,
+                    'sort_order' => $index,
+                ]);
+            }
+        } elseif ($this->record->quiz) {
+            $this->record->quiz->questions()->delete();
+        }
+
+        $this->record->unsetRelation('quiz');
     }
 
     protected function getHeaderActions(): array
@@ -199,6 +248,58 @@ class EditLesson extends EditRecord
                 ->icon(Heroicon::OutlinedLink)
                 ->button()
                 ->visible(fn () => $this->record->tutorGuide?->notion_page_id !== null),
+            Action::make('generateQuiz')
+                ->label(fn () => $this->record->quiz?->questions->isNotEmpty() ? 'Regenerate Quiz' : 'Generate Quiz')
+                ->icon(Heroicon::OutlinedSparkles)
+                ->disabled(fn () => blank($this->record->slideshow?->slides_text))
+                ->tooltip(fn () => blank($this->record->slideshow?->slides_text)
+                    ? 'Add slide text above before generating a quiz.'
+                    : null)
+                ->schema([
+                    TextInput::make('question_count')
+                        ->label('Number of questions')
+                        ->numeric()
+                        ->default(5)
+                        ->minValue(1)
+                        ->maxValue(20)
+                        ->required(),
+                ])
+                ->requiresConfirmation()
+                ->modalDescription(fn () => $this->record->quiz?->questions->isNotEmpty()
+                    ? 'This lesson already has quiz questions. Regenerating will replace ALL existing questions — including any manual edits — with a new AI-generated set.'
+                    : 'Generate a draft multiple-choice quiz from this lesson\'s slide text using OpenAI.')
+                ->action(function (array $data) {
+                    try {
+                        Bus::dispatchNow(new GenerateLessonQuizJob($this->record, (int) $data['question_count']));
+
+                        Notification::make()->title('Quiz generated')->success()->send();
+                    } catch (Throwable $e) {
+                        report($e);
+
+                        Notification::make()
+                            ->title('Quiz generation failed')
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->send();
+                    }
+
+                    $this->record->unsetRelation('quiz');
+                    $this->refreshFormData(['quiz_questions']);
+                }),
+            Action::make('publishQuiz')
+                ->label('Publish Quiz')
+                ->icon(Heroicon::OutlinedCheckCircle)
+                ->color('success')
+                ->visible(fn () => $this->record->quiz?->status === LessonQuizStatus::Draft && $this->record->quiz?->questions->isNotEmpty())
+                ->requiresConfirmation()
+                ->modalDescription('Students will be able to see and take this quiz once published.')
+                ->action(function () {
+                    $this->record->quiz->update(['status' => LessonQuizStatus::Published]);
+
+                    Notification::make()->title('Quiz published')->success()->send();
+
+                    $this->record->unsetRelation('quiz');
+                }),
             DeleteAction::make(),
         ];
     }

@@ -46,6 +46,7 @@ require __DIR__.'/lesson-videos.php';
 require __DIR__.'/lesson-tutor-guides.php';
 require __DIR__.'/lesson-slideshows.php';
 require __DIR__.'/lesson-projects.php';
+require __DIR__.'/lesson-quizzes.php';
 require __DIR__.'/impersonation.php';
 require __DIR__.'/referral-codes.php';
 require __DIR__.'/payroll.php';

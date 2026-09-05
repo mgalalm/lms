@@ -23,6 +23,7 @@ export interface SharedData {
     impersonator: { name: string } | null;
     flash: {
         quizResult: { score: number; passed: boolean } | null;
+        lessonQuizResult: LessonQuizResult | null;
         success: string | null;
         error: string | null;
     };
@@ -317,6 +318,7 @@ export interface CurrentLesson {
     course_title: string | null;
     video: { duration_seconds: number | null } | null;
     project: LessonProjectSummary | null;
+    quiz: LessonQuizSummary | null;
 }
 
 export interface LessonProjectSummary {
@@ -324,6 +326,31 @@ export interface LessonProjectSummary {
     title: string;
     brief: string | null;
     is_required: boolean;
+}
+
+export interface LessonQuizSummary {
+    id: number;
+    questions: LessonQuizQuestionSummary[];
+}
+
+export interface LessonQuizQuestionSummary {
+    id: number;
+    question_text: string;
+    type: 'multiple_choice' | 'true_false';
+    options: string[];
+}
+
+export interface LessonQuizResult {
+    score: number;
+    correct: number;
+    total: number;
+    results: {
+        id: number;
+        submitted_answer: string | null;
+        correct_answer: string;
+        explanation: string | null;
+        is_correct: boolean;
+    }[];
 }
 
 export type ProjectSubmissionStatus = 'submitted' | 'reviewed';

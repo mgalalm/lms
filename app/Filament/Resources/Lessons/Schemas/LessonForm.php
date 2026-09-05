@@ -2,13 +2,16 @@
 
 namespace App\Filament\Resources\Lessons\Schemas;
 
+use App\Enums\LessonQuizQuestionType;
 use App\Models\Lesson;
 use App\Models\LessonSlideshow;
 use App\Services\Bunny\BunnyStreamClient;
 use App\Services\Notion\NotionSyncService;
 use Closure;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -172,6 +175,82 @@ class LessonForm
                                     '<iframe src="'.e($url).'" class="aspect-video w-full max-w-xl rounded-lg" allowfullscreen></iframe>'
                                 );
                             })
+                            ->columnSpanFull(),
+                        Textarea::make('slides_text')
+                            ->label('Slide Text (admin only)')
+                            ->rows(12)
+                            ->helperText(
+                                'Pasted slide content used to generate this lesson\'s quiz — never shown to '
+                                .'students or teachers. Separate slides with a blank line or a "---" line so '
+                                .'question generation has some sense of slide boundaries.'
+                            )
+                            ->columnSpanFull(),
+                    ])
+                    ->hiddenOn('create')
+                    ->columnSpanFull(),
+                Section::make('Quiz')
+                    ->description('Student-facing quiz generated from the slide text above via OpenAI. Fully editable — rewrite, add, remove, or reorder questions as needed.')
+                    ->schema([
+                        Placeholder::make('quiz_status')
+                            ->hiddenLabel()
+                            ->content(function (?Lesson $record) {
+                                $quiz = $record?->quiz;
+
+                                if (! $quiz) {
+                                    return 'No quiz generated yet.';
+                                }
+
+                                $summary = 'Status: '.$quiz->status->getLabel();
+
+                                if ($quiz->generated_at) {
+                                    $summary .= ' · Generated '.$quiz->generated_at->diffForHumans();
+                                }
+
+                                $currentHash = hash('sha256', trim((string) $record->slideshow?->slides_text));
+
+                                if ($quiz->source_text_hash && $quiz->source_text_hash !== $currentHash) {
+                                    return new HtmlString(
+                                        e($summary).'<br><span class="font-medium text-warning-600">⚠ Slide text has changed since this quiz was generated.</span>'
+                                    );
+                                }
+
+                                return $summary;
+                            }),
+                        Repeater::make('quiz_questions')
+                            ->hiddenLabel()
+                            ->reorderable()
+                            ->reorderableWithDragAndDrop()
+                            ->addActionLabel('Add Question')
+                            ->itemLabel(fn (array $state) => (($state['is_ai_generated'] ?? false) ? '🤖 AI · ' : '').($state['question_text'] ?? 'New question'))
+                            ->schema([
+                                Textarea::make('question_text')
+                                    ->label('Question')
+                                    ->required()
+                                    ->columnSpanFull(),
+                                Select::make('type')
+                                    ->options(LessonQuizQuestionType::class)
+                                    ->default(LessonQuizQuestionType::MultipleChoice->value)
+                                    ->live()
+                                    ->required(),
+                                Toggle::make('is_ai_generated')
+                                    ->label('AI-generated (uncheck once reviewed)')
+                                    ->inline(false),
+                                TagsInput::make('options')
+                                    ->label('Options')
+                                    ->helperText('Press enter after each option.')
+                                    ->live()
+                                    ->required()
+                                    ->columnSpanFull(),
+                                Select::make('correct_answer')
+                                    ->label('Correct Answer')
+                                    ->options(fn (Get $get) => collect($get('options') ?? [])->mapWithKeys(fn ($option) => [$option => $option]))
+                                    ->required()
+                                    ->columnSpanFull(),
+                                Textarea::make('explanation')
+                                    ->label('Explanation')
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns(2)
                             ->columnSpanFull(),
                     ])
                     ->hiddenOn('create')

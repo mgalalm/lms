@@ -10,7 +10,7 @@
 - **Current lesson card** — shows current module/lesson (e.g. "L11: Tkinter in Python") and topic (e.g. "M2: Chatbot Development with Data Encryption - Grade 5-6"), with tabs for:
   - **Recap** — includes a "Watch Recap" video player for the session
   - **Reading**
-  - **Quiz**
+  - **Quiz** — multiple-choice, AI-generated from the lesson's admin-pasted slide content (see `docs/design/domain-model.md` → LessonQuiz). Only shows once an admin publishes it; the tab shows an empty state otherwise. Submitting scores immediately with a correct/incorrect + explanation breakdown; no attempt history is kept.
 - **Missed content reminder** — banner nudging students to review missed content, with a "My Progress" button
 
 ### Earnings & Gamification

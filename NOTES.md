@@ -1,87 +1,95 @@
-# Collapse Course into Grade Band
+# Lesson Slide Text + AI Quiz Generation
 
-Full plan lived at `/Users/mgalal/.claude/plans/shimmering-snuggling-metcalfe.md`.
+## Status: Done — implemented, tested, docs updated. Not committed.
 
-## Status: Done — all three parts complete, verified, local DB rebuilt
+## What this does
 
-## Part 1 — Collapse Course into grade_band
+1. Admin pastes a plain-text transcript of a lesson's slides
+   (`LessonSlideshow::slides_text`, admin-only, never rendered to students
+   or teachers) alongside the existing Google Slides URL field.
+2. Admin clicks "Generate Quiz" on the Lesson edit page — dispatches
+   `GenerateLessonQuizJob` → `QuizGenerationService`, which calls OpenAI
+   (gpt-4o-mini) to produce multiple-choice questions from `slides_text`
+   (falls back to `Lesson::reading_content` if no slide text yet).
+   Questions save as `LessonQuiz`/`LessonQuizQuestion` rows, status
+   `draft`, `is_ai_generated = true`.
+3. Admin can fully rewrite/add/remove/reorder questions via a Repeater on
+   the same edit page, then "Publish Quiz" to flip status to `published`.
+4. Students see a lesson's quiz (radio-button MC, submit, instant score +
+   per-question explanation) only once published — enforced via
+   `LessonQuizPolicy`, not just hidden in the UI. Grading is stateless (no
+   attempt history persisted), same convention as the existing teacher
+   certification quiz.
 
-- `app/Console/Commands/AuditCourseTitlesCommand.php` — pre-flight safety
-  check (`php artisan courses:audit-titles`). Run before migrating; correctly
-  flagged 6 local demo rows with real Faker titles + 2 duplicate grade_bands.
-- `database/migrations/2026_09_02_123727_collapse_course_title_into_grade_band.php`
-  — drops `title`, makes `grade_band` non-nullable + unique, adds `sort_order`.
-- `app/Models/Course.php` — `title` removed from `$fillable`, `sort_order`
-  added; `getNameAttribute()` returns `grade_band` for generic "name" callers.
-- Filament `Courses` resource — `grade_band` is the primary
-  display/searchable/sortable field (display-only in the form —
-  `->disabled()->dehydrated(false)`), `sort_order` added, `title` removed
-  everywhere (form, table, `$recordTitleAttribute`).
-- Full backend + frontend sweep of `->title`/`.title` → `->name`/`grade_band`
-  across resources, controllers, notifications, Vue pages/components, and
-  `resources/js/types/index.ts` (also tightened `grade_band` to non-nullable
-  `string` in `Course`, `LmsCourseCard`, `LmsCourseDetail`).
+## Key decisions (deviations from the original ask, made explicit to the user)
 
-## Part 2 — Seed the grade bands
+- **Naming**: used `lesson_quizzes`/`lesson_quiz_questions` (models
+  `LessonQuiz`/`LessonQuizQuestion`) instead of `quizzes`/`quiz_questions`
+  — those table/model names already exist for the unrelated course-level
+  teacher certification quiz (`App\Models\Quiz`/`QuizQuestion`). Confirmed
+  naming and this distinction is now recorded in `.ai/rules/models.md` and
+  `docs/design/domain-model.md`.
+- **Student UI scope**: user asked for a full student quiz-taking UI (not
+  just a backend guardrail), added to `CurrentLessonCard.vue`'s existing
+  (previously empty-state-only) "Quiz" tab.
+- **No teacher access to the new per-lesson quiz** — user clarified their
+  "teacher will have the same quiz" comment was about the *existing*,
+  unrelated course-certification quiz gate, not a request to extend the
+  new lesson quiz to teachers. Verified that existing gate
+  (`TeacherCourseCompletion`/`LmsQuizAttemptController`) is untouched by
+  this work — full suite still green.
+- **Attempts are stateless** (no `LessonQuizAttempt` model) — matches this
+  codebase's only precedent (`Teacher\LmsQuizAttemptController`): grade on
+  submit, return score via flash data, persist nothing per-attempt.
+- **Fixed a latent bug while touching `EditLesson::afterSave()`**: the
+  slideshow was previously deleted whenever `slideshow_google_url` was
+  blank, which would have silently destroyed `slides_text` for a lesson
+  that has slide text but no Google Slides URL set. Now the slideshow is
+  only deleted when *both* are blank.
 
-- `database/seeders/CourseSeeder.php` — seeds the 4 canonical bands
-  (`"Grade 5 - 6"` ... `"Grade 11 - 12"`, spaced format) via `updateOrCreate`
-  keyed on `grade_band`, `sort_order` 1–4, `thumbnail_path` left null.
-- Registered in `DatabaseSeeder.php` before `DemoDataSeeder`.
-- `DemoDataSeeder::seedCurriculumAndCertifications()` — its two ad-hoc
-  `Course::factory()->create([...])` calls replaced with
-  `Course::where('grade_band', ...)->firstOrFail()` lookups against the
-  seeded rows (module/lesson creation underneath unchanged).
-- `CourseResource` — `canCreate()`/`canDelete()`/`canDeleteAny()` all return
-  `false`; Create/Delete header actions removed from the Filament pages.
+## Key files
 
-## Part 3 — Tests
+- Migrations: `2026_09_05_074637_add_slides_text_to_lesson_slideshows_table.php`,
+  `2026_09_05_074638_create_lesson_quizzes_table.php`,
+  `2026_09_05_074639_create_lesson_quiz_questions_table.php` (note: the
+  quizzes/quiz_questions pair originally shared an identical timestamp and
+  had to be re-ordered — see the new rule in `.ai/rules/migrations.md`).
+- `App\Services\QuizGenerationService` + `App\Services\OpenAI\QuizGenerationClient`
+  — generation + validation; throws with a clear message on empty source
+  text or malformed OpenAI output (never saves malformed questions).
+- `App\Jobs\GenerateLessonQuizJob` — dispatched via `Bus::dispatchNow` from
+  the Filament action (same pattern as `SyncNotionContentJob`), so the
+  admin gets an immediate success/failure notification.
+- `App\Policies\LessonQuizPolicy`, `LessonQuiz::scopePublished()` — the
+  actual student-visibility enforcement (`DashboardController` and
+  `Student\LessonQuizAttemptController` both check it).
+- `app/Filament/Resources/Lessons/{Schemas/LessonForm.php,Pages/EditLesson.php}`
+  — slides_text field, Quiz section (Repeater, drag-to-reorder, AI badge
+  via item label + an `is_ai_generated` toggle), Generate/Publish actions.
+- `resources/js/components/dashboard/{CurrentLessonCard.vue,LessonQuizPanel.vue}`
+  — student-facing quiz tab.
 
-- `database/factories/CourseFactory.php` — `title` dropped; `grade_band`
-  picks from the 4 canonical bands via `fake()->randomElement(...)` (no
-  `->unique()`, would exhaust after 4 across a suite run).
-- `database/factories/ModuleFactory.php` — **fix beyond the original
-  plan, found during verification**: its bare `course_id => Course::factory()`
-  default meant every independently-created Module (e.g. 3+ via
-  `ClassSession::factory()->count(3)`) rolled its own random `grade_band`
-  from only 4 possible values — a real, intermittent collision against the
-  new unique constraint (caught via `RoleDashboardTest` failing on one run,
-  not always — genuinely flaky before this fix, not a one-off). Fixed by
-  reusing an existing Course when one exists, falling back to
-  `Course::factory()` only when none does. Verified stable across 4
-  consecutive full-suite runs after the fix. `QuizFactory` and
-  `TeacherCourseCompletionFactory` also default to `Course::factory()` but
-  are never invoked without an explicit `course_id` anywhere in the
-  codebase, so left as-is.
-- `tests/Feature/Filament/CurriculumAdminTest.php` — list test now uses
-  explicit distinct `grade_band`s (`->sequence(...)`); the old create test
-  replaced with an assertion that `GET .../courses/create` 403s
-  (`canCreate()` is enforced at the route level via Filament's
-  `authorizeAccess()`); added a delete-unavailable assertion
-  (`assertActionDoesNotExist('delete')` on `EditCourse`).
-- `tests/Feature/CourseSeederTest.php` — new: asserts the 4 bands seed in
-  the right order, and that running the seeder twice yields 4 courses (not
-  8) and preserves an existing `thumbnail_path`.
+## Tests
 
-## Verification (all done)
+- `tests/Feature/LessonQuizGenerationTest.php` — service-level: generates
+  from slides_text, falls back to reading_content, throws on empty
+  source, fails loudly on malformed AI output, regeneration replaces
+  questions.
+- `tests/Feature/Filament/LessonQuizAdminTest.php` — admin generate
+  (mocked OpenAI via `Http::fake`), generate action disabled + blocked
+  server-side when no slide text, manual edits survive a save, publish
+  flips status, regenerate-with-existing-questions shows the overwrite
+  warning.
+- `tests/Feature/LessonQuizVisibilityTest.php` — draft quiz excluded from
+  the student dashboard payload and from submission (403); published quiz
+  is visible (answers never sent to the client) and scores correctly;
+  non-students can't submit at all.
+- Full suite: `php artisan test --compact` → 403 passed. `vendor/bin/pint
+  --dirty`, `npm run build`, `npm run lint` all clean.
 
-- `vendor/bin/pint --dirty --format agent` — passed.
-- `php artisan test --compact` — 386 passed, run 4 times in a row (post
-  ModuleFactory fix) with no flakes.
-- `php artisan migrate:fresh --seed` — ran locally (user confirmed, since it
-  drops local data): clean migration, courses table now holds exactly the
-  4 seeded bands in order with null thumbnails, as expected.
-- `npm run build && npm run lint` — both clean.
-- No browser/Playwright check — standing instruction for this session to
-  skip it.
+## Not done / explicitly out of scope
 
-## Docs sweep (done earlier, same task)
-
-`docs/product/05-teacher-dashboard.md` and `docs/design/domain-model.md`
-already updated to describe the Course/grade_band model — see git history/
-diff for details, nothing further needed there.
-
-## Not committed
-
-Nothing from this task has been committed yet. Per this session's
-established convention, only commit/push when the user explicitly says so.
+- No student attempt history/analytics (stateless by design, see above).
+- No auto-extraction from the Google Slides API — deliberately deferred
+  per the original ask; `slides_text` is designed so that can populate it
+  later without a schema change.

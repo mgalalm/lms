@@ -28,7 +28,21 @@ class LessonSlideshow extends Model
         'locale',
         'google_slides_url',
         'google_slides_id',
+        'slides_text',
+        'slides_text_updated_at',
     ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'slides_text_updated_at' => 'datetime',
+        ];
+    }
 
     public function lesson(): BelongsTo
     {

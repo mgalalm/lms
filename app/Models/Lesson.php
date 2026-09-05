@@ -76,4 +76,14 @@ class Lesson extends Model
     {
         return $this->hasOne(LessonProject::class);
     }
+
+    /**
+     * Get this lesson's student-facing quiz, generated from the
+     * slideshow's slides_text. Distinct from Course::quiz(), the
+     * teacher certification quiz.
+     */
+    public function quiz(): HasOne
+    {
+        return $this->hasOne(LessonQuiz::class);
+    }
 }

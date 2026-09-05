@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import EmptyState from '@/components/EmptyState.vue';
 import LessonProjectPanel from '@/components/dashboard/LessonProjectPanel.vue';
+import LessonQuizPanel from '@/components/dashboard/LessonQuizPanel.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { CurrentLesson, ProjectSubmission } from '@/types';
+import type { CurrentLesson, ProjectSubmission, SharedData } from '@/types';
+import { usePage } from '@inertiajs/vue3';
 import { BookOpen, HelpCircle, Loader2, PackagePlus, Video } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 
@@ -14,6 +16,9 @@ const props = defineProps<{
 }>();
 
 const lessonPath = computed(() => [props.lesson?.course_title, props.lesson?.module_title].filter(Boolean).join(' / '));
+
+const page = usePage<SharedData>();
+const lessonQuizResult = computed(() => page.props.flash.lessonQuizResult);
 
 const activeTab = ref('video');
 const videoPlaybackUrl = ref<string | null>(null);
@@ -123,7 +128,14 @@ watch(
                     </TabsContent>
 
                     <TabsContent value="quiz">
+                        <LessonQuizPanel
+                            v-if="lesson.quiz"
+                            :lesson-id="lesson.id"
+                            :quiz="lesson.quiz"
+                            :result="lessonQuizResult"
+                        />
                         <EmptyState
+                            v-else
                             :icon="HelpCircle"
                             heading="No quiz available yet"
                             description="Check back after your next session — quizzes unlock as your teacher adds them."

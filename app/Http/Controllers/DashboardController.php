@@ -8,6 +8,7 @@ use App\Enums\UserRole;
 use App\Http\Resources\BadgeResource;
 use App\Http\Resources\ClassSessionResource;
 use App\Http\Resources\LeaderboardEntryResource;
+use App\Http\Resources\LessonQuizResource;
 use App\Http\Resources\ProjectSubmissionResource;
 use App\Models\ClassSession;
 use App\Models\Lesson;
@@ -76,8 +77,12 @@ class DashboardController extends Controller
         $currentLesson = $currentSession?->lesson;
 
         if ($currentLesson) {
-            $currentLesson->loadMissing('module.course', 'video', 'project');
+            $currentLesson->loadMissing('module.course', 'video', 'project', 'quiz.questions');
         }
+
+        $visibleQuiz = $currentLesson?->quiz && $user->can('view', $currentLesson->quiz)
+            ? $currentLesson->quiz
+            : null;
 
         $projectSubmissions = $currentLesson?->project
             ? $currentLesson->project->submissions()
@@ -112,6 +117,7 @@ class DashboardController extends Controller
                     'brief' => $currentLesson->project->brief,
                     'is_required' => $currentLesson->project->is_required,
                 ] : null,
+                'quiz' => $visibleQuiz ? new LessonQuizResource($visibleQuiz) : null,
             ] : null,
             'projectSubmissions' => ProjectSubmissionResource::collection($projectSubmissions),
             'progress' => $currentLesson ? $this->moduleProgress($user, $currentLesson) : null,
