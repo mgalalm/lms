@@ -89,20 +89,31 @@ class Settings extends Page
     private function componentFor(SettingKey $key): TextInput
     {
         return match ($key) {
-            SettingKey::QuizMaxGenerations => TextInput::make($key->name)
+            SettingKey::QuizMaxGenerations,
+            SettingKey::QuizMaxAttempts => TextInput::make($key->name)
                 ->label($key->label())
                 ->helperText($key->helperText())
                 ->numeric()
                 ->required()
                 ->minValue(1)
                 ->maxValue(20),
+            SettingKey::QuizPassingScore => TextInput::make($key->name)
+                ->label($key->label())
+                ->helperText($key->helperText())
+                ->numeric()
+                ->required()
+                ->minValue(1)
+                ->maxValue(100)
+                ->suffix('%'),
         };
     }
 
     private function castValue(SettingKey $key, mixed $value): mixed
     {
         return match ($key) {
-            SettingKey::QuizMaxGenerations => (int) $value,
+            SettingKey::QuizMaxGenerations,
+            SettingKey::QuizPassingScore,
+            SettingKey::QuizMaxAttempts => (int) $value,
         };
     }
 }

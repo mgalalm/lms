@@ -3,7 +3,7 @@ import LessonSlideshowViewer from '@/components/LessonSlideshowViewer.vue';
 import LessonVideoPlayer from '@/components/LessonVideoPlayer.vue';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout.vue';
-import type { BreadcrumbItem, LmsCourseDetail, SharedData } from '@/types';
+import type { BreadcrumbItem, LmsCourseDetail, LmsLesson, SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import { computed, nextTick, onMounted, reactive, ref } from 'vue';
 
@@ -51,6 +51,41 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const page = usePage<SharedData>();
 const quizResult = computed(() => page.props.flash.quizResult);
+const lessonQuizResult = computed(() => page.props.flash.teacherLessonQuizResult);
+
+const expandedQuizLessonIds = ref<Set<number>>(new Set());
+const lessonAnswers = reactive<Record<number, Record<number, string>>>({});
+
+function toggleLessonQuiz(lessonId: number): void {
+    expandedQuizLessonIds.value = toggleExpanded(expandedQuizLessonIds.value, lessonId);
+}
+
+function answersFor(lessonId: number): Record<number, string> {
+    if (!lessonAnswers[lessonId]) {
+        lessonAnswers[lessonId] = {};
+    }
+
+    return lessonAnswers[lessonId];
+}
+
+function lessonQuizAnswered(lesson: LmsLesson): boolean {
+    const questions = lesson.quiz?.questions ?? [];
+
+    return questions.length > 0 && questions.every((question) => answersFor(lesson.id)[question.id] !== undefined);
+}
+
+function submitLessonQuiz(lesson: LmsLesson): void {
+    router.post(
+        route('lms.lessons.quiz.submit', [props.course.id, lesson.id]),
+        { answers: answersFor(lesson.id) },
+        {
+            preserveScroll: true,
+            onSuccess: () => {
+                lessonAnswers[lesson.id] = {};
+            },
+        },
+    );
+}
 
 const answers = reactive<Record<number, number>>({});
 
@@ -172,9 +207,75 @@ onMounted(async () => {
                                 <Button as-child size="sm" variant="outline">
                                     <Link :href="route('lessons.tutor-guide', lesson.id)">Tutor Guide</Link>
                                 </Button>
+                                <Button
+                                    v-if="lesson.quiz && !lesson.completed && !lesson.quiz.passed && lesson.quiz.can_attempt"
+                                    size="sm"
+                                    variant="outline"
+                                    @click="toggleLessonQuiz(lesson.id)"
+                                >
+                                    {{ expandedQuizLessonIds.has(lesson.id) ? 'Hide Quiz' : 'Take Quiz' }}
+                                </Button>
                                 <Button v-if="lesson.completed" disabled size="sm" variant="secondary">Completed</Button>
-                                <Button v-else size="sm" @click="markLessonComplete(lesson.id)">Mark as complete</Button>
+                                <Button v-else-if="lesson.quiz?.passed" size="sm" @click="markLessonComplete(lesson.id)">Mark as complete</Button>
                             </div>
+                        </div>
+
+                        <p v-if="!lesson.completed && !lesson.quiz" class="mt-2 text-xs text-muted-foreground">
+                            This lesson has no published quiz yet, so it can't be completed. Ask an admin to publish one.
+                        </p>
+                        <p
+                            v-else-if="!lesson.completed && lesson.quiz && !lesson.quiz.passed && !lesson.quiz.can_attempt"
+                            class="mt-2 text-xs text-destructive"
+                        >
+                            You've used all your attempts at this quiz without passing. Ask an admin to reset your attempts
+                            before trying again.
+                        </p>
+                        <p
+                            v-else-if="!lesson.completed && lesson.quiz && !lesson.quiz.passed"
+                            class="mt-2 text-xs text-muted-foreground"
+                        >
+                            Pass this lesson's quiz ({{ lesson.quiz.passing_score }}% to pass) to mark it complete.
+                            {{ lesson.quiz.attempts_remaining }} attempt(s) left.
+                        </p>
+
+                        <div
+                            v-if="lessonQuizResult && lessonQuizResult.lesson_id === lesson.id"
+                            class="mt-3 rounded-lg border p-3 text-sm"
+                            :class="
+                                lessonQuizResult.passed
+                                    ? 'border-green-200 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-300'
+                                    : 'border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-300'
+                            "
+                        >
+                            <p v-if="lessonQuizResult.passed" class="font-medium">
+                                Passed with {{ lessonQuizResult.score }}% ({{ lessonQuizResult.correct }}/{{ lessonQuizResult.total }}). You can now
+                                mark this lesson complete.
+                            </p>
+                            <p v-else class="font-medium">
+                                Scored {{ lessonQuizResult.score }}% ({{ lessonQuizResult.correct }}/{{ lessonQuizResult.total }}) —
+                                {{ lessonQuizResult.attempts_remaining }} attempt(s) left.
+                            </p>
+                        </div>
+
+                        <div
+                            v-if="expandedQuizLessonIds.has(lesson.id) && lesson.quiz?.questions.length"
+                            class="mt-3 space-y-4 rounded-xl border border-sidebar-border/70 p-4 dark:border-sidebar-border"
+                        >
+                            <div v-for="(question, index) in lesson.quiz.questions" :key="question.id" class="space-y-2">
+                                <p class="text-sm font-medium">{{ index + 1 }}. {{ question.question_text }}</p>
+                                <label v-for="option in question.options" :key="option" class="flex items-center gap-2 text-sm">
+                                    <input
+                                        type="radio"
+                                        :name="`lesson-${lesson.id}-question-${question.id}`"
+                                        :value="option"
+                                        :checked="answersFor(lesson.id)[question.id] === option"
+                                        @change="answersFor(lesson.id)[question.id] = option"
+                                    />
+                                    {{ option }}
+                                </label>
+                            </div>
+
+                            <Button size="sm" :disabled="!lessonQuizAnswered(lesson)" @click="submitLessonQuiz(lesson)">Submit Quiz</Button>
                         </div>
 
                         <LessonVideoPlayer v-if="expandedVideoLessonIds.has(lesson.id)" :lesson-id="lesson.id" class="mt-3" />

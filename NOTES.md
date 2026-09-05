@@ -20,7 +20,34 @@ sidebar — configuration, not day-to-day ops).
   `static::all()` + `mapWithKeys`, NOT `pluck('value','key')` — a
   query-builder pluck bypasses the JSON cast.
 
-First setting: `quiz.max_generations`, default **2**.
+Settings so far: `quiz.max_generations` (2), `quiz.passing_score` (80),
+`quiz.max_attempts` (3).
+
+## Teacher lesson-completion gate (2026-09-05)
+
+Teachers can no longer self-declare a lesson complete — they must pass
+that lesson's published quiz (the same one students take).
+
+- **A lesson with no published quiz cannot be completed at all** (user's
+  explicit choice over "allow as today"). I flagged that this blocks
+  every lesson until an admin publishes a quiz; they chose it knowingly.
+  The teacher LMS page explains why rather than showing a dead button.
+- Pass mark = `quiz.passing_score` (80). Attempts capped at
+  `quiz.max_attempts` (3, **counting the first attempt**).
+- Exhausting attempts blocks lesson completion → blocks course
+  certification → blocks being assigned to teach. Escape hatch is an
+  admin reset (user's choice), via the **Quiz Attempts** relation manager
+  on the Filament Lesson edit page.
+- A reset **voids** attempts (`voided_at`) rather than deleting them —
+  this gates employment-relevant certification, so history is kept. Every
+  count/pass check must go through `TeacherLessonQuizAttempt::counting()`.
+- Teacher attempts are **persisted** (`teacher_lesson_quiz_attempts`),
+  unlike the stateless student flow — the cap and the gate both need
+  history. Two separate controllers/routes as a result.
+- Flash keys differ deliberately: student `lessonQuizResult` vs teacher
+  `teacherLessonQuizResult` (different payload shapes, same concept).
+- Two pre-existing `LmsTest` tests asserted unconditional completion and
+  correctly broke; updated to the new rule rather than weakened.
 
 - Counts the **first** generation, so default = 1 generate + 1 regenerate
   (user's explicit choice over "1 generate + 2 regenerates").

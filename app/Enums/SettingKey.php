@@ -12,6 +12,10 @@ enum SettingKey: string
 {
     case QuizMaxGenerations = 'quiz.max_generations';
 
+    case QuizPassingScore = 'quiz.passing_score';
+
+    case QuizMaxAttempts = 'quiz.max_attempts';
+
     /**
      * Value used when an admin has never saved this setting.
      */
@@ -19,6 +23,8 @@ enum SettingKey: string
     {
         return match ($this) {
             self::QuizMaxGenerations => 2,
+            self::QuizPassingScore => 80,
+            self::QuizMaxAttempts => 3,
         };
     }
 
@@ -26,6 +32,8 @@ enum SettingKey: string
     {
         return match ($this) {
             self::QuizMaxGenerations => 'Quiz generations per lesson',
+            self::QuizPassingScore => 'Passing score (%)',
+            self::QuizMaxAttempts => 'Quiz attempts per teacher',
         };
     }
 
@@ -36,6 +44,12 @@ enum SettingKey: string
                 .'counting the first generation. Once a quiz reaches this limit it can never be regenerated '
                 .'again — the count is not reset by editing the slide text. Admins can always keep editing '
                 .'questions by hand.',
+            self::QuizPassingScore => 'The score a teacher must reach on a lesson quiz before they can mark '
+                .'that lesson complete toward their course certification.',
+            self::QuizMaxAttempts => 'How many times a teacher may attempt a given lesson quiz in total, '
+                .'counting their first attempt. A teacher who uses them all without passing is blocked from '
+                .'completing that lesson — and so from certifying for the course — until an admin resets '
+                .'their attempts from the lesson\'s Quiz Attempts list.',
         };
     }
 
@@ -46,6 +60,7 @@ enum SettingKey: string
     {
         return match ($this) {
             self::QuizMaxGenerations => 'Lesson Quizzes',
+            self::QuizPassingScore, self::QuizMaxAttempts => 'Teacher Certification',
         };
     }
 }

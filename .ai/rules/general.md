@@ -15,9 +15,7 @@ To process queued jobs (including the `MessageSent` broadcast job that powers Co
 
 Neither Reverb (`reverb:start`) nor Horizon are yet wired into `deploy.sh` or any process supervisor (Supervisor/systemd) — a deploy currently does not start or restart either. That's a known gap, not an oversight to silently fix — confirm with the user before adding infra/deploy-pipeline changes.
 
-## Git: push straight to main, never open a PR
-When the user asks to commit/push, push directly — do NOT open a pull request, and do not offer to. Stated explicitly by the user 2026-09-05.
+## Git: never push to main unprompted — ask every time. No PRs.
+**Always ask before pushing to `main`.** Committing locally is fine and expected; pushing is not. Approval to push once does NOT carry over to the next change — ask again, every time. Stated explicitly by the user 2026-09-05, after a stretch of auto-pushing each finished piece of work.
 
-This repo's history is linear and lands on `main` directly (no merge commits, no PR flow). So: commit, then push to `main`. Don't create a feature branch and don't do the branch → merge → push dance; that just adds steps the user then has to undo. (This overrides the generic "if on the default branch, branch first" default.)
-
-Still ask before pushing unless the user has already said to — this rule is about *how* to push, not about pushing unprompted.
+When the user does say to push: push straight to `main`. Do NOT open a pull request, and do not offer to. This repo's history is linear and lands on `main` directly (no merge commits, no PR flow), so don't create a feature branch and don't do the branch → merge → push dance either; that just adds steps the user then has to undo. (This overrides the generic "if on the default branch, branch first" default.)

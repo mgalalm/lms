@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\LessonQuizStatus;
+use App\Enums\SettingKey;
 use Database\Factories\TeacherProfileFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -118,6 +120,67 @@ class TeacherProfile extends Model
         }
 
         return $this->lessonCompletions()->whereIn('lesson_id', $lessonIds)->count() === $lessonIds->count();
+    }
+
+    /**
+     * Get this teacher's scored attempts at lesson quizzes, voided ones
+     * included — use scopeCounting() for anything that gates behaviour.
+     */
+    public function lessonQuizAttempts(): HasMany
+    {
+        return $this->hasMany(TeacherLessonQuizAttempt::class);
+    }
+
+    /**
+     * Attempts this teacher has spent on a quiz, ignoring any an admin
+     * has reset.
+     */
+    public function attemptsUsedFor(LessonQuiz $quiz): int
+    {
+        return $this->lessonQuizAttempts()
+            ->counting()
+            ->where('lesson_quiz_id', $quiz->id)
+            ->count();
+    }
+
+    public function attemptsRemainingFor(LessonQuiz $quiz): int
+    {
+        return max(0, (int) Setting::get(SettingKey::QuizMaxAttempts) - $this->attemptsUsedFor($quiz));
+    }
+
+    public function hasPassedLessonQuiz(LessonQuiz $quiz): bool
+    {
+        return $this->lessonQuizAttempts()
+            ->counting()
+            ->where('lesson_quiz_id', $quiz->id)
+            ->where('passed', true)
+            ->exists();
+    }
+
+    /**
+     * Whether this teacher may take (another) run at a quiz — already
+     * passing it stops further attempts, as does exhausting the cap.
+     */
+    public function canAttemptLessonQuiz(LessonQuiz $quiz): bool
+    {
+        return ! $this->hasPassedLessonQuiz($quiz)
+            && $this->attemptsRemainingFor($quiz) > 0;
+    }
+
+    /**
+     * Whether this teacher is allowed to mark a lesson complete. A lesson
+     * must have a published quiz and the teacher must have passed it —
+     * completion is a certification step, not a self-declaration.
+     */
+    public function canCompleteLesson(Lesson $lesson): bool
+    {
+        $quiz = $lesson->quiz;
+
+        if (! $quiz || $quiz->status !== LessonQuizStatus::Published) {
+            return false;
+        }
+
+        return $this->hasPassedLessonQuiz($quiz);
     }
 
     /**

@@ -2,7 +2,12 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\LessonQuizStatus;
+use App\Enums\SettingKey;
 use App\Models\Course;
+use App\Models\Lesson;
+use App\Models\Setting;
+use App\Models\TeacherProfile;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Collection;
@@ -23,6 +28,7 @@ class LmsCourseDetailResource extends JsonResource
         private readonly Collection $completedLessonIds,
         private readonly bool $isCertified,
         private readonly bool $canTakeQuiz,
+        private readonly TeacherProfile $teacherProfile,
     ) {
         parent::__construct($resource);
     }
@@ -61,6 +67,9 @@ class LmsCourseDetailResource extends JsonResource
                     'slideshow' => $lesson->slideshow?->google_slides_id
                         ? ['google_slides_id' => $lesson->slideshow->google_slides_id]
                         : null,
+                    // Passing the lesson's quiz is what unlocks "Mark as
+                    // complete" — see TeacherProfile::canCompleteLesson().
+                    'quiz' => $this->lessonQuizPayload($lesson),
                 ]),
             ]),
             'quiz' => $this->whenLoaded('quiz', fn () => $this->quiz ? [
@@ -73,6 +82,42 @@ class LmsCourseDetailResource extends JsonResource
                     ])
                     : [],
             ] : null),
+        ];
+    }
+
+    /**
+     * The viewing teacher's state for one lesson's quiz. Returns null when
+     * no published quiz exists — the lesson then can't be completed at
+     * all, and the page explains why rather than offering a dead button.
+     *
+     * Questions are withheld once the teacher has passed or run out of
+     * attempts, so the payload never hands out a quiz they can't take.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function lessonQuizPayload(Lesson $lesson): ?array
+    {
+        $quiz = $lesson->quiz;
+
+        if (! $quiz || $quiz->status !== LessonQuizStatus::Published) {
+            return null;
+        }
+
+        $canAttempt = $this->teacherProfile->canAttemptLessonQuiz($quiz);
+
+        return [
+            'id' => $quiz->id,
+            'passed' => $this->teacherProfile->hasPassedLessonQuiz($quiz),
+            'can_attempt' => $canAttempt,
+            'attempts_remaining' => $this->teacherProfile->attemptsRemainingFor($quiz),
+            'passing_score' => (int) Setting::get(SettingKey::QuizPassingScore),
+            'questions' => $canAttempt
+                ? $quiz->questions->map(fn ($question) => [
+                    'id' => $question->id,
+                    'question_text' => $question->question_text,
+                    'options' => $question->options,
+                ])->values()
+                : [],
         ];
     }
 }

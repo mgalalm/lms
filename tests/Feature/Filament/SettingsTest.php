@@ -75,6 +75,41 @@ class SettingsTest extends TestCase
         $this->assertSame(2, Setting::get(SettingKey::QuizMaxGenerations));
     }
 
+    public function test_the_certification_settings_default_and_save(): void
+    {
+        $this->assertSame(80, Setting::get(SettingKey::QuizPassingScore));
+        $this->assertSame(3, Setting::get(SettingKey::QuizMaxAttempts));
+
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin);
+
+        Livewire::test(SettingsPage::class)
+            ->fillForm([
+                SettingKey::QuizPassingScore->name => 70,
+                SettingKey::QuizMaxAttempts->name => 5,
+            ])
+            ->call('save')
+            ->assertNotified('Settings saved');
+
+        $this->assertSame(70, Setting::get(SettingKey::QuizPassingScore));
+        $this->assertSame(5, Setting::get(SettingKey::QuizMaxAttempts));
+    }
+
+    public function test_the_passing_score_cannot_exceed_one_hundred(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin);
+
+        Livewire::test(SettingsPage::class)
+            ->fillForm([SettingKey::QuizPassingScore->name => 150])
+            ->call('save')
+            ->assertHasFormErrors([SettingKey::QuizPassingScore->name]);
+
+        $this->assertSame(80, Setting::get(SettingKey::QuizPassingScore));
+    }
+
     public function test_a_non_admin_cannot_reach_the_settings_page(): void
     {
         $teacher = User::factory()->teacher()->create();

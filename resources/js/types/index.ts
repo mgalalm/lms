@@ -24,6 +24,7 @@ export interface SharedData {
     flash: {
         quizResult: { score: number; passed: boolean } | null;
         lessonQuizResult: LessonQuizResult | null;
+        teacherLessonQuizResult: TeacherLessonQuizResult | null;
         success: string | null;
         error: string | null;
     };
@@ -208,6 +209,27 @@ export interface LmsLesson {
     completed: boolean;
     has_video: boolean;
     slideshow: { google_slides_id: string } | null;
+    /** Null when the lesson has no published quiz — completion stays locked. */
+    quiz: LmsLessonQuiz | null;
+}
+
+export interface LmsLessonQuiz {
+    id: number;
+    passed: boolean;
+    can_attempt: boolean;
+    attempts_remaining: number;
+    passing_score: number;
+    /** Empty once the teacher has passed or run out of attempts. */
+    questions: { id: number; question_text: string; options: string[] }[];
+}
+
+export interface TeacherLessonQuizResult {
+    lesson_id: number;
+    score: number;
+    passed: boolean;
+    correct: number;
+    total: number;
+    attempts_remaining: number;
 }
 
 export interface LmsModule {

@@ -62,7 +62,12 @@ class LmsController extends Controller
      */
     public function show(Request $request, Course $course): Response
     {
-        $course->load(['modules.lessons.video', 'modules.lessons.slideshow', 'quiz.questions']);
+        $course->load([
+            'modules.lessons.video',
+            'modules.lessons.slideshow',
+            'modules.lessons.quiz.questions',
+            'quiz.questions',
+        ]);
 
         $teacherProfile = $request->user()->teacherProfile;
         $lessonIds = $course->modules->flatMap(fn ($module) => $module->lessons)->pluck('id');
@@ -77,7 +82,13 @@ class LmsController extends Controller
             && $teacherProfile->hasCompletedAllLessonsForCourse($course);
 
         return Inertia::render('teacher/Lms/Show', [
-            'course' => new LmsCourseDetailResource($course, $completedLessonIds, $isCertified, $canTakeQuiz),
+            'course' => new LmsCourseDetailResource(
+                $course,
+                $completedLessonIds,
+                $isCertified,
+                $canTakeQuiz,
+                $teacherProfile,
+            ),
         ]);
     }
 }

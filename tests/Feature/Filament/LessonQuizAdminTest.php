@@ -4,9 +4,11 @@ namespace Tests\Feature\Filament;
 
 use App\Enums\LessonQuizStatus;
 use App\Filament\Resources\Lessons\Pages\EditLesson;
+use App\Filament\Resources\Lessons\RelationManagers\QuizAttemptsRelationManager;
 use App\Models\Lesson;
 use App\Models\LessonQuiz;
 use App\Models\LessonSlideshow;
+use App\Models\TeacherLessonQuizAttempt;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -161,6 +163,37 @@ class LessonQuizAdminTest extends TestCase
 
         Livewire::test(EditLesson::class, ['record' => $lesson->getRouteKey()])
             ->assertActionEnabled('generateQuiz');
+    }
+
+    public function test_an_admin_can_reset_a_teachers_exhausted_quiz_attempts(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $teacher = User::factory()->teacher()->create();
+        $lesson = Lesson::factory()->create();
+        $quiz = LessonQuiz::factory()->published()->for($lesson)->create();
+
+        $attempts = TeacherLessonQuizAttempt::factory()
+            ->count(3)
+            ->for($teacher->teacherProfile)
+            ->for($quiz, 'quiz')
+            ->create();
+
+        $this->assertSame(0, $teacher->teacherProfile->attemptsRemainingFor($quiz));
+
+        $this->actingAs($admin);
+
+        Livewire::test(QuizAttemptsRelationManager::class, [
+            'ownerRecord' => $lesson,
+            'pageClass' => EditLesson::class,
+        ])
+            ->callTableAction('resetAttempts', $attempts->first())
+            ->assertNotified();
+
+        // All three voided, so the teacher gets a full allowance back —
+        // and the history is kept rather than deleted.
+        $this->assertSame(3, $teacher->teacherProfile->attemptsRemainingFor($quiz));
+        $this->assertDatabaseCount('teacher_lesson_quiz_attempts', 3);
+        $this->assertSame(0, TeacherLessonQuizAttempt::whereNull('voided_at')->count());
     }
 
     public function test_regenerating_an_existing_quiz_warns_before_replacing_it(): void

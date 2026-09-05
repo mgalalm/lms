@@ -6,10 +6,12 @@ use App\Enums\SessionCreditReason;
 use App\Filament\Resources\ClassSessions\Pages\CreateClassSession;
 use App\Models\Course;
 use App\Models\Lesson;
+use App\Models\LessonQuiz;
 use App\Models\LessonVideo;
 use App\Models\Module;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
+use App\Models\TeacherLessonQuizAttempt;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -90,11 +92,18 @@ class LmsTest extends TestCase
             );
     }
 
-    public function test_teacher_can_mark_a_lesson_complete(): void
+    public function test_teacher_can_mark_a_lesson_complete_once_they_have_passed_its_quiz(): void
     {
         $teacher = User::factory()->teacher()->create();
         $module = Module::factory()->create();
         $lesson = Lesson::factory()->for($module)->create();
+        $quiz = LessonQuiz::factory()->published()->for($lesson)->create();
+
+        TeacherLessonQuizAttempt::factory()
+            ->for($teacher->teacherProfile)
+            ->for($quiz, 'quiz')
+            ->passed()
+            ->create();
 
         $this->actingAs($teacher)
             ->post(route('lms.lessons.complete', [$module->course, $lesson]))
@@ -111,11 +120,83 @@ class LmsTest extends TestCase
         $teacher = User::factory()->teacher()->create();
         $module = Module::factory()->create();
         $lesson = Lesson::factory()->for($module)->create();
+        $quiz = LessonQuiz::factory()->published()->for($lesson)->create();
+
+        TeacherLessonQuizAttempt::factory()
+            ->for($teacher->teacherProfile)
+            ->for($quiz, 'quiz')
+            ->passed()
+            ->create();
 
         $this->actingAs($teacher)->post(route('lms.lessons.complete', [$module->course, $lesson]));
         $this->actingAs($teacher)->post(route('lms.lessons.complete', [$module->course, $lesson]));
 
         $this->assertDatabaseCount('teacher_lesson_completions', 1);
+    }
+
+    public function test_teacher_cannot_mark_a_lesson_complete_without_passing_its_quiz(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $module = Module::factory()->create();
+        $lesson = Lesson::factory()->for($module)->create();
+        LessonQuiz::factory()->published()->for($lesson)->create();
+
+        $this->actingAs($teacher)
+            ->post(route('lms.lessons.complete', [$module->course, $lesson]))
+            ->assertForbidden();
+
+        $this->assertDatabaseCount('teacher_lesson_completions', 0);
+    }
+
+    public function test_teacher_cannot_mark_a_lesson_complete_when_it_has_no_published_quiz(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $module = Module::factory()->create();
+        $lesson = Lesson::factory()->for($module)->create();
+        // Draft, not published — completion stays locked.
+        LessonQuiz::factory()->for($lesson)->create();
+
+        $this->actingAs($teacher)
+            ->post(route('lms.lessons.complete', [$module->course, $lesson]))
+            ->assertForbidden();
+
+        $this->assertDatabaseCount('teacher_lesson_completions', 0);
+    }
+
+    public function test_a_failed_attempt_does_not_unlock_completion(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $module = Module::factory()->create();
+        $lesson = Lesson::factory()->for($module)->create();
+        $quiz = LessonQuiz::factory()->published()->for($lesson)->create();
+
+        TeacherLessonQuizAttempt::factory()
+            ->for($teacher->teacherProfile)
+            ->for($quiz, 'quiz')
+            ->create(['score' => 50, 'passed' => false]);
+
+        $this->actingAs($teacher)
+            ->post(route('lms.lessons.complete', [$module->course, $lesson]))
+            ->assertForbidden();
+    }
+
+    public function test_a_voided_pass_no_longer_unlocks_completion(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $module = Module::factory()->create();
+        $lesson = Lesson::factory()->for($module)->create();
+        $quiz = LessonQuiz::factory()->published()->for($lesson)->create();
+
+        TeacherLessonQuizAttempt::factory()
+            ->for($teacher->teacherProfile)
+            ->for($quiz, 'quiz')
+            ->passed()
+            ->voided()
+            ->create();
+
+        $this->actingAs($teacher)
+            ->post(route('lms.lessons.complete', [$module->course, $lesson]))
+            ->assertForbidden();
     }
 
     public function test_teacher_cannot_take_the_quiz_before_completing_all_lessons(): void
