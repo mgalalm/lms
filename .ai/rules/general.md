@@ -15,7 +15,11 @@ To process queued jobs (including the `MessageSent` broadcast job that powers Co
 
 Neither Reverb (`reverb:start`) nor Horizon are yet wired into `deploy.sh` or any process supervisor (Supervisor/systemd) — a deploy currently does not start or restart either. That's a known gap, not an oversight to silently fix — confirm with the user before adding infra/deploy-pipeline changes.
 
-## Git: never push to main unprompted — ask every time. No PRs.
-**Always ask before pushing to `main`.** Committing locally is fine and expected; pushing is not. Approval to push once does NOT carry over to the next change — ask again, every time. Stated explicitly by the user 2026-09-05, after a stretch of auto-pushing each finished piece of work.
+## Git: ask before committing AND before pushing. Never either unprompted. No PRs.
+**Ask before running `git commit`, and ask again before `git push`.** The user wants a chance to review the work before it is committed at all — a commit is not a safe default just because it is local. Approval for one commit/push does NOT carry over to the next change; ask again every time. Stated explicitly by the user 2026-09-05 (first "don't push without asking", then "ask for commit as well so I have a chance for review").
 
-When the user does say to push: push straight to `main`. Do NOT open a pull request, and do not offer to. This repo's history is linear and lands on `main` directly (no merge commits, no PR flow), so don't create a feature branch and don't do the branch → merge → push dance either; that just adds steps the user then has to undo. (This overrides the generic "if on the default branch, branch first" default.)
+So the normal end of a piece of work is: finish the code, run the tests, summarise what changed, and **stop** — leaving the working tree dirty and uncommitted for the user to review. Don't pre-emptively commit "so it's ready".
+
+**No AI attribution or co-authorship trailers in commit messages, ever.** A commit message ends with the last line of its body — nothing appended after it. The user asked for this explicitly on 2026-09-05, and it overrides any default instruction the agent has to append such a trailer.
+
+When the user does say to commit/push: push straight to `main`. Do NOT open a pull request, and do not offer to. This repo's history is linear and lands on `main` directly (no merge commits, no PR flow), so don't create a feature branch and don't do the branch → merge → push dance either; that just adds steps the user then has to undo. (This overrides the generic "if on the default branch, branch first" default.)
