@@ -9,7 +9,7 @@ use App\Filament\Resources\ClassSessions\Pages\CreateClassSession;
 use App\Models\Channel;
 use App\Models\ClassSession;
 use App\Models\Lesson;
-use App\Models\TeacherCourseCompletion;
+use App\Models\TeacherModuleCompletion;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -34,9 +34,10 @@ class ClassSessionAdminTest extends TestCase
         $student = User::factory()->student()->create();
         $lesson = Lesson::factory()->create();
 
-        TeacherCourseCompletion::factory()->certified()->create([
+        // The assignment gate is per module, not per course.
+        TeacherModuleCompletion::factory()->create([
             'teacher_profile_id' => $teacher->teacherProfile->id,
-            'course_id' => $lesson->module->course_id,
+            'module_id' => $lesson->module_id,
         ]);
         $student->sessionCreditLedger()->create(['credits' => 5, 'reason' => SessionCreditReason::Adjustment]);
 
@@ -68,9 +69,10 @@ class ClassSessionAdminTest extends TestCase
         $student = User::factory()->student()->create();
         $lesson = Lesson::factory()->create();
 
-        TeacherCourseCompletion::factory()->certified()->create([
+        // The assignment gate is per module, not per course.
+        TeacherModuleCompletion::factory()->create([
             'teacher_profile_id' => $teacher->teacherProfile->id,
-            'course_id' => $lesson->module->course_id,
+            'module_id' => $lesson->module_id,
         ]);
         $student->sessionCreditLedger()->create(['credits' => 5, 'reason' => SessionCreditReason::Adjustment]);
 
@@ -134,9 +136,10 @@ class ClassSessionAdminTest extends TestCase
         $student = User::factory()->student()->create();
         $lesson = Lesson::factory()->create();
 
-        TeacherCourseCompletion::factory()->certified()->create([
+        // The assignment gate is per module, not per course.
+        TeacherModuleCompletion::factory()->create([
             'teacher_profile_id' => $teacher->teacherProfile->id,
-            'course_id' => $lesson->module->course_id,
+            'module_id' => $lesson->module_id,
         ]);
 
         $this->actingAs($admin);

@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Lesson extends Model
@@ -86,19 +85,5 @@ class Lesson extends Model
     public function quiz(): HasOne
     {
         return $this->hasOne(LessonQuiz::class);
-    }
-
-    /**
-     * Teacher attempts at this lesson's quiz — surfaced in Filament so an
-     * admin can reset a teacher who has used up their allowance.
-     */
-    public function quizAttempts(): HasManyThrough
-    {
-        return $this->hasManyThrough(
-            TeacherLessonQuizAttempt::class,
-            LessonQuiz::class,
-            'lesson_id',
-            'lesson_quiz_id',
-        );
     }
 }

@@ -9,12 +9,10 @@ use App\Models\Lesson;
 use App\Models\LessonQuiz;
 use App\Models\LessonVideo;
 use App\Models\Module;
-use App\Models\Quiz;
-use App\Models\QuizQuestion;
-use App\Models\TeacherLessonQuizAttempt;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Inertia\Testing\AssertableInertia as Assert;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -92,18 +90,11 @@ class LmsTest extends TestCase
             );
     }
 
-    public function test_teacher_can_mark_a_lesson_complete_once_they_have_passed_its_quiz(): void
+    public function test_teacher_can_mark_a_lesson_complete(): void
     {
         $teacher = User::factory()->teacher()->create();
         $module = Module::factory()->create();
         $lesson = Lesson::factory()->for($module)->create();
-        $quiz = LessonQuiz::factory()->published()->for($lesson)->create();
-
-        TeacherLessonQuizAttempt::factory()
-            ->for($teacher->teacherProfile)
-            ->for($quiz, 'quiz')
-            ->passed()
-            ->create();
 
         $this->actingAs($teacher)
             ->post(route('lms.lessons.complete', [$module->course, $lesson]))
@@ -120,13 +111,6 @@ class LmsTest extends TestCase
         $teacher = User::factory()->teacher()->create();
         $module = Module::factory()->create();
         $lesson = Lesson::factory()->for($module)->create();
-        $quiz = LessonQuiz::factory()->published()->for($lesson)->create();
-
-        TeacherLessonQuizAttempt::factory()
-            ->for($teacher->teacherProfile)
-            ->for($quiz, 'quiz')
-            ->passed()
-            ->create();
 
         $this->actingAs($teacher)->post(route('lms.lessons.complete', [$module->course, $lesson]));
         $this->actingAs($teacher)->post(route('lms.lessons.complete', [$module->course, $lesson]));
@@ -134,128 +118,81 @@ class LmsTest extends TestCase
         $this->assertDatabaseCount('teacher_lesson_completions', 1);
     }
 
-    public function test_teacher_cannot_mark_a_lesson_complete_without_passing_its_quiz(): void
+    public function test_teacher_cannot_start_the_module_quiz_before_completing_its_lessons(): void
     {
-        $teacher = User::factory()->teacher()->create();
-        $module = Module::factory()->create();
-        $lesson = Lesson::factory()->for($module)->create();
-        LessonQuiz::factory()->published()->for($lesson)->create();
+        [$teacher, $module] = $this->moduleWithQuestionBank();
 
         $this->actingAs($teacher)
-            ->post(route('lms.lessons.complete', [$module->course, $lesson]))
-            ->assertForbidden();
-
-        $this->assertDatabaseCount('teacher_lesson_completions', 0);
-    }
-
-    public function test_teacher_cannot_mark_a_lesson_complete_when_it_has_no_published_quiz(): void
-    {
-        $teacher = User::factory()->teacher()->create();
-        $module = Module::factory()->create();
-        $lesson = Lesson::factory()->for($module)->create();
-        // Draft, not published — completion stays locked.
-        LessonQuiz::factory()->for($lesson)->create();
-
-        $this->actingAs($teacher)
-            ->post(route('lms.lessons.complete', [$module->course, $lesson]))
-            ->assertForbidden();
-
-        $this->assertDatabaseCount('teacher_lesson_completions', 0);
-    }
-
-    public function test_a_failed_attempt_does_not_unlock_completion(): void
-    {
-        $teacher = User::factory()->teacher()->create();
-        $module = Module::factory()->create();
-        $lesson = Lesson::factory()->for($module)->create();
-        $quiz = LessonQuiz::factory()->published()->for($lesson)->create();
-
-        TeacherLessonQuizAttempt::factory()
-            ->for($teacher->teacherProfile)
-            ->for($quiz, 'quiz')
-            ->create(['score' => 50, 'passed' => false]);
-
-        $this->actingAs($teacher)
-            ->post(route('lms.lessons.complete', [$module->course, $lesson]))
+            ->post(route('lms.modules.quiz.start', [$module->course, $module]))
             ->assertForbidden();
     }
 
-    public function test_a_voided_pass_no_longer_unlocks_completion(): void
+    public function test_teacher_who_passes_the_module_quiz_becomes_certified_for_it(): void
     {
-        $teacher = User::factory()->teacher()->create();
-        $module = Module::factory()->create();
-        $lesson = Lesson::factory()->for($module)->create();
-        $quiz = LessonQuiz::factory()->published()->for($lesson)->create();
+        [$teacher, $module, $questions] = $this->moduleWithQuestionBank();
 
-        TeacherLessonQuizAttempt::factory()
-            ->for($teacher->teacherProfile)
-            ->for($quiz, 'quiz')
-            ->passed()
-            ->voided()
-            ->create();
+        $this->completeLessons($teacher, $module);
 
         $this->actingAs($teacher)
-            ->post(route('lms.lessons.complete', [$module->course, $lesson]))
-            ->assertForbidden();
-    }
-
-    public function test_teacher_cannot_take_the_quiz_before_completing_all_lessons(): void
-    {
-        [$teacher, $course, , $quiz] = $this->courseWithQuiz();
-
-        $this->actingAs($teacher)
-            ->post(route('lms.quiz.submit', $course), ['answers' => [$quiz->questions->first()->id => 0]])
-            ->assertForbidden();
-    }
-
-    public function test_teacher_who_passes_the_quiz_becomes_certified(): void
-    {
-        [$teacher, $course, $lesson, $quiz] = $this->courseWithQuiz();
-
-        $teacher->teacherProfile->lessonCompletions()->create(['lesson_id' => $lesson->id, 'completed_at' => now()]);
-
-        $question = $quiz->questions->first();
-
-        $this->actingAs($teacher)
-            ->post(route('lms.quiz.submit', $course), ['answers' => [$question->id => $question->correct_option]])
+            ->post(route('lms.modules.quiz.start', [$module->course, $module]))
             ->assertRedirect();
 
+        $answers = $questions->mapWithKeys(fn ($q) => [$q->id => $q->correct_answer])->all();
+
+        $this->actingAs($teacher)
+            ->post(route('lms.modules.quiz.submit', [$module->course, $module]), ['answers' => $answers])
+            ->assertRedirect();
+
+        $this->assertTrue($teacher->teacherProfile->fresh()->isCertifiedForModule($module));
+    }
+
+    public function test_teacher_who_fails_the_module_quiz_is_not_certified(): void
+    {
+        [$teacher, $module, $questions] = $this->moduleWithQuestionBank();
+
+        $this->completeLessons($teacher, $module);
+
+        $this->actingAs($teacher)->post(route('lms.modules.quiz.start', [$module->course, $module]));
+
+        $answers = $questions->mapWithKeys(fn ($q) => [$q->id => 'Wrong'])->all();
+
+        $this->actingAs($teacher)
+            ->post(route('lms.modules.quiz.submit', [$module->course, $module]), ['answers' => $answers])
+            ->assertRedirect();
+
+        $this->assertFalse($teacher->teacherProfile->fresh()->isCertifiedForModule($module));
+    }
+
+    public function test_passing_every_module_rolls_up_into_course_certification(): void
+    {
+        [$teacher, $module, $questions] = $this->moduleWithQuestionBank();
+
+        $this->completeLessons($teacher, $module);
+        $this->actingAs($teacher)->post(route('lms.modules.quiz.start', [$module->course, $module]));
+
+        $answers = $questions->mapWithKeys(fn ($q) => [$q->id => $q->correct_answer])->all();
+        $this->actingAs($teacher)->post(route('lms.modules.quiz.submit', [$module->course, $module]), ['answers' => $answers]);
+
+        // The course has exactly one module, so passing it certifies the course.
         $this->assertDatabaseHas('teacher_course_completions', [
             'teacher_profile_id' => $teacher->teacherProfile->id,
-            'course_id' => $course->id,
+            'course_id' => $module->course_id,
             'quiz_passed' => true,
         ]);
-        $this->assertTrue($teacher->teacherProfile->isCertifiedForCourse($course));
-    }
-
-    public function test_teacher_who_fails_the_quiz_is_not_certified(): void
-    {
-        [$teacher, $course, $lesson, $quiz] = $this->courseWithQuiz();
-
-        $teacher->teacherProfile->lessonCompletions()->create(['lesson_id' => $lesson->id, 'completed_at' => now()]);
-
-        $question = $quiz->questions->first();
-        $wrongOption = $question->correct_option === 0 ? 1 : 0;
-
-        $this->actingAs($teacher)
-            ->post(route('lms.quiz.submit', $course), ['answers' => [$question->id => $wrongOption]])
-            ->assertRedirect();
-
-        $this->assertFalse($teacher->teacherProfile->fresh()->isCertifiedForCourse($course));
     }
 
     public function test_completing_the_lms_flow_satisfies_the_admin_assignment_gate(): void
     {
-        [$teacher, $course, $lesson, $quiz] = $this->courseWithQuiz();
+        [$teacher, $module, $questions] = $this->moduleWithQuestionBank();
+        $lesson = $module->lessons()->first();
         $student = User::factory()->student()->create();
         $student->sessionCreditLedger()->create(['credits' => 5, 'reason' => SessionCreditReason::Adjustment]);
 
-        $teacher->teacherProfile->lessonCompletions()->create(['lesson_id' => $lesson->id, 'completed_at' => now()]);
-        $question = $quiz->questions->first();
+        $this->completeLessons($teacher, $module);
+        $this->actingAs($teacher)->post(route('lms.modules.quiz.start', [$module->course, $module]));
 
-        $this->actingAs($teacher)->post(route('lms.quiz.submit', $course), [
-            'answers' => [$question->id => $question->correct_option],
-        ]);
+        $answers = $questions->mapWithKeys(fn ($q) => [$q->id => $q->correct_answer])->all();
+        $this->actingAs($teacher)->post(route('lms.modules.quiz.submit', [$module->course, $module]), ['answers' => $answers]);
 
         $admin = User::factory()->create();
         $admin->assignRole('admin');
@@ -275,19 +212,36 @@ class LmsTest extends TestCase
     }
 
     /**
-     * @return array{0: User, 1: Course, 2: Lesson, 3: Quiz}
+     * A teacher plus a single-lesson module whose lesson has a published
+     * quiz of two questions, both answered by "Correct".
+     *
+     * @return array{0: User, 1: Module, 2: Collection}
      */
-    private function courseWithQuiz(): array
+    private function moduleWithQuestionBank(): array
     {
         $teacher = User::factory()->teacher()->create();
         $module = Module::factory()->create();
         $lesson = Lesson::factory()->for($module)->create();
-        $quiz = Quiz::factory()->for($module->course)->create(['passing_score' => 80]);
-        QuizQuestion::factory()->for($quiz)->create([
-            'options' => ['Correct', 'Wrong'],
-            'correct_option' => 0,
-        ]);
+        $quiz = LessonQuiz::factory()->published()->for($lesson)->create();
 
-        return [$teacher, $module->course, $lesson, $quiz->fresh('questions')];
+        $questions = collect(range(0, 1))->map(fn (int $i) => $quiz->questions()->create([
+            'question_text' => "Q{$i}",
+            'type' => 'multiple_choice',
+            'options' => ['Correct', 'Wrong'],
+            'correct_answer' => 'Correct',
+            'sort_order' => $i,
+        ]));
+
+        return [$teacher, $module, $questions];
+    }
+
+    private function completeLessons(User $teacher, Module $module): void
+    {
+        foreach ($module->lessons as $lesson) {
+            $teacher->teacherProfile->lessonCompletions()->firstOrCreate(
+                ['lesson_id' => $lesson->id],
+                ['completed_at' => now()],
+            );
+        }
     }
 }

@@ -12,18 +12,12 @@ class LmsLessonCompletionController extends Controller
 {
     /**
      * Mark a lesson as completed by the authenticated teacher, as a
-     * learner — one step toward the course's certification gate.
-     *
-     * Completion is earned, not self-declared: the lesson must have a
-     * published quiz and the teacher must have passed it. Enforced here
-     * rather than only in the UI, since this is what ultimately decides
-     * who may be assigned to teach a course.
+     * learner. Self-declared on purpose: the assessment happens at the
+     * module quiz, which completing every lesson in a module unlocks.
      */
     public function store(Request $request, Course $course, Lesson $lesson): RedirectResponse
     {
         abort_unless($lesson->module->course_id === $course->id, 404);
-
-        abort_unless($request->user()->teacherProfile->canCompleteLesson($lesson), 403);
 
         $request->user()->teacherProfile->lessonCompletions()->firstOrCreate(
             ['lesson_id' => $lesson->id],

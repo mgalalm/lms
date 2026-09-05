@@ -39,4 +39,14 @@ class Module extends Model
     {
         return $this->hasMany(Lesson::class);
     }
+
+    /**
+     * Teacher attempts at this module's certification quiz — surfaced in
+     * Filament so an admin can reset a teacher who has used up their
+     * allowance without passing.
+     */
+    public function quizAttempts(): HasMany
+    {
+        return $this->hasMany(TeacherModuleQuizAttempt::class);
+    }
 }

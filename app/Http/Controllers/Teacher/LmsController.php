@@ -66,7 +66,6 @@ class LmsController extends Controller
             'modules.lessons.video',
             'modules.lessons.slideshow',
             'modules.lessons.quiz.questions',
-            'quiz.questions',
         ]);
 
         $teacherProfile = $request->user()->teacherProfile;
@@ -76,17 +75,11 @@ class LmsController extends Controller
             ->whereIn('lesson_id', $lessonIds)
             ->pluck('lesson_id');
 
-        $isCertified = $teacherProfile->isCertifiedForCourse($course);
-        $canTakeQuiz = ! $isCertified
-            && $course->quiz !== null
-            && $teacherProfile->hasCompletedAllLessonsForCourse($course);
-
         return Inertia::render('teacher/Lms/Show', [
             'course' => new LmsCourseDetailResource(
                 $course,
                 $completedLessonIds,
-                $isCertified,
-                $canTakeQuiz,
+                $teacherProfile->isCertifiedForCourse($course),
                 $teacherProfile,
             ),
         ]);

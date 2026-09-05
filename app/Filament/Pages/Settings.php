@@ -90,7 +90,8 @@ class Settings extends Page
     {
         return match ($key) {
             SettingKey::QuizMaxGenerations,
-            SettingKey::QuizMaxAttempts => TextInput::make($key->name)
+            SettingKey::QuizMaxAttempts,
+            SettingKey::ModuleQuizQuestionCount => TextInput::make($key->name)
                 ->label($key->label())
                 ->helperText($key->helperText())
                 ->numeric()
@@ -113,7 +114,8 @@ class Settings extends Page
         return match ($key) {
             SettingKey::QuizMaxGenerations,
             SettingKey::QuizPassingScore,
-            SettingKey::QuizMaxAttempts => (int) $value,
+            SettingKey::QuizMaxAttempts,
+            SettingKey::ModuleQuizQuestionCount => (int) $value,
         };
     }
 }

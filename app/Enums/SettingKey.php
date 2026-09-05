@@ -16,6 +16,8 @@ enum SettingKey: string
 
     case QuizMaxAttempts = 'quiz.max_attempts';
 
+    case ModuleQuizQuestionCount = 'quiz.module_question_count';
+
     /**
      * Value used when an admin has never saved this setting.
      */
@@ -25,6 +27,7 @@ enum SettingKey: string
             self::QuizMaxGenerations => 2,
             self::QuizPassingScore => 80,
             self::QuizMaxAttempts => 3,
+            self::ModuleQuizQuestionCount => 10,
         };
     }
 
@@ -34,6 +37,7 @@ enum SettingKey: string
             self::QuizMaxGenerations => 'Quiz generations per lesson',
             self::QuizPassingScore => 'Passing score (%)',
             self::QuizMaxAttempts => 'Quiz attempts per teacher',
+            self::ModuleQuizQuestionCount => 'Questions per module quiz',
         };
     }
 
@@ -46,10 +50,13 @@ enum SettingKey: string
                 .'questions by hand.',
             self::QuizPassingScore => 'The score a teacher must reach on a lesson quiz before they can mark '
                 .'that lesson complete toward their course certification.',
-            self::QuizMaxAttempts => 'How many times a teacher may attempt a given lesson quiz in total, '
-                .'counting their first attempt. A teacher who uses them all without passing is blocked from '
-                .'completing that lesson — and so from certifying for the course — until an admin resets '
-                .'their attempts from the lesson\'s Quiz Attempts list.',
+            self::QuizMaxAttempts => 'How many times a teacher may attempt a given module quiz in total, '
+                .'counting their first attempt. A teacher who uses them all without passing stays uncertified '
+                .'for that module — and so can\'t be assigned to teach its lessons — until an admin resets '
+                .'their attempts from the module\'s Quiz Attempts list.',
+            self::ModuleQuizQuestionCount => 'How many questions each attempt at a module quiz draws. Questions '
+                .'are sampled fresh per attempt from the question banks of the module\'s lessons, spread as '
+                .'evenly as possible across them. A module with fewer questions than this simply asks fewer.',
         };
     }
 
@@ -60,7 +67,7 @@ enum SettingKey: string
     {
         return match ($this) {
             self::QuizMaxGenerations => 'Lesson Quizzes',
-            self::QuizPassingScore, self::QuizMaxAttempts => 'Teacher Certification',
+            self::QuizPassingScore, self::QuizMaxAttempts, self::ModuleQuizQuestionCount => 'Teacher Certification',
         };
     }
 }

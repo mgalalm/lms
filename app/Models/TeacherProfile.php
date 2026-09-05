@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\LessonQuizStatus;
 use App\Enums\SettingKey;
 use Database\Factories\TeacherProfileFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -123,64 +122,72 @@ class TeacherProfile extends Model
     }
 
     /**
-     * Get this teacher's scored attempts at lesson quizzes, voided ones
-     * included — use scopeCounting() for anything that gates behaviour.
+     * Get this teacher's module certification records.
      */
-    public function lessonQuizAttempts(): HasMany
+    public function moduleCompletions(): HasMany
     {
-        return $this->hasMany(TeacherLessonQuizAttempt::class);
+        return $this->hasMany(TeacherModuleCompletion::class);
     }
 
     /**
-     * Attempts this teacher has spent on a quiz, ignoring any an admin
-     * has reset.
+     * Get this teacher's scored attempts at module quizzes, voided ones
+     * included — use scopeCounting() for anything that gates behaviour.
      */
-    public function attemptsUsedFor(LessonQuiz $quiz): int
+    public function moduleQuizAttempts(): HasMany
     {
-        return $this->lessonQuizAttempts()
+        return $this->hasMany(TeacherModuleQuizAttempt::class);
+    }
+
+    /**
+     * Attempts this teacher has spent on a module's quiz, ignoring any an
+     * admin has reset.
+     */
+    public function attemptsUsedFor(Module $module): int
+    {
+        return $this->moduleQuizAttempts()
             ->counting()
-            ->where('lesson_quiz_id', $quiz->id)
+            ->where('module_id', $module->id)
             ->count();
     }
 
-    public function attemptsRemainingFor(LessonQuiz $quiz): int
+    public function attemptsRemainingFor(Module $module): int
     {
-        return max(0, (int) Setting::get(SettingKey::QuizMaxAttempts) - $this->attemptsUsedFor($quiz));
+        return max(0, (int) Setting::get(SettingKey::QuizMaxAttempts) - $this->attemptsUsedFor($module));
     }
 
-    public function hasPassedLessonQuiz(LessonQuiz $quiz): bool
+    public function isCertifiedForModule(Module $module): bool
     {
-        return $this->lessonQuizAttempts()
-            ->counting()
-            ->where('lesson_quiz_id', $quiz->id)
-            ->where('passed', true)
+        return $this->moduleCompletions()
+            ->where('module_id', $module->id)
+            ->where('quiz_passed', true)
             ->exists();
     }
 
     /**
-     * Whether this teacher may take (another) run at a quiz — already
-     * passing it stops further attempts, as does exhausting the cap.
+     * Whether every lesson in a module is marked complete — what unlocks
+     * the module's certification quiz.
      */
-    public function canAttemptLessonQuiz(LessonQuiz $quiz): bool
+    public function hasCompletedAllLessonsForModule(Module $module): bool
     {
-        return ! $this->hasPassedLessonQuiz($quiz)
-            && $this->attemptsRemainingFor($quiz) > 0;
-    }
+        $lessonIds = $module->lessons()->pluck('id');
 
-    /**
-     * Whether this teacher is allowed to mark a lesson complete. A lesson
-     * must have a published quiz and the teacher must have passed it —
-     * completion is a certification step, not a self-declaration.
-     */
-    public function canCompleteLesson(Lesson $lesson): bool
-    {
-        $quiz = $lesson->quiz;
-
-        if (! $quiz || $quiz->status !== LessonQuizStatus::Published) {
+        if ($lessonIds->isEmpty()) {
             return false;
         }
 
-        return $this->hasPassedLessonQuiz($quiz);
+        return $this->lessonCompletions()->whereIn('lesson_id', $lessonIds)->count() === $lessonIds->count();
+    }
+
+    /**
+     * Whether this teacher may take (another) run at a module's quiz.
+     * Already being certified stops further attempts, as does exhausting
+     * the cap or not having finished the module's lessons.
+     */
+    public function canAttemptModuleQuiz(Module $module): bool
+    {
+        return ! $this->isCertifiedForModule($module)
+            && $this->hasCompletedAllLessonsForModule($module)
+            && $this->attemptsRemainingFor($module) > 0;
     }
 
     /**

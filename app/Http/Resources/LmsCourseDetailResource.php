@@ -2,12 +2,12 @@
 
 namespace App\Http\Resources;
 
-use App\Enums\LessonQuizStatus;
 use App\Enums\SettingKey;
 use App\Models\Course;
-use App\Models\Lesson;
+use App\Models\Module;
 use App\Models\Setting;
 use App\Models\TeacherProfile;
+use App\Services\ModuleQuizAssembler;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Collection;
@@ -27,7 +27,6 @@ class LmsCourseDetailResource extends JsonResource
         Course $resource,
         private readonly Collection $completedLessonIds,
         private readonly bool $isCertified,
-        private readonly bool $canTakeQuiz,
         private readonly TeacherProfile $teacherProfile,
     ) {
         parent::__construct($resource);
@@ -50,10 +49,10 @@ class LmsCourseDetailResource extends JsonResource
                 ? (int) round($this->completedLessonIds->count() / $totalLessons * 100)
                 : 0,
             'is_certified' => $this->isCertified,
-            'can_take_quiz' => $this->canTakeQuiz,
             'modules' => $this->modules->map(fn ($module) => [
                 'id' => $module->id,
                 'title' => $module->title,
+                'quiz' => $this->moduleQuizPayload($module),
                 'lessons' => $module->lessons->map(fn ($lesson) => [
                     'id' => $lesson->id,
                     'title' => $lesson->title,
@@ -67,52 +66,45 @@ class LmsCourseDetailResource extends JsonResource
                     'slideshow' => $lesson->slideshow?->google_slides_id
                         ? ['google_slides_id' => $lesson->slideshow->google_slides_id]
                         : null,
-                    // Passing the lesson's quiz is what unlocks "Mark as
-                    // complete" — see TeacherProfile::canCompleteLesson().
-                    'quiz' => $this->lessonQuizPayload($lesson),
                 ]),
             ]),
-            'quiz' => $this->whenLoaded('quiz', fn () => $this->quiz ? [
-                'passing_score' => $this->quiz->passing_score,
-                'questions' => $this->canTakeQuiz
-                    ? $this->quiz->questions->map(fn ($question) => [
-                        'id' => $question->id,
-                        'question' => $question->question,
-                        'options' => $question->options,
-                    ])
-                    : [],
-            ] : null),
         ];
     }
 
     /**
-     * The viewing teacher's state for one lesson's quiz. Returns null when
-     * no published quiz exists — the lesson then can't be completed at
-     * all, and the page explains why rather than offering a dead button.
+     * The viewing teacher's state for one module's certification quiz.
      *
-     * Questions are withheld once the teacher has passed or run out of
-     * attempts, so the payload never hands out a quiz they can't take.
+     * Questions come from the teacher's open attempt, not from the module
+     * directly: each attempt draws its own balanced sample (see
+     * ModuleQuizAssembler), so the page must show exactly what was drawn
+     * for them and nothing more.
      *
-     * @return array<string, mixed>|null
+     * @return array<string, mixed>
      */
-    private function lessonQuizPayload(Lesson $lesson): ?array
+    private function moduleQuizPayload(Module $module): array
     {
-        $quiz = $lesson->quiz;
+        $assembler = app(ModuleQuizAssembler::class);
 
-        if (! $quiz || $quiz->status !== LessonQuizStatus::Published) {
-            return null;
-        }
-
-        $canAttempt = $this->teacherProfile->canAttemptLessonQuiz($quiz);
+        $openAttempt = $this->teacherProfile->moduleQuizAttempts()
+            ->counting()
+            ->where('module_id', $module->id)
+            ->whereNull('submitted_at')
+            ->first();
 
         return [
-            'id' => $quiz->id,
-            'passed' => $this->teacherProfile->hasPassedLessonQuiz($quiz),
-            'can_attempt' => $canAttempt,
-            'attempts_remaining' => $this->teacherProfile->attemptsRemainingFor($quiz),
+            'is_ready' => $assembler->isReady($module),
+            'bank_size' => $assembler->bankSize($module),
+            'certified' => $this->teacherProfile->isCertifiedForModule($module),
+            'lessons_complete' => $this->teacherProfile->hasCompletedAllLessonsForModule($module),
+            'can_attempt' => $this->teacherProfile->canAttemptModuleQuiz($module),
+            // An open attempt stays finishable even at zero remaining —
+            // it's already counted, so the page must offer it rather than
+            // showing the out-of-attempts message over the top of it.
+            'has_open_attempt' => $openAttempt !== null,
+            'attempts_remaining' => $this->teacherProfile->attemptsRemainingFor($module),
             'passing_score' => (int) Setting::get(SettingKey::QuizPassingScore),
-            'questions' => $canAttempt
-                ? $quiz->questions->map(fn ($question) => [
+            'questions' => $openAttempt
+                ? $openAttempt->questions()->map(fn ($question) => [
                     'id' => $question->id,
                     'question_text' => $question->question_text,
                     'options' => $question->options,

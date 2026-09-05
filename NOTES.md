@@ -21,92 +21,54 @@ sidebar — configuration, not day-to-day ops).
   query-builder pluck bypasses the JSON cast.
 
 Settings so far: `quiz.max_generations` (2), `quiz.passing_score` (80),
-`quiz.max_attempts` (3).
+`quiz.max_attempts` (3), `quiz.module_question_count` (10).
 
-## Teacher lesson-completion gate (2026-09-05)
+## Certification moved to MODULE level (2026-09-05, supersedes the below)
 
-Teachers can no longer self-declare a lesson complete — they must pass
-that lesson's published quiz (the same one students take).
+The earlier lesson-completion gate was the wrong rung and has been
+**reverted**. Marking a lesson complete is self-declared again. The
+assessment is now a **module quiz**, which completing a module's lessons
+unlocks.
 
-- **A lesson with no published quiz cannot be completed at all** (user's
-  explicit choice over "allow as today"). I flagged that this blocks
-  every lesson until an admin publishes a quiz; they chose it knowingly.
-  The teacher LMS page explains why rather than showing a dead button.
-- Pass mark = `quiz.passing_score` (80). Attempts capped at
-  `quiz.max_attempts` (3, **counting the first attempt**).
-- Exhausting attempts blocks lesson completion → blocks course
-  certification → blocks being assigned to teach. Escape hatch is an
-  admin reset (user's choice), via the **Quiz Attempts** relation manager
-  on the Filament Lesson edit page.
-- A reset **voids** attempts (`voided_at`) rather than deleting them —
-  this gates employment-relevant certification, so history is kept. Every
-  count/pass check must go through `TeacherLessonQuizAttempt::counting()`.
-- Teacher attempts are **persisted** (`teacher_lesson_quiz_attempts`),
-  unlike the stateless student flow — the cap and the gate both need
-  history. Two separate controllers/routes as a result.
-- Flash keys differ deliberately: student `lessonQuizResult` vs teacher
-  `teacherLessonQuizResult` (different payload shapes, same concept).
-- Two pre-existing `LmsTest` tests asserted unconditional completion and
-  correctly broke; updated to the new rule rather than weakened.
-
-- Counts the **first** generation, so default = 1 generate + 1 regenerate
-  (user's explicit choice over "1 generate + 2 regenerates").
-- **Permanent hard stop** per quiz (user's explicit choice) — not reset by
-  editing slide text, no per-quiz reset action. Escape hatch is raising
-  the global setting, or editing questions by hand.
-- `generation_count` increments **only on success**, inside the
-  transaction. My call, not the user's: charging a failed moderation check
-  or an API outage against the cap could permanently strand a quiz at 0
-  usable questions. Flag if this should be stricter.
-- Enforced in `QuizGenerationService::generate()` *before* the API call
-  (so a blocked attempt costs nothing), and surfaced in Filament as a
-  disabled action + tooltip, a remaining-count in the quiz status line,
-  and a remaining-count in the confirm modal.
-
-## What this does
-
-1. Admin pastes a plain-text transcript of a lesson's slides
-   (`LessonSlideshow::slides_text`, admin-only, never rendered to students
-   or teachers) alongside the existing Google Slides URL field.
-2. Admin clicks "Generate Quiz" on the Lesson edit page — dispatches
-   `GenerateLessonQuizJob` → `QuizGenerationService`, which calls OpenAI
-   (gpt-4o-mini) to produce multiple-choice questions from `slides_text`
-   (falls back to `Lesson::reading_content` if no slide text yet).
-   Questions save as `LessonQuiz`/`LessonQuizQuestion` rows, status
-   `draft`, `is_ai_generated = true`.
-3. Admin can fully rewrite/add/remove/reorder questions via a Repeater on
-   the same edit page, then "Publish Quiz" to flip status to `published`.
-4. Students see a lesson's quiz (radio-button MC, submit, instant score +
-   per-question explanation) only once published — enforced via
-   `LessonQuizPolicy`, not just hidden in the UI. Grading is stateless (no
-   attempt history persisted), same convention as the existing teacher
-   certification quiz.
-
-## Key decisions (deviations from the original ask, made explicit to the user)
-
-- **Naming**: used `lesson_quizzes`/`lesson_quiz_questions` (models
-  `LessonQuiz`/`LessonQuizQuestion`) instead of `quizzes`/`quiz_questions`
-  — those table/model names already exist for the unrelated course-level
-  teacher certification quiz (`App\Models\Quiz`/`QuizQuestion`). Confirmed
-  naming and this distinction is now recorded in `.ai/rules/models.md` and
-  `docs/design/domain-model.md`.
-- **Student UI scope**: user asked for a full student quiz-taking UI (not
-  just a backend guardrail), added to `CurrentLessonCard.vue`'s existing
-  (previously empty-state-only) "Quiz" tab.
-- **No teacher access to the new per-lesson quiz** — user clarified their
-  "teacher will have the same quiz" comment was about the *existing*,
-  unrelated course-certification quiz gate, not a request to extend the
-  new lesson quiz to teachers. Verified that existing gate
-  (`TeacherCourseCompletion`/`LmsQuizAttemptController`) is untouched by
-  this work — full suite still green.
-- **Attempts are stateless** (no `LessonQuizAttempt` model) — matches this
-  codebase's only precedent (`Teacher\LmsQuizAttemptController`): grade on
-  submit, return score via flash data, persist nothing per-attempt.
-- **Fixed a latent bug while touching `EditLesson::afterSave()`**: the
-  slideshow was previously deleted whenever `slideshow_google_url` was
-  blank, which would have silently destroyed `slides_text` for a lesson
-  that has slide text but no Google Slides URL set. Now the slideshow is
-  only deleted when *both* are blank.
+- **Module quiz replaces the course quiz.** `Quiz`/`QuizQuestion` (the
+  old course-level certification quiz) and `LmsQuizAttemptController` are
+  **retired/deleted**. The tables still exist but nothing reads them —
+  drop them in a later cleanup migration if you want.
+- `TeacherModuleCompletion` is now the unit of certification.
+  `TeacherCourseCompletion` survives as a **derived rollup** (written when
+  every module in the course is passed) purely so Insights' certificate
+  count and the LMS course cards keep working.
+- **Assignment gate is now per module** — `ClassSessionForm` checks
+  `isCertifiedForModule($lesson->module)`, not the course.
+- **No stored module quiz.** `ModuleQuizAssembler` samples the module's
+  per-lesson `LessonQuizQuestion` banks fresh on each attempt: a fixed
+  total (`quiz.module_question_count`, default 10) spread evenly across
+  lessons that have questions, one-per-lesson-per-pass so a small bank
+  drops out and the rest redistribute. Lessons with no published quiz are
+  skipped, not blocking.
+- Drawn `question_ids` are stored on the attempt so grading scores what
+  was actually shown. **Restarting resumes an open attempt** rather than
+  redrawing — otherwise a teacher could reroll for easier questions.
+- **Except when the module changed underneath them**: each attempt stores
+  a `bank_fingerprint` (sha256 of the sorted eligible question ids). If
+  lessons were added/removed or quizzes published/unpublished/regenerated
+  since the draw, the open attempt is **redrawn in place** — same row, so
+  the content change doesn't consume one of the teacher's attempts.
+  Rewording a question keeps its id and so does NOT redraw (deliberate —
+  composition changes invalidate a draw, copy edits don't).
+- **Bug found and fixed while explaining the flow**: the resume lookup
+  originally sat *after* the attempt-cap guard. Since an open attempt
+  already counts toward the cap, a teacher who started their *final*
+  attempt and navigated away got a 403 trying to return, and the page
+  showed "used all attempts" over their open quiz. Resume now runs before
+  the cap check, and the payload carries `has_open_attempt` so the UI
+  offers the open quiz. Regression-tested both ways.
+- Attempts capped (`quiz.max_attempts`, 3, counting the first); admin
+  reset voids rather than deletes, now on the **Module** resource's Quiz
+  Attempts relation manager (moved off Lesson).
+- Lesson-level teacher attempt code from the previous iteration
+  (`TeacherLessonQuizAttempt`, its table/factory/controller/relation
+  manager and test) was deleted outright — zero rows existed.
 
 ## Key files
 
@@ -137,6 +99,12 @@ that lesson's published quiz (the same one students take).
   via item label + an `is_ai_generated` toggle), Generate/Publish actions.
 - `resources/js/components/dashboard/{CurrentLessonCard.vue,LessonQuizPanel.vue}`
   — student-facing quiz tab.
+- `App\Services\ModuleQuizAssembler` — the balanced random draw.
+- `App\Http\Controllers\Teacher\LmsModuleQuizAttemptController` —
+  start (draws + records) and submit (grades + certifies + rolls up).
+- `app/Filament/Resources/Modules/RelationManagers/QuizAttemptsRelationManager.php`
+  — admin reset.
+- `resources/js/pages/teacher/Lms/Show.vue` — per-module quiz section.
 
 ## Tests
 
@@ -161,11 +129,24 @@ that lesson's published quiz (the same one students take).
   the student dashboard payload and from submission (403); published quiz
   is visible (answers never sent to the client) and scores correctly;
   non-students can't submit at all.
-- Full suite: `php artisan test --compact` → 403 passed. `vendor/bin/pint
+- `tests/Feature/ModuleQuizAssemblerTest.php` — draws the configured
+  count, spreads evenly across lessons, a small bank redistributes rather
+  than shortening the draw, falls short gracefully when the whole bank is
+  too small, skips draft/quiz-less lessons, successive draws differ.
+- `tests/Feature/TeacherModuleQuizAttemptTest.php` — start records the
+  draw, restart resumes rather than rerolls, pass certifies, fail
+  doesn't, grading scores only drawn questions, cap + voided attempts +
+  already-certified + setting-driven cap, page only exposes questions
+  while an attempt is open.
+- `tests/Feature/Filament/ModuleQuizAttemptsAdminTest.php` — admin reset.
+- Full suite: `php artisan test --compact` → 442 passed. `vendor/bin/pint
   --dirty`, `npm run build`, `npm run lint` all clean.
 
 ## Not done / explicitly out of scope
 
+- The retired `quizzes`/`quiz_questions` tables are still in the schema,
+  unreferenced. No cleanup migration written — deliberate, so nothing is
+  dropped without a decision.
 - No student attempt history/analytics (stateless by design, see above).
 - No auto-extraction from the Google Slides API — deliberately deferred
   per the original ask; `slides_text` is designed so that can populate it

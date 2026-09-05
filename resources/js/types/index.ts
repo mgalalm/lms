@@ -22,9 +22,8 @@ export interface SharedData {
     auth: Auth;
     impersonator: { name: string } | null;
     flash: {
-        quizResult: { score: number; passed: boolean } | null;
         lessonQuizResult: LessonQuizResult | null;
-        teacherLessonQuizResult: TeacherLessonQuizResult | null;
+        moduleQuizResult: ModuleQuizResult | null;
         success: string | null;
         error: string | null;
     };
@@ -209,22 +208,25 @@ export interface LmsLesson {
     completed: boolean;
     has_video: boolean;
     slideshow: { google_slides_id: string } | null;
-    /** Null when the lesson has no published quiz — completion stays locked. */
-    quiz: LmsLessonQuiz | null;
 }
 
-export interface LmsLessonQuiz {
-    id: number;
-    passed: boolean;
+export interface LmsModuleQuiz {
+    /** Whether any lesson in the module has published questions to draw from. */
+    is_ready: boolean;
+    bank_size: number;
+    certified: boolean;
+    lessons_complete: boolean;
     can_attempt: boolean;
+    /** An open attempt stays finishable even at zero attempts remaining. */
+    has_open_attempt: boolean;
     attempts_remaining: number;
     passing_score: number;
-    /** Empty once the teacher has passed or run out of attempts. */
+    /** Only populated while an attempt is open — drawn fresh per attempt. */
     questions: { id: number; question_text: string; options: string[] }[];
 }
 
-export interface TeacherLessonQuizResult {
-    lesson_id: number;
+export interface ModuleQuizResult {
+    module_id: number;
     score: number;
     passed: boolean;
     correct: number;
@@ -235,18 +237,8 @@ export interface TeacherLessonQuizResult {
 export interface LmsModule {
     id: number;
     title: string;
+    quiz: LmsModuleQuiz;
     lessons: LmsLesson[];
-}
-
-export interface LmsQuizQuestion {
-    id: number;
-    question: string;
-    options: string[];
-}
-
-export interface LmsQuiz {
-    passing_score: number;
-    questions: LmsQuizQuestion[];
 }
 
 export interface LmsCourseDetail {
@@ -255,9 +247,7 @@ export interface LmsCourseDetail {
     thumbnail_url: string | null;
     progress_percentage: number;
     is_certified: boolean;
-    can_take_quiz: boolean;
     modules: LmsModule[];
-    quiz: LmsQuiz | null;
 }
 
 export type FlagSeverity = 'green' | 'yellow' | 'red';

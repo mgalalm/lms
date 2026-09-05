@@ -27,18 +27,21 @@ class ClassSessionForm
                     ->live()
                     ->required()
                     ->rules([
+                        // Certification is per module, not per course — a
+                        // teacher only needs to have passed the quiz for
+                        // the module this session's lesson belongs to.
                         fn (Get $get): Closure => function (string $attribute, $value, Closure $fail) use ($get): void {
-                            $lesson = Lesson::with('module.course')->find($get('lesson_id'));
-                            $course = $lesson?->module?->course;
+                            $lesson = Lesson::with('module')->find($get('lesson_id'));
+                            $module = $lesson?->module;
 
-                            if (! $course) {
+                            if (! $module) {
                                 return;
                             }
 
                             $teacherProfile = User::find($value)?->teacherProfile;
 
-                            if (! $teacherProfile || ! $teacherProfile->isCertifiedForCourse($course)) {
-                                $fail("This teacher hasn't completed \"{$course->name}\" (including its quiz) and can't be assigned to teach it yet.");
+                            if (! $teacherProfile || ! $teacherProfile->isCertifiedForModule($module)) {
+                                $fail("This teacher hasn't passed the quiz for \"{$module->title}\" and can't be assigned to teach it yet.");
                             }
                         },
                     ]),
