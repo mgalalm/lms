@@ -33,16 +33,24 @@ class QuizGenerationService
 
         $gradeBand = $lesson->module->course->grade_band;
 
-        $raw = $this->client->generateQuestions($sourceText, $gradeBand, $questionCount);
-        $questions = $this->validateQuestions($raw);
+        $raw = $this->client->generateQuestions(
+            sourceText: $sourceText,
+            gradeBand: $gradeBand,
+            questionCount: $questionCount,
+            lessonTitle: $lesson->title,
+            moduleTitle: $lesson->module->title,
+        );
 
-        return DB::transaction(function () use ($lesson, $sourceText, $questions) {
+        $questions = $this->validateQuestions($raw);
+        $sourceHash = $this->sourceHash($lesson, $sourceText, $gradeBand);
+
+        return DB::transaction(function () use ($lesson, $sourceHash, $questions) {
             $quiz = $lesson->quiz()->updateOrCreate(
                 ['locale' => 'en'],
                 [
                     'status' => LessonQuizStatus::Draft,
                     'generated_at' => now(),
-                    'source_text_hash' => hash('sha256', $sourceText),
+                    'source_text_hash' => $sourceHash,
                 ],
             );
 
@@ -62,6 +70,22 @@ class QuizGenerationService
 
             return $quiz->fresh('questions');
         });
+    }
+
+    /**
+     * Fingerprint everything that feeds the prompt, not just the slide text —
+     * retitling a lesson or moving it to another grade band changes the
+     * questions we'd generate, so it should trip the "source has changed"
+     * warning on the edit page just as editing the slides does.
+     */
+    public function sourceHash(Lesson $lesson, ?string $sourceText = null, ?string $gradeBand = null): string
+    {
+        return hash('sha256', implode("\0", [
+            $sourceText ?? $this->resolveSourceText($lesson),
+            $gradeBand ?? $lesson->module->course->grade_band,
+            (string) $lesson->title,
+            (string) $lesson->module->title,
+        ]));
     }
 
     private function resolveSourceText(Lesson $lesson): string

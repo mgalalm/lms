@@ -43,7 +43,7 @@ class LessonQuizGenerationTest extends TestCase
 
         $this->assertSame(LessonQuizStatus::Draft, $quiz->status);
         $this->assertNotNull($quiz->generated_at);
-        $this->assertSame(hash('sha256', "Slide 1: Variables\n\n---\n\nSlide 2: Loops"), $quiz->source_text_hash);
+        $this->assertSame(app(QuizGenerationService::class)->sourceHash($lesson), $quiz->source_text_hash);
         $this->assertCount(2, $quiz->questions);
         $this->assertTrue($quiz->questions->every(fn ($question) => $question->is_ai_generated === true));
         $this->assertSame('What is a variable?', $quiz->questions->first()->question_text);
@@ -59,9 +59,63 @@ class LessonQuizGenerationTest extends TestCase
         $quiz = app(QuizGenerationService::class)->generate($lesson, 1);
 
         $this->assertSame(
-            hash('sha256', 'Python is a programming language.'),
+            app(QuizGenerationService::class)->sourceHash($lesson, 'Python is a programming language.'),
             $quiz->source_text_hash,
         );
+    }
+
+    public function test_the_hash_changes_when_the_lesson_is_retitled_so_the_staleness_warning_fires(): void
+    {
+        $lesson = Lesson::factory()->create(['title' => 'L1: Variables']);
+        LessonSlideshow::factory()->for($lesson)->create(['slides_text' => 'Slide content.']);
+
+        $before = app(QuizGenerationService::class)->sourceHash($lesson);
+
+        $lesson->update(['title' => 'L1: Loops']);
+
+        $this->assertNotSame($before, app(QuizGenerationService::class)->sourceHash($lesson->fresh()));
+    }
+
+    public function test_the_prompt_carries_the_lesson_titles_and_an_age_appropriate_guardrail(): void
+    {
+        $this->fakeOpenAiResponse([$this->question('What is a variable?', 'A named store')]);
+
+        $course = Course::factory()->create(['grade_band' => 'Grade 5 - 6']);
+        $module = Module::factory()->for($course)->create(['title' => 'M2: Chatbot Development']);
+        $lesson = Lesson::factory()->for($module)->create(['title' => 'L11: Tkinter in Python']);
+        LessonSlideshow::factory()->for($lesson)->create(['slides_text' => 'Variables store values.']);
+
+        app(QuizGenerationService::class)->generate($lesson, 1);
+
+        Http::assertSent(function ($request) {
+            $prompt = $request->data()['messages'][1]['content'];
+
+            return str_contains($prompt, 'L11: Tkinter in Python')
+                && str_contains($prompt, 'M2: Chatbot Development')
+                && str_contains($prompt, 'Grade 5 - 6')
+                // Grade band translated to a concrete age range (grade + 5/6).
+                && str_contains($prompt, '10-12 years old')
+                && str_contains($prompt, 'school-appropriate for minors');
+        });
+    }
+
+    public function test_an_unrecognised_grade_band_omits_the_age_range_rather_than_guessing(): void
+    {
+        $this->fakeOpenAiResponse([$this->question('Q?', 'A')]);
+
+        $course = Course::factory()->create(['grade_band' => 'Foundation']);
+        $module = Module::factory()->for($course)->create();
+        $lesson = Lesson::factory()->for($module)->create();
+        LessonSlideshow::factory()->for($lesson)->create(['slides_text' => 'Content.']);
+
+        app(QuizGenerationService::class)->generate($lesson, 1);
+
+        Http::assertSent(function ($request) {
+            $prompt = $request->data()['messages'][1]['content'];
+
+            return str_contains($prompt, 'students in Foundation.')
+                && ! str_contains($prompt, 'years old');
+        });
     }
 
     public function test_it_throws_when_there_is_no_slide_text_or_reading_content(): void

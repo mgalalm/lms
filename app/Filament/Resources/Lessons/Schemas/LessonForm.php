@@ -7,6 +7,7 @@ use App\Models\Lesson;
 use App\Models\LessonSlideshow;
 use App\Services\Bunny\BunnyStreamClient;
 use App\Services\Notion\NotionSyncService;
+use App\Services\QuizGenerationService;
 use Closure;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
@@ -206,11 +207,11 @@ class LessonForm
                                     $summary .= ' · Generated '.$quiz->generated_at->diffForHumans();
                                 }
 
-                                $currentHash = hash('sha256', trim((string) $record->slideshow?->slides_text));
+                                $currentHash = app(QuizGenerationService::class)->sourceHash($record);
 
                                 if ($quiz->source_text_hash && $quiz->source_text_hash !== $currentHash) {
                                     return new HtmlString(
-                                        e($summary).'<br><span class="font-medium text-warning-600">⚠ Slide text has changed since this quiz was generated.</span>'
+                                        e($summary).'<br><span class="font-medium text-warning-600">⚠ The lesson content has changed since this quiz was generated.</span>'
                                     );
                                 }
 
