@@ -1,6 +1,30 @@
-# Lesson Slide Text + AI Quiz Generation (+ first App Settings)
+# Lesson Slide Text + AI Quiz Generation, Module Certification, App Settings
 
 ## Status: Done — implemented, tested, docs updated, pushed to main.
+
+## Archived page: search by student added (2026-09-05)
+
+`GET /teaching/archive` (`TeachingController::archive()`) now accepts the
+same `search` query param as the `/teaching` feed, so a teacher can look up
+a specific student without leaving the archive the way they already can on
+the live feed. Applies across all four lists (past sessions, reviewed
+projects, completed tasks, resolved tickets) — reuses the existing private
+`searchableText()` matcher so the fields searched per type stay identical
+between the feed and the archive.
+
+- Sessions/projects have an encrypted `student.name`, so (same trick as
+  `Teacher\InsightsController`) a non-empty search fetches the full
+  teacher-scoped set, filters in PHP after decryption, then wraps the
+  result in a manually built `LengthAwarePaginator` — see the new
+  `paginateSearchMatches()` helper. Empty search still uses a normal SQL
+  `paginate()`, unchanged from before.
+- Frontend: `resources/js/pages/teacher/TeachingArchive.vue` gained a search
+  input above the tab bar (same debounce-on-clear + enter-to-submit idiom
+  as `Teaching.vue`), and passes the active tab through the search request
+  so the tab selection survives the resulting page visit.
+- Tests added in `tests/Feature/TeachingPageTest.php`: search-by-student for
+  both past sessions and reviewed projects, plus a no-match case asserting
+  all four lists come back empty.
 
 ## App Settings (new, first of its kind)
 
@@ -79,8 +103,12 @@ unlocks.
   already counts toward the cap, a teacher who started their *final*
   attempt and navigated away got a 403 trying to return, and the page
   showed "used all attempts" over their open quiz. Resume now runs before
-  the cap check, and the payload carries `has_open_attempt` so the UI
-  offers the open quiz. Regression-tested both ways.
+  the cap check. Regression-tested both ways (`test_an_open_final_attempt
+  _can_still_be_resumed_and_submitted`). The payload flag that surfaced
+  this started life as `has_open_attempt`; it is now `is_active`, which
+  is narrower — it means "drawn on this very render", not "an attempt row
+  exists" — but still stays true at zero attempts remaining so the page
+  lets a teacher finish the attempt they're in.
 - Attempts capped (`quiz.max_attempts`, 3, counting the first); admin
   reset voids rather than deletes, now on the **Module** resource's Quiz
   Attempts relation manager (moved off Lesson).
@@ -152,19 +180,30 @@ unlocks.
   than shortening the draw, falls short gracefully when the whole bank is
   too small, skips draft/quiz-less lessons, successive draws differ.
 - `tests/Feature/TeacherModuleQuizAttemptTest.php` — start records the
-  draw, restart resumes rather than rerolls, pass certifies, fail
-  doesn't, grading scores only drawn questions, cap + voided attempts +
-  already-certified + setting-driven cap, page only exposes questions
-  while an attempt is open.
+  draw, pressing start again redraws, redrawing doesn't consume extra
+  attempts, pass certifies, fail doesn't, grading scores only drawn
+  questions, cap + voided attempts + already-certified + setting-driven
+  cap, an open *final* attempt can still be resumed and submitted (the
+  lock-out regression) while an exhausted teacher with no open attempt
+  still can't start one, questions appear only on the render right after
+  starting and navigating back hides them again, adding/removing a lesson
+  redraws a stale open attempt.
 - `tests/Feature/Filament/ModuleQuizAttemptsAdminTest.php` — admin reset.
-- Full suite: `php artisan test --compact` → 442 passed. `vendor/bin/pint
-  --dirty`, `npm run build`, `npm run lint` all clean.
+- Full suite: `php artisan test --compact` → 448 passed (2035
+  assertions). `vendor/bin/pint --dirty`, `npm run build`, `npm run lint`
+  all clean.
 
 ## Not done / explicitly out of scope
 
 - The retired `quizzes`/`quiz_questions` tables are still in the schema,
   unreferenced. No cleanup migration written — deliberate, so nothing is
   dropped without a decision.
+- **A browser refresh mid-quiz clears the questions too**, losing any
+  answers already selected — the flash can't distinguish "refreshed" from
+  "navigated away", and both were wanted gone. Known limitation, left
+  alone deliberately rather than pre-empted; fixing it means moving the
+  marker from flash to session (survives refresh, cleared on visiting
+  another page). Revisit if teachers report losing progress.
 - No student attempt history/analytics (stateless by design, see above).
 - No auto-extraction from the Google Slides API — deliberately deferred
   per the original ask; `slides_text` is designed so that can populate it

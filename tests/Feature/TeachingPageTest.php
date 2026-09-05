@@ -270,6 +270,63 @@ class TeachingPageTest extends TestCase
             );
     }
 
+    public function test_archived_past_sessions_can_be_searched_by_student_name(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $student = User::factory()->student()->create(['name' => 'Alice Example']);
+        $otherStudent = User::factory()->student()->create(['name' => 'Bob Example']);
+
+        $aliceSession = ClassSession::factory()->for($teacher, 'teacher')->for($student, 'student')
+            ->completed()->create(['zoom_meeting_id' => 'archive-test-1']);
+        ClassSession::factory()->for($teacher, 'teacher')->for($otherStudent, 'student')
+            ->completed()->create(['zoom_meeting_id' => 'archive-test-2']);
+
+        $this->actingAs($teacher)
+            ->get(route('teaching.archive', ['search' => 'Alice']))
+            ->assertInertia(fn (Assert $page) => $page->component('teacher/TeachingArchive')
+                ->count('pastSessions.data', 1)
+                ->where('pastSessions.data.0.id', $aliceSession->id)
+            );
+    }
+
+    public function test_archived_reviewed_projects_can_be_searched_by_student_name(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $student = User::factory()->student()->create(['name' => 'Alice Example']);
+        $otherStudent = User::factory()->student()->create(['name' => 'Bob Example']);
+        ClassSession::factory()->for($teacher, 'teacher')->for($student, 'student')->create(['zoom_meeting_id' => 'archive-test-3']);
+        ClassSession::factory()->for($teacher, 'teacher')->for($otherStudent, 'student')->create(['zoom_meeting_id' => 'archive-test-4']);
+
+        $aliceProject = ProjectSubmission::factory()->for($student, 'student')->reviewed()->create();
+        ProjectSubmission::factory()->for($otherStudent, 'student')->reviewed()->create();
+
+        $this->actingAs($teacher)
+            ->get(route('teaching.archive', ['search' => 'Alice']))
+            ->assertInertia(fn (Assert $page) => $page->component('teacher/TeachingArchive')
+                ->count('reviewedProjects.data', 1)
+                ->where('reviewedProjects.data.0.id', $aliceProject->id)
+            );
+    }
+
+    public function test_archived_search_with_no_matches_returns_empty_lists(): void
+    {
+        $teacher = User::factory()->teacher()->create();
+        $student = User::factory()->student()->create();
+        ClassSession::factory()->for($teacher, 'teacher')->for($student, 'student')->completed()->create(['zoom_meeting_id' => 'archive-test-5']);
+        ProjectSubmission::factory()->for($student, 'student')->reviewed()->create();
+        TeacherTask::factory()->for($teacher, 'teacher')->completed()->create(['type' => TeacherTaskType::Manual]);
+        SupportTicket::factory()->for($teacher, 'teacher')->resolved()->create();
+
+        $this->actingAs($teacher)
+            ->get(route('teaching.archive', ['search' => 'no-such-thing-matches-this']))
+            ->assertInertia(fn (Assert $page) => $page->component('teacher/TeachingArchive')
+                ->count('pastSessions.data', 0)
+                ->count('reviewedProjects.data', 0)
+                ->count('completedTasks.data', 0)
+                ->count('resolvedTickets.data', 0)
+            );
+    }
+
     public function test_students_cannot_view_the_archive_page(): void
     {
         $student = User::factory()->student()->create();

@@ -8,7 +8,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import type { BreadcrumbItem, ClassSession, FeedbackTemplate, Paginated, ProjectSubmission, SupportTicket, TeacherTask } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { CalendarClock, CheckCircle2, FolderCheck, LifeBuoy } from 'lucide-vue-next';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 
 const props = defineProps<{
     pastSessions: Paginated<ClassSession>;
@@ -16,6 +16,7 @@ const props = defineProps<{
     completedTasks: Paginated<TeacherTask>;
     resolvedTickets: Paginated<SupportTicket>;
     feedbackTemplates: FeedbackTemplate[];
+    filters: { search: string };
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -56,6 +57,26 @@ function selectTab(tab: ArchiveTab): void {
     window.history.replaceState(window.history.state, '', url);
 }
 
+// Search hits the server (each list is decrypted/filtered in PHP — see
+// TeachingController::archive()), same debounce-on-clear idiom as the
+// /teaching feed's search. `tab` rides along so the active tab survives
+// the resulting page visit/remount.
+const search = ref(props.filters.search);
+
+function applySearch(): void {
+    router.get(
+        route('teaching.archive'),
+        { search: search.value, tab: activeTab.value },
+        { preserveState: true, preserveScroll: true },
+    );
+}
+
+watch(search, (value, previous) => {
+    if (value === '' && previous !== '') {
+        applySearch();
+    }
+});
+
 function lessonPath(session: ClassSession): string {
     return [session.lesson.module?.course?.grade_band, session.lesson.module?.title, session.lesson.title].filter(Boolean).join(' / ');
 }
@@ -86,6 +107,14 @@ const openSubmissionId = ref<number | null>(null);
         <div class="flex h-full flex-1 flex-col gap-4 p-4">
             <h1 class="text-xl font-semibold">Archived</h1>
 
+            <input
+                v-model="search"
+                type="search"
+                placeholder="Search by student name/ID, lesson, or title"
+                class="min-w-64 rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+                @keyup.enter="applySearch()"
+            />
+
             <div class="flex flex-wrap items-center gap-2">
                 <Button
                     v-for="tab in TABS"
@@ -99,7 +128,12 @@ const openSubmissionId = ref<number | null>(null);
             </div>
 
             <section v-if="activeTab === 'sessions'" class="space-y-3">
-                <EmptyState v-if="!pastSessions.data.length" :icon="CalendarClock" heading="No past sessions yet" description="" />
+                <EmptyState
+                    v-if="!pastSessions.data.length"
+                    :icon="CalendarClock"
+                    :heading="search ? 'No past sessions match your search' : 'No past sessions yet'"
+                    description=""
+                />
 
                 <div
                     v-else
@@ -121,7 +155,12 @@ const openSubmissionId = ref<number | null>(null);
             </section>
 
             <section v-else-if="activeTab === 'projects'" class="space-y-3">
-                <EmptyState v-if="!reviewedProjects.data.length" :icon="FolderCheck" heading="No reviewed projects yet" description="" />
+                <EmptyState
+                    v-if="!reviewedProjects.data.length"
+                    :icon="FolderCheck"
+                    :heading="search ? 'No reviewed projects match your search' : 'No reviewed projects yet'"
+                    description=""
+                />
 
                 <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     <ProjectCard
@@ -136,7 +175,12 @@ const openSubmissionId = ref<number | null>(null);
             </section>
 
             <section v-else-if="activeTab === 'tasks'" class="space-y-3">
-                <EmptyState v-if="!completedTasks.data.length" :icon="CheckCircle2" heading="No completed tasks yet" description="" />
+                <EmptyState
+                    v-if="!completedTasks.data.length"
+                    :icon="CheckCircle2"
+                    :heading="search ? 'No completed tasks match your search' : 'No completed tasks yet'"
+                    description=""
+                />
 
                 <div
                     v-else
@@ -155,7 +199,12 @@ const openSubmissionId = ref<number | null>(null);
             </section>
 
             <section v-else class="space-y-3">
-                <EmptyState v-if="!resolvedTickets.data.length" :icon="LifeBuoy" heading="No resolved tickets yet" description="" />
+                <EmptyState
+                    v-if="!resolvedTickets.data.length"
+                    :icon="LifeBuoy"
+                    :heading="search ? 'No resolved tickets match your search' : 'No resolved tickets yet'"
+                    description=""
+                />
 
                 <div
                     v-else

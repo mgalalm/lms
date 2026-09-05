@@ -15,8 +15,11 @@ use App\Models\ProjectSubmission;
 use App\Models\SupportTicket;
 use App\Models\TeacherProfile;
 use App\Models\TeacherTask;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -188,41 +191,88 @@ class TeachingController extends Controller
      * A lightweight, read-only view of already-handled items that don't
      * belong in the priority feed — past sessions, reviewed projects,
      * completed tasks, and resolved support tickets. Deliberately
-     * minimal: no filter toolbar, just paginated lists.
+     * minimal: no date/type filter toolbar, just paginated lists — but
+     * `search` is supported here too, consistent with the /teaching feed,
+     * since a teacher's most common reason to dig through the archive is
+     * looking up a specific student.
      */
     public function archive(Request $request): Response
     {
         $user = $request->user();
-
-        $pastSessions = $user->sessionsAsTeacher()
-            ->with(['lesson.module.course', 'student.studentProfile'])
-            ->past()
-            ->paginate(10, ['*'], 'sessions_page')
-            ->withQueryString();
+        $search = $request->string('search')->value();
+        $needle = mb_strtolower($search);
 
         $assignedStudentIds = ClassSession::where('teacher_id', $user->id)->distinct()->pluck('student_id');
 
-        $reviewedProjects = ProjectSubmission::query()
-            ->whereIn('student_id', $assignedStudentIds)
-            ->where('status', ProjectSubmissionStatus::Reviewed)
-            ->with(['lessonProject.lesson.module.course', 'student.studentProfile', 'feedback.teacher'])
-            ->orderByDesc('submitted_at')
-            ->paginate(12, ['*'], 'projects_page')
-            ->withQueryString();
+        if ($search === '') {
+            $pastSessions = $user->sessionsAsTeacher()
+                ->with(['lesson.module.course', 'student.studentProfile'])
+                ->past()
+                ->paginate(10, ['*'], 'sessions_page')
+                ->withQueryString();
 
-        $completedTasks = TeacherTask::where('teacher_id', $user->id)
-            ->whereNotNull('completed_at')
-            ->with('lesson')
-            ->orderByDesc('completed_at')
-            ->paginate(15, ['*'], 'tasks_page')
-            ->withQueryString();
+            $reviewedProjects = ProjectSubmission::query()
+                ->whereIn('student_id', $assignedStudentIds)
+                ->where('status', ProjectSubmissionStatus::Reviewed)
+                ->with(['lessonProject.lesson.module.course', 'student.studentProfile', 'feedback.teacher'])
+                ->orderByDesc('submitted_at')
+                ->paginate(12, ['*'], 'projects_page')
+                ->withQueryString();
 
-        $resolvedTickets = SupportTicket::where('teacher_id', $user->id)
-            ->where('status', SupportTicketStatus::Resolved)
-            ->with('classSession.lesson')
-            ->orderByDesc('resolved_at')
-            ->paginate(15, ['*'], 'tickets_page')
-            ->withQueryString();
+            $completedTasks = TeacherTask::where('teacher_id', $user->id)
+                ->whereNotNull('completed_at')
+                ->with('lesson')
+                ->orderByDesc('completed_at')
+                ->paginate(15, ['*'], 'tasks_page')
+                ->withQueryString();
+
+            $resolvedTickets = SupportTicket::where('teacher_id', $user->id)
+                ->where('status', SupportTicketStatus::Resolved)
+                ->with('classSession.lesson')
+                ->orderByDesc('resolved_at')
+                ->paginate(15, ['*'], 'tickets_page')
+                ->withQueryString();
+        } else {
+            // student.name is encrypted, so it can't be matched with a SQL
+            // LIKE — reuse the same searchableText() matching the
+            // /teaching feed uses, filtering each list in PHP after
+            // decryption rather than in the query.
+            $pastSessions = $this->paginateSearchMatches(
+                $user->sessionsAsTeacher()->with(['lesson.module.course', 'student.studentProfile'])->past()->get()
+                    ->filter(fn (ClassSession $session) => str_contains($this->searchableText(['type' => 'session', 'model' => $session]), $needle))
+                    ->sortByDesc('scheduled_at'),
+                10,
+                'sessions_page',
+            );
+
+            $reviewedProjects = $this->paginateSearchMatches(
+                ProjectSubmission::query()
+                    ->whereIn('student_id', $assignedStudentIds)
+                    ->where('status', ProjectSubmissionStatus::Reviewed)
+                    ->with(['lessonProject.lesson.module.course', 'student.studentProfile', 'feedback.teacher'])
+                    ->get()
+                    ->filter(fn (ProjectSubmission $project) => str_contains($this->searchableText(['type' => 'project', 'model' => $project]), $needle))
+                    ->sortByDesc('submitted_at'),
+                12,
+                'projects_page',
+            );
+
+            $completedTasks = $this->paginateSearchMatches(
+                TeacherTask::where('teacher_id', $user->id)->whereNotNull('completed_at')->with('lesson')->get()
+                    ->filter(fn (TeacherTask $task) => str_contains($this->searchableText(['type' => 'task', 'model' => $task]), $needle))
+                    ->sortByDesc('completed_at'),
+                15,
+                'tasks_page',
+            );
+
+            $resolvedTickets = $this->paginateSearchMatches(
+                SupportTicket::where('teacher_id', $user->id)->where('status', SupportTicketStatus::Resolved)->with('classSession.lesson')->get()
+                    ->filter(fn (SupportTicket $ticket) => str_contains($this->searchableText(['type' => 'ticket', 'model' => $ticket]), $needle))
+                    ->sortByDesc('resolved_at'),
+                15,
+                'tickets_page',
+            );
+        }
 
         return Inertia::render('teacher/TeachingArchive', [
             'pastSessions' => ClassSessionResource::collection($pastSessions)->response()->getData(true),
@@ -230,7 +280,29 @@ class TeachingController extends Controller
             'completedTasks' => TeacherTaskResource::collection($completedTasks)->response()->getData(true),
             'resolvedTickets' => SupportTicketResource::collection($resolvedTickets)->response()->getData(true),
             'feedbackTemplates' => FeedbackTemplate::active()->get(['id', 'label', 'body', 'sentiment']),
+            'filters' => ['search' => $search],
         ]);
+    }
+
+    /**
+     * Paginates an already-filtered, already-sorted in-memory collection —
+     * used for the search path above, where the underlying query can't do
+     * the filtering itself (encrypted columns).
+     *
+     * @param  Collection<int, Model>  $matches
+     */
+    private function paginateSearchMatches(Collection $matches, int $perPage, string $pageName): LengthAwarePaginator
+    {
+        $matches = $matches->values();
+        $page = LengthAwarePaginator::resolveCurrentPage($pageName);
+
+        return new LengthAwarePaginator(
+            $matches->forPage($page, $perPage)->values(),
+            $matches->count(),
+            $perPage,
+            $page,
+            ['path' => request()->url(), 'query' => request()->query(), 'pageName' => $pageName],
+        );
     }
 
     private function toEnvelope(array $item): array
