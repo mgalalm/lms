@@ -4,11 +4,13 @@ namespace App\Filament\Resources\Lessons\Pages;
 
 use App\Enums\LessonQuizStatus;
 use App\Enums\LessonVideoStatus;
+use App\Enums\SettingKey;
 use App\Filament\Resources\Lessons\LessonResource;
 use App\Jobs\GenerateLessonQuizJob;
 use App\Jobs\PushLessonVideoToBunnyJob;
 use App\Jobs\SyncNotionContentJob;
 use App\Models\LessonSlideshow;
+use App\Models\Setting;
 use App\Services\Notion\NotionSyncService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -251,10 +253,20 @@ class EditLesson extends EditRecord
             Action::make('generateQuiz')
                 ->label(fn () => $this->record->quiz?->questions->isNotEmpty() ? 'Regenerate Quiz' : 'Generate Quiz')
                 ->icon(Heroicon::OutlinedSparkles)
-                ->disabled(fn () => blank($this->record->slideshow?->slides_text))
-                ->tooltip(fn () => blank($this->record->slideshow?->slides_text)
-                    ? 'Add slide text above before generating a quiz.'
-                    : null)
+                ->disabled(fn () => blank($this->record->slideshow?->slides_text)
+                    || $this->record->quiz?->hasGenerationsRemaining() === false)
+                ->tooltip(function () {
+                    if (blank($this->record->slideshow?->slides_text)) {
+                        return 'Add slide text above before generating a quiz.';
+                    }
+
+                    if ($this->record->quiz?->hasGenerationsRemaining() === false) {
+                        return 'This quiz has reached the generation limit set in Settings. '
+                            .'You can still edit the questions by hand.';
+                    }
+
+                    return null;
+                })
                 ->schema([
                     TextInput::make('question_count')
                         ->label('Number of questions')
@@ -265,9 +277,18 @@ class EditLesson extends EditRecord
                         ->required(),
                 ])
                 ->requiresConfirmation()
-                ->modalDescription(fn () => $this->record->quiz?->questions->isNotEmpty()
-                    ? 'This lesson already has quiz questions. Regenerating will replace ALL existing questions — including any manual edits — with a new AI-generated set.'
-                    : 'Generate a draft multiple-choice quiz from this lesson\'s slide text using OpenAI.')
+                ->modalDescription(function () {
+                    $quiz = $this->record->quiz;
+
+                    $base = $quiz?->questions->isNotEmpty()
+                        ? 'This lesson already has quiz questions. Regenerating will replace ALL existing questions — including any manual edits — with a new AI-generated set.'
+                        : 'Generate a draft multiple-choice quiz from this lesson\'s slide text using OpenAI.';
+
+                    $remaining = $quiz?->generationsRemaining() ?? Setting::get(SettingKey::QuizMaxGenerations);
+
+                    return $base." This lesson has {$remaining} AI generation(s) left, and the limit is permanent "
+                        .'once reached.';
+                })
                 ->action(function (array $data) {
                     try {
                         Bus::dispatchNow(new GenerateLessonQuizJob($this->record, (int) $data['question_count']));

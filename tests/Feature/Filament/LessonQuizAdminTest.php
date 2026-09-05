@@ -137,6 +137,32 @@ class LessonQuizAdminTest extends TestCase
         $this->assertSame(LessonQuizStatus::Published, $quiz->fresh()->status);
     }
 
+    public function test_the_generate_action_is_disabled_once_the_quiz_hits_the_generation_limit(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $lesson = Lesson::factory()->create();
+        LessonSlideshow::factory()->for($lesson)->create(['slides_text' => 'Some content.']);
+        LessonQuiz::factory()->for($lesson)->generationLimitReached()->create();
+
+        $this->actingAs($admin);
+
+        Livewire::test(EditLesson::class, ['record' => $lesson->getRouteKey()])
+            ->assertActionDisabled('generateQuiz');
+    }
+
+    public function test_the_generate_action_stays_enabled_while_generations_remain(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $lesson = Lesson::factory()->create();
+        LessonSlideshow::factory()->for($lesson)->create(['slides_text' => 'Some content.']);
+        LessonQuiz::factory()->for($lesson)->create(['generation_count' => 1]);
+
+        $this->actingAs($admin);
+
+        Livewire::test(EditLesson::class, ['record' => $lesson->getRouteKey()])
+            ->assertActionEnabled('generateQuiz');
+    }
+
     public function test_regenerating_an_existing_quiz_warns_before_replacing_it(): void
     {
         $admin = User::factory()->admin()->create();

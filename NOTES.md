@@ -1,6 +1,40 @@
-# Lesson Slide Text + AI Quiz Generation
+# Lesson Slide Text + AI Quiz Generation (+ first App Settings)
 
-## Status: Done — implemented, tested, docs updated. Not committed.
+## Status: Done — implemented, tested, docs updated, pushed to main.
+
+## App Settings (new, first of its kind)
+
+`settings` table + `App\Models\Setting` + `App\Enums\SettingKey` +
+`App\Filament\Pages\Settings` (new "Settings" nav group, last in the
+sidebar — configuration, not day-to-day ops).
+
+- Adding a setting = add a `SettingKey` case (default/label/helper/section)
+  + a component in `Settings::componentFor()` + a cast in `castValue()`.
+  No migration, no new page.
+- `Setting::get(SettingKey::Foo)` falls back to the enum default when no
+  row exists; `Setting::set()` busts the cache.
+- **Deliberately built in-house, no package.** CLAUDE.md forbids adding
+  dependencies without approval, so `spatie/laravel-settings` and the
+  Filament settings plugin were both avoided.
+- Trap (recorded in `.ai/rules/models.md`): the cached read uses
+  `static::all()` + `mapWithKeys`, NOT `pluck('value','key')` — a
+  query-builder pluck bypasses the JSON cast.
+
+First setting: `quiz.max_generations`, default **2**.
+
+- Counts the **first** generation, so default = 1 generate + 1 regenerate
+  (user's explicit choice over "1 generate + 2 regenerates").
+- **Permanent hard stop** per quiz (user's explicit choice) — not reset by
+  editing slide text, no per-quiz reset action. Escape hatch is raising
+  the global setting, or editing questions by hand.
+- `generation_count` increments **only on success**, inside the
+  transaction. My call, not the user's: charging a failed moderation check
+  or an API outage against the cap could permanently strand a quiz at 0
+  usable questions. Flag if this should be stricter.
+- Enforced in `QuizGenerationService::generate()` *before* the API call
+  (so a blocked attempt costs nothing), and surfaced in Filament as a
+  disabled action + tooltip, a remaining-count in the quiz status line,
+  and a remaining-count in the confirm modal.
 
 ## What this does
 
@@ -93,6 +127,9 @@
   server-side when no slide text, manual edits survive a save, publish
   flips status, regenerate-with-existing-questions shows the overwrite
   warning.
+- `tests/Feature/Filament/SettingsTest.php` — default fallback with no
+  row, typed round-trip (guards the pluck/cast trap), cache busting on
+  write, admin can view/save, validation rejects < 1, non-admin 403s.
 - `tests/Feature/LessonQuizVisibilityTest.php` — draft quiz excluded from
   the student dashboard payload and from submission (403); published quiz
   is visible (answers never sent to the client) and scores correctly;

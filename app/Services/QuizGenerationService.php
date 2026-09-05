@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Enums\LessonQuizStatus;
+use App\Enums\SettingKey;
 use App\Models\Lesson;
 use App\Models\LessonQuiz;
+use App\Models\Setting;
 use App\Services\OpenAI\ModerationClient;
 use App\Services\OpenAI\QuizGenerationClient;
 use Illuminate\Support\Facades\DB;
@@ -37,6 +39,20 @@ class QuizGenerationService
             );
         }
 
+        // Checked before spending an API call. Only successful generations
+        // increment the counter (see below), so a moderation rejection or
+        // an outage can't permanently strand a quiz with zero questions.
+        $existingQuiz = $lesson->quiz;
+
+        if ($existingQuiz && ! $existingQuiz->hasGenerationsRemaining()) {
+            $limit = Setting::get(SettingKey::QuizMaxGenerations);
+
+            throw new RuntimeException(
+                "This quiz has already been generated {$existingQuiz->generation_count} times, which is the "
+                ."configured limit of {$limit}. Edit the questions by hand, or raise the limit in Settings."
+            );
+        }
+
         $gradeBand = $lesson->module->course->grade_band;
 
         $raw = $this->client->generateQuestions(
@@ -53,12 +69,16 @@ class QuizGenerationService
 
         $sourceHash = $this->sourceHash($lesson, $sourceText, $gradeBand);
 
-        return DB::transaction(function () use ($lesson, $sourceHash, $questions) {
+        return DB::transaction(function () use ($lesson, $sourceHash, $questions, $existingQuiz) {
             $quiz = $lesson->quiz()->updateOrCreate(
                 ['locale' => 'en'],
                 [
                     'status' => LessonQuizStatus::Draft,
                     'generated_at' => now(),
+                    // Incremented here rather than up front so only
+                    // generations the admin actually got questions out of
+                    // count against the limit.
+                    'generation_count' => ($existingQuiz?->generation_count ?? 0) + 1,
                     'source_text_hash' => $sourceHash,
                 ],
             );

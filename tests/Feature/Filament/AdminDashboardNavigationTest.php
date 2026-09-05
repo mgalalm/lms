@@ -36,6 +36,8 @@ class AdminDashboardNavigationTest extends TestCase
             'Insights',
             'Gamification',
             'Support',
+            // Configuration, not day-to-day operations — deliberately last.
+            'Settings',
         ], $labels);
     }
 

@@ -3,11 +3,13 @@
 namespace Tests\Feature;
 
 use App\Enums\LessonQuizStatus;
+use App\Enums\SettingKey;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\LessonQuiz;
 use App\Models\LessonSlideshow;
 use App\Models\Module;
+use App\Models\Setting;
 use App\Services\QuizGenerationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -223,6 +225,74 @@ class LessonQuizGenerationTest extends TestCase
                 && str_contains($input, 'OPTION-MARKER')
                 && str_contains($input, 'EXPLANATION-MARKER');
         });
+    }
+
+    public function test_the_first_generation_counts_toward_the_limit(): void
+    {
+        $this->fakeOpenAiResponse([$this->question('Q?', 'A')]);
+
+        $lesson = Lesson::factory()->create();
+        LessonSlideshow::factory()->for($lesson)->create(['slides_text' => 'Content.']);
+
+        $quiz = app(QuizGenerationService::class)->generate($lesson, 1);
+
+        $this->assertSame(1, $quiz->generation_count);
+        // Default limit is 2, so one generation remains after the first.
+        $this->assertSame(1, $quiz->generationsRemaining());
+        $this->assertTrue($quiz->hasGenerationsRemaining());
+    }
+
+    public function test_it_blocks_generation_once_the_configured_limit_is_reached(): void
+    {
+        $this->fakeOpenAiResponse([$this->question('Q?', 'A')]);
+
+        $lesson = Lesson::factory()->create();
+        LessonSlideshow::factory()->for($lesson)->create(['slides_text' => 'Content.']);
+        LessonQuiz::factory()->for($lesson)->generationLimitReached()->create();
+
+        try {
+            app(QuizGenerationService::class)->generate($lesson, 1);
+            $this->fail('Expected the generation limit to block a further generation.');
+        } catch (RuntimeException $e) {
+            $this->assertStringContainsString('configured limit of 2', $e->getMessage());
+        }
+
+        // Blocked before spending an API call.
+        Http::assertNothingSent();
+    }
+
+    public function test_the_limit_follows_the_admin_configured_setting(): void
+    {
+        Setting::set(SettingKey::QuizMaxGenerations, 3);
+        $this->fakeOpenAiResponse([$this->question('Q?', 'A')]);
+
+        $lesson = Lesson::factory()->create();
+        LessonSlideshow::factory()->for($lesson)->create(['slides_text' => 'Content.']);
+        LessonQuiz::factory()->for($lesson)->create(['generation_count' => 2]);
+
+        $quiz = app(QuizGenerationService::class)->generate($lesson, 1);
+
+        $this->assertSame(3, $quiz->generation_count);
+        $this->assertFalse($quiz->hasGenerationsRemaining());
+    }
+
+    public function test_a_failed_generation_does_not_consume_an_attempt(): void
+    {
+        $this->fakeOpenAiResponse([$this->question('Q?', 'A')], flagged: true);
+
+        $lesson = Lesson::factory()->create();
+        LessonSlideshow::factory()->for($lesson)->create(['slides_text' => 'Content.']);
+        $quiz = LessonQuiz::factory()->for($lesson)->create(['generation_count' => 1]);
+
+        try {
+            app(QuizGenerationService::class)->generate($lesson, 1);
+        } catch (RuntimeException) {
+            // expected — moderation rejected the output
+        }
+
+        // Otherwise two bad rolls could strand a quiz at the cap with no
+        // usable questions and no way back.
+        $this->assertSame(1, $quiz->fresh()->generation_count);
     }
 
     public function test_regenerating_replaces_existing_questions(): void

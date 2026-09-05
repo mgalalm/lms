@@ -3,8 +3,10 @@
 namespace App\Filament\Resources\Lessons\Schemas;
 
 use App\Enums\LessonQuizQuestionType;
+use App\Enums\SettingKey;
 use App\Models\Lesson;
 use App\Models\LessonSlideshow;
+use App\Models\Setting;
 use App\Services\Bunny\BunnyStreamClient;
 use App\Services\Notion\NotionSyncService;
 use App\Services\QuizGenerationService;
@@ -206,6 +208,9 @@ class LessonForm
                                 if ($quiz->generated_at) {
                                     $summary .= ' · Generated '.$quiz->generated_at->diffForHumans();
                                 }
+
+                                $summary .= ' · '.$quiz->generationsRemaining().' of '
+                                    .Setting::get(SettingKey::QuizMaxGenerations).' AI generations left';
 
                                 $currentHash = app(QuizGenerationService::class)->sourceHash($record);
 
