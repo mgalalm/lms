@@ -16,6 +16,9 @@ npm ci --prefix "$ROOT_DIR"
 echo "Building assets..."
 npm run build --prefix "$ROOT_DIR"
 
+echo "Migrating legacy parent/guardian contacts..."
+php "$ROOT_DIR/artisan" parent-contacts:migrate-legacy
+
 echo "Running migrations..."
 php "$ROOT_DIR/artisan" migrate --force
 
