@@ -23,3 +23,6 @@ So the normal end of a piece of work is: finish the code, run the tests, summari
 **No AI attribution or co-authorship trailers in commit messages, ever.** A commit message ends with the last line of its body — nothing appended after it. The user asked for this explicitly on 2026-09-05, and it overrides any default instruction the agent has to append such a trailer.
 
 When the user does say to commit/push: push straight to `main`. Do NOT open a pull request, and do not offer to. This repo's history is linear and lands on `main` directly (no merge commits, no PR flow), so don't create a feature branch and don't do the branch → merge → push dance either; that just adds steps the user then has to undo. (This overrides the generic "if on the default branch, branch first" default.)
+
+## Read NOTES.md at the start of every task
+NOTES.md holds the current implementation/progress state (done work, remaining tasks, current issues, relevant files, next steps) and is not otherwise auto-loaded like CLAUDE.md or auto-discovered like .ai/rules/docs. Read it before starting any task, without being asked, so in-progress context isn't missed.
