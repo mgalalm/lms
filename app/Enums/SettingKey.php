@@ -18,6 +18,8 @@ enum SettingKey: string
 
     case ModuleQuizQuestionCount = 'quiz.module_question_count';
 
+    case ParentPingDailyCapPerTeacher = 'parent_ping.daily_cap_per_teacher';
+
     /**
      * Value used when an admin has never saved this setting.
      */
@@ -28,6 +30,7 @@ enum SettingKey: string
             self::QuizPassingScore => 80,
             self::QuizMaxAttempts => 3,
             self::ModuleQuizQuestionCount => 10,
+            self::ParentPingDailyCapPerTeacher => 20,
         };
     }
 
@@ -38,6 +41,7 @@ enum SettingKey: string
             self::QuizPassingScore => 'Passing score (%)',
             self::QuizMaxAttempts => 'Quiz attempts per teacher',
             self::ModuleQuizQuestionCount => 'Questions per module quiz',
+            self::ParentPingDailyCapPerTeacher => 'Parent ping daily cap (per teacher)',
         };
     }
 
@@ -57,6 +61,9 @@ enum SettingKey: string
             self::ModuleQuizQuestionCount => 'How many questions each attempt at a module quiz draws. Questions '
                 .'are sampled fresh per attempt from the question banks of the module\'s lessons, spread as '
                 .'evenly as possible across them. A module with fewer questions than this simply asks fewer.',
+            self::ParentPingDailyCapPerTeacher => 'How many times a single teacher may use "Ping Parent" in one '
+                .'day, across all of their students. Protects against runaway SMS/email costs and notification '
+                .'fatigue for parents.',
         };
     }
 
@@ -68,6 +75,7 @@ enum SettingKey: string
         return match ($this) {
             self::QuizMaxGenerations => 'Lesson Quizzes',
             self::QuizPassingScore, self::QuizMaxAttempts, self::ModuleQuizQuestionCount => 'Teacher Certification',
+            self::ParentPingDailyCapPerTeacher => 'Parent Contact',
         };
     }
 }

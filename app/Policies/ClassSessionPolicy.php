@@ -18,4 +18,13 @@ class ClassSessionPolicy
         return $user->id === $classSession->teacher_id
             || $user->hasRole(UserRole::Admin->value);
     }
+
+    /**
+     * Only the assigned teacher may ping this session's parent — matches
+     * today's behavior (admin is deliberately not included).
+     */
+    public function pingParent(User $user, ClassSession $classSession): bool
+    {
+        return $user->id === $classSession->teacher_id;
+    }
 }

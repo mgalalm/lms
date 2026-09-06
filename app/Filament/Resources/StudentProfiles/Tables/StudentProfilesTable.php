@@ -31,24 +31,6 @@ class StudentProfilesTable
                 TextColumn::make('timezone')
                     ->placeholder(StudentProfile::DEFAULT_TIMEZONE.' (default)')
                     ->sortable(),
-                // Not ->searchable(): these are encrypted at rest, so the
-                // database can't LIKE-match against ciphertext.
-                TextColumn::make('parent_name')
-                    ->label('Parent/Guardian Name')
-                    ->placeholder('Not set')
-                    ->toggleable(),
-                TextColumn::make('parent_email')
-                    ->label('Parent/Guardian Email')
-                    ->placeholder('Not set')
-                    ->toggleable(),
-                TextColumn::make('parent_phone')
-                    ->label('Parent/Guardian Phone')
-                    ->placeholder('Not set')
-                    ->toggleable(isToggledHiddenByDefault: true),
-                IconColumn::make('consent_given_at')
-                    ->label('Consent')
-                    ->boolean()
-                    ->tooltip(fn (StudentProfile $record) => $record->consent_given_at?->toDayDateTimeString() ?? 'Not recorded'),
                 IconColumn::make('user.gdpr_erased_at')
                     ->label('Erased')
                     ->boolean()

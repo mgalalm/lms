@@ -163,7 +163,7 @@
 - **Countdown timer** — days/hrs/mins to next session, with date and time (e.g. "8 Aug, 3:00 PM GMT+3")
 - **Student info inline** — shows student name + ID (e.g. "Selim Elkhergawy (S-271873)"), language (e.g. "English"), and current lesson path (e.g. "Grade 5-6/Module 3/Lesson 5: L5 UX Process")
 - **Join Now** button — opens the session directly in **Zoom**
-- **Ping Parent** button — quick action to notify the student's parent
+- **Ping Parent** button — quick action to notify the student's parent. Routes through the parent's `urgent_ping` channel preference (SMS, email, or both), sending only to a *verified* contact point (falls back to a verified email if SMS is preferred but the phone isn't verified; if nothing is verified, this is logged for admin follow-up rather than failing silently). Rate limited: once per student per 30 minutes, plus an admin-configurable daily cap per teacher (Settings → Parent Contact, default 20) — a limited attempt shows a clear message rather than silently dropping. See [Domain Model → Parent Contact](../design/domain-model.md#parent-contact) for the full contact/verification/preferences model.
 - **Materials** button — likely opens lesson materials/resources for the session
 
 ### Community (Teacher side)

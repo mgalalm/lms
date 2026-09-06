@@ -16,7 +16,9 @@ const form = useForm({
     email: '',
     password: '',
     password_confirmation: '',
+    parent_name: '',
     parent_email: '',
+    parent_phone: '',
     consent: false,
     referral_code: '',
     turnstile_token: '',
@@ -139,14 +141,18 @@ const submit = () => {
                 </div>
 
                 <div class="grid gap-2 rounded-lg border border-input p-4">
-                    <Label for="parent_email">Parent/Guardian Email</Label>
+                    <Label for="parent_name">Parent/Guardian Name</Label>
+                    <Input id="parent_name" type="text" required tabindex="5" autocomplete="name" v-model="form.parent_name" placeholder="Full name" />
+                    <InputError :message="form.errors.parent_name" />
+
+                    <Label for="parent_email" class="mt-2">Parent/Guardian Email</Label>
                     <p class="text-xs text-muted-foreground">We'll use this to reach you about your child's upcoming sessions.</p>
 
                     <Input
                         id="parent_email"
                         type="email"
                         required
-                        tabindex="5"
+                        tabindex="6"
                         autocomplete="email"
                         v-model="form.parent_email"
                         :disabled="parentEmailSameAsAccount"
@@ -155,12 +161,23 @@ const submit = () => {
                     <InputError :message="form.errors.parent_email" />
 
                     <Label for="parent_email_same" class="mt-1 flex items-center gap-2 text-xs font-normal text-muted-foreground">
-                        <Checkbox id="parent_email_same" v-model:checked="parentEmailSameAsAccount" tabindex="6" />
+                        <Checkbox id="parent_email_same" v-model:checked="parentEmailSameAsAccount" tabindex="7" />
                         <span>Same as the email above</span>
                     </Label>
 
+                    <Label for="parent_phone" class="mt-2">Parent/Guardian Phone (optional)</Label>
+                    <Input
+                        id="parent_phone"
+                        type="tel"
+                        tabindex="8"
+                        autocomplete="tel"
+                        v-model="form.parent_phone"
+                        placeholder="+353871234567"
+                    />
+                    <InputError :message="form.errors.parent_phone" />
+
                     <Label for="consent" class="mt-2 flex items-start gap-3 border-t border-input pt-3 font-normal">
-                        <Checkbox id="consent" v-model:checked="form.consent" tabindex="7" class="mt-0.5" />
+                        <Checkbox id="consent" v-model:checked="form.consent" tabindex="9" class="mt-0.5" />
                         <span>I am the parent/guardian and consent to my child's data being processed.</span>
                     </Label>
                     <InputError :message="form.errors.consent" />
@@ -171,7 +188,7 @@ const submit = () => {
                     <Input
                         id="referral_code"
                         type="text"
-                        tabindex="8"
+                        tabindex="10"
                         autocomplete="off"
                         v-model="form.referral_code"
                         placeholder="e.g. ABC12345"
@@ -186,7 +203,7 @@ const submit = () => {
                 <div ref="turnstileContainer"></div>
                 <InputError :message="form.errors.turnstile_token" />
 
-                <Button type="submit" class="mt-2 w-full" tabindex="9" :disabled="form.processing">
+                <Button type="submit" class="mt-2 w-full" tabindex="11" :disabled="form.processing">
                     <LoaderCircle v-if="form.processing" class="h-4 w-4 animate-spin" />
                     Create account
                 </Button>
@@ -194,7 +211,7 @@ const submit = () => {
 
             <div class="text-center text-sm text-muted-foreground">
                 Already have an account?
-                <TextLink :href="route('login')" class="underline underline-offset-4" tabindex="10">Log in</TextLink>
+                <TextLink :href="route('login')" class="underline underline-offset-4" tabindex="12">Log in</TextLink>
             </div>
         </form>
     </AuthBase>

@@ -106,6 +106,13 @@ class Settings extends Page
                 ->minValue(1)
                 ->maxValue(100)
                 ->suffix('%'),
+            SettingKey::ParentPingDailyCapPerTeacher => TextInput::make($key->name)
+                ->label($key->label())
+                ->helperText($key->helperText())
+                ->numeric()
+                ->required()
+                ->minValue(1)
+                ->maxValue(200),
         };
     }
 
@@ -115,7 +122,8 @@ class Settings extends Page
             SettingKey::QuizMaxGenerations,
             SettingKey::QuizPassingScore,
             SettingKey::QuizMaxAttempts,
-            SettingKey::ModuleQuizQuestionCount => (int) $value,
+            SettingKey::ModuleQuizQuestionCount,
+            SettingKey::ParentPingDailyCapPerTeacher => (int) $value,
         };
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\ParentContact;
 use App\Models\StudentProfile;
 use App\Models\User;
 use App\Notifications\StudentRegistered;
@@ -41,7 +42,9 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'parent_name' => ['required', 'string', 'max:255'],
             'parent_email' => ['required', 'string', 'email', 'max:255'],
+            'parent_phone' => ['nullable', 'string', 'max:32'],
             'consent' => ['required', 'accepted'],
             // Optional — an invalid/expired/self-referred code is simply
             // ignored rather than blocking registration (see
@@ -66,7 +69,12 @@ class RegisteredUserController extends Controller
         StudentProfile::create([
             'user_id' => $user->id,
             'code' => 'S-'.str_pad((string) $user->id, 6, '0', STR_PAD_LEFT),
-            'parent_email' => $request->parent_email,
+        ]);
+        ParentContact::create([
+            'student_id' => $user->id,
+            'name' => $request->parent_name,
+            'email' => $request->parent_email,
+            'phone' => $request->parent_phone,
             'consent_given_at' => now(),
         ]);
 

@@ -36,6 +36,7 @@ Route::redirect('teaching/history', '/teaching/archive');
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';
 require __DIR__.'/webhooks.php';
+require __DIR__.'/parents.php';
 require __DIR__.'/community.php';
 require __DIR__.'/lms.php';
 require __DIR__.'/insights.php';

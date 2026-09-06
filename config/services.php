@@ -75,4 +75,16 @@ return [
         'api_version' => env('NOTION_API_VERSION', '2022-06-28'),
     ],
 
+    'sms' => [
+        'default' => env('SMS_PROVIDER', 'twilio'),
+        'providers' => [
+            'twilio' => [
+                'sid' => env('TWILIO_SID'),
+                'token' => env('TWILIO_AUTH_TOKEN'),
+                'from' => env('TWILIO_FROM_NUMBER'),
+            ],
+        ],
+        'webhook_secret' => env('TWILIO_WEBHOOK_SECRET'),
+    ],
+
 ];

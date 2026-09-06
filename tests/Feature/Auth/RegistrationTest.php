@@ -70,23 +70,49 @@ class RegistrationTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_registering_stores_the_parent_email(): void
+    public function test_registration_requires_a_parent_name()
     {
-        $this->post('/register', [...$this->validPayload(), 'parent_email' => 'parent@example.com']);
+        $response = $this->post('/register', [...$this->validPayload(), 'parent_name' => null]);
 
-        $studentProfile = User::where('email', 'test@example.com')->firstOrFail()->studentProfile;
+        $response->assertInvalid(['parent_name']);
+        $this->assertGuest();
+    }
 
-        $this->assertSame('parent@example.com', $studentProfile->parent_email);
+    public function test_registration_does_not_require_a_parent_phone()
+    {
+        $response = $this->post('/register', [...$this->validPayload(), 'parent_phone' => null]);
+
+        $response->assertRedirect(route('dashboard', absolute: false));
+        $this->assertAuthenticated();
+    }
+
+    public function test_registering_stores_the_parent_contact(): void
+    {
+        $this->post('/register', [
+            ...$this->validPayload(),
+            'parent_name' => 'Pat Guardian',
+            'parent_email' => 'parent@example.com',
+            'parent_phone' => '+353871234567',
+        ]);
+
+        $user = User::where('email', 'test@example.com')->firstOrFail();
+
+        $this->assertSame('Pat Guardian', $user->parentContact->name);
+        $this->assertSame('parent@example.com', $user->parentContact->email);
+        $this->assertSame('+353871234567', $user->parentContact->phone);
+        // Legacy student_profiles columns are gone entirely — parent data
+        // lives only on parent_contacts now.
+        $this->assertArrayNotHasKey('parent_email', $user->studentProfile->getAttributes());
     }
 
     public function test_registering_records_when_consent_was_given()
     {
         $this->post('/register', $this->validPayload());
 
-        $studentProfile = User::where('email', 'test@example.com')->firstOrFail()->studentProfile;
+        $user = User::where('email', 'test@example.com')->firstOrFail();
 
-        $this->assertNotNull($studentProfile->consent_given_at);
-        $this->assertTrue($studentProfile->consent_given_at->diffInSeconds(now()) < 5);
+        $this->assertNotNull($user->parentContact->consent_given_at);
+        $this->assertTrue($user->parentContact->consent_given_at->diffInSeconds(now()) < 5);
     }
 
     public function test_registering_sends_a_verification_email(): void
@@ -138,7 +164,9 @@ class RegistrationTest extends TestCase
             'email' => 'test@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
+            'parent_name' => 'Test Parent',
             'parent_email' => 'test@example.com',
+            'parent_phone' => null,
             'consent' => true,
         ];
     }

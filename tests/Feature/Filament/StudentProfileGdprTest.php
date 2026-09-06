@@ -6,12 +6,14 @@ use App\Enums\SessionType;
 use App\Filament\Resources\StudentProfiles\Pages\EditStudentProfile;
 use App\Filament\Resources\StudentProfiles\Pages\ListStudentProfiles;
 use App\Models\ClassSession;
+use App\Models\ParentContact;
 use App\Models\SessionPackagePurchase;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -33,10 +35,10 @@ class StudentProfileGdprTest extends TestCase
             'name' => 'Jamie Student',
             'email' => 'jamie@example.com',
         ]);
-        $student->studentProfile->update([
-            'parent_name' => 'Pat Guardian',
-            'parent_email' => 'parent@example.com',
-            'parent_phone' => '+353123456789',
+        ParentContact::factory()->for($student, 'student')->create([
+            'name' => 'Pat Guardian',
+            'email' => 'parent@example.com',
+            'phone' => '+353123456789',
         ]);
 
         $purchase = SessionPackagePurchase::factory()->paid()->for($student)->create(['session_count' => 10, 'price_cents' => 15000]);
@@ -51,10 +53,10 @@ class StudentProfileGdprTest extends TestCase
         $this->assertNotNull($student->gdpr_erased_at);
         $this->assertFalse($student->hasRole('student'));
 
-        $studentProfile = $student->studentProfile->fresh();
-        $this->assertNull($studentProfile->parent_name);
-        $this->assertNull($studentProfile->parent_email);
-        $this->assertNull($studentProfile->parent_phone);
+        $parentContact = $student->parentContact->fresh();
+        $this->assertNull($parentContact->name);
+        $this->assertNull($parentContact->email);
+        $this->assertNull($parentContact->phone);
 
         // Financial and session records survive, untouched.
         $this->assertDatabaseHas('session_package_purchases', [
@@ -71,6 +73,18 @@ class StudentProfileGdprTest extends TestCase
         // the session created above — unrelated to erasure, just confirms
         // the ledger itself wasn't touched by gdprErase().
         $this->assertSame(9, $student->sessionCreditsBalance());
+    }
+
+    public function test_gdpr_erase_does_not_trigger_a_fresh_verification_send(): void
+    {
+        $student = User::factory()->student()->create();
+        ParentContact::factory()->for($student, 'student')->create(['email' => 'parent@example.com']);
+
+        Notification::fake();
+
+        $student->gdprErase();
+
+        Notification::assertNothingSent();
     }
 
     public function test_gdpr_erase_is_idempotent(): void

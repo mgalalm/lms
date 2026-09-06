@@ -77,6 +77,7 @@ class TurnstileVerificationTest extends TestCase
             'email' => 'test@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
+            'parent_name' => 'Test Parent',
             'parent_email' => 'test@example.com',
             'consent' => true,
         ];

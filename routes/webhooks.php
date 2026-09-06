@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\BunnyWebhookController;
+use App\Http\Controllers\TwilioWebhookController;
 use App\Http\Controllers\ZoomWebhookController;
 use App\Http\Middleware\VerifyBunnyWebhookSignature;
+use App\Http\Middleware\VerifyTwilioWebhookSignature;
 use App\Http\Middleware\VerifyZoomWebhookSignature;
 use Illuminate\Support\Facades\Route;
 
@@ -13,3 +15,7 @@ Route::post('webhooks/zoom', ZoomWebhookController::class)
 Route::post('webhooks/bunny', BunnyWebhookController::class)
     ->middleware(VerifyBunnyWebhookSignature::class)
     ->name('webhooks.bunny');
+
+Route::post('webhooks/twilio', TwilioWebhookController::class)
+    ->middleware(VerifyTwilioWebhookSignature::class)
+    ->name('webhooks.twilio');

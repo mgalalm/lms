@@ -4,6 +4,7 @@ namespace App\Filament\Resources\StudentProfiles;
 
 use App\Filament\Resources\StudentProfiles\Pages\EditStudentProfile;
 use App\Filament\Resources\StudentProfiles\Pages\ListStudentProfiles;
+use App\Filament\Resources\StudentProfiles\RelationManagers\ParentContactsRelationManager;
 use App\Filament\Resources\StudentProfiles\Schemas\StudentProfileForm;
 use App\Filament\Resources\StudentProfiles\Tables\StudentProfilesTable;
 use App\Models\StudentProfile;
@@ -52,7 +53,7 @@ class StudentProfileResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            ParentContactsRelationManager::class,
         ];
     }
 

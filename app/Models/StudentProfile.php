@@ -6,6 +6,8 @@ use Database\Factories\StudentProfileFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class StudentProfile extends Model
 {
@@ -23,10 +25,6 @@ class StudentProfile extends Model
         'grade_level',
         'language',
         'timezone',
-        'parent_name',
-        'parent_email',
-        'parent_phone',
-        'consent_given_at',
     ];
 
     /**
@@ -41,16 +39,7 @@ class StudentProfile extends Model
      */
     protected function casts(): array
     {
-        return [
-            'consent_given_at' => 'datetime',
-            // Parent/guardian contact details are safeguarding data —
-            // encrypted at rest. This makes them unsearchable/unsortable
-            // at the database level (ciphertext, random IV per write);
-            // see StudentProfilesTable and StudentProfileResource.
-            'parent_name' => 'encrypted',
-            'parent_email' => 'encrypted',
-            'parent_phone' => 'encrypted',
-        ];
+        return [];
     }
 
     /**
@@ -59,6 +48,26 @@ class StudentProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Convenience delegate to the student's parent/guardian contact —
+     * lives on ParentContact (keyed off the User), not on this profile.
+     */
+    public function parentContact(): HasOne
+    {
+        return $this->hasOne(ParentContact::class, 'student_id', 'user_id')->latestOfMany();
+    }
+
+    /**
+     * Returns 0-or-1 rows today (parent_contacts.student_id has no unique
+     * constraint, by design) — exists so Filament's
+     * ParentContactsRelationManager can plug into a HasMany, even while
+     * cardinality stays 1.
+     */
+    public function parentContacts(): HasMany
+    {
+        return $this->hasMany(ParentContact::class, 'student_id', 'user_id');
     }
 
     /**

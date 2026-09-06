@@ -82,6 +82,17 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     }
 
     /**
+     * Get this student's parent/guardian contact. A hasOne today, but kept
+     * as its own relation (rather than reused for the HasMany below) so
+     * app code that only ever needs "the" contact isn't affected when
+     * multiple contacts become possible.
+     */
+    public function parentContact(): HasOne
+    {
+        return $this->hasOne(ParentContact::class, 'student_id')->latestOfMany();
+    }
+
+    /**
      * This user's timezone, resolved from whichever profile (teacher or
      * student) they have, falling back to UTC for users with neither.
      */
@@ -233,10 +244,15 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 
             $this->syncRoles([]);
 
-            $this->studentProfile?->update([
-                'parent_name' => null,
-                'parent_email' => null,
-                'parent_phone' => null,
+            // Loaded-instance update, not parentContact()->update(...) —
+            // the latter bypasses the `encrypted` cast (see
+            // .ai/rules/models.md). Nulling values (never setting a
+            // non-null one) means ParentContactObserver's `!== null`
+            // guard keeps this from triggering a fresh verification send.
+            $this->parentContact?->update([
+                'name' => null,
+                'email' => null,
+                'phone' => null,
             ]);
 
             $this->teacherProfile?->update([

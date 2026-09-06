@@ -7,6 +7,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\URL;
 
 class ParentPinged extends Notification implements ShouldQueue
 {
@@ -36,17 +37,27 @@ class ParentPinged extends Notification implements ShouldQueue
     {
         $student = $this->classSession->student;
         $teacher = $this->classSession->teacher;
-        $parentName = $student->studentProfile?->parent_name;
+        $parentContact = $student->parentContact;
         $scheduledAt = $this->classSession->scheduled_at->copy()->setTimezone($student->resolvedTimezone());
 
-        return (new MailMessage)
+        $mail = (new MailMessage)
             ->subject('A note from '.$teacher->name.' about '.$student->name)
-            ->greeting('Hi'.($parentName ? ' '.$parentName : '').',')
+            ->greeting('Hi'.($parentContact?->name ? ' '.$parentContact->name : '').',')
             ->line($teacher->name.', '.$student->name."'s tutor, wanted to reach out about a session.")
             ->line($this->lessonPath())
             ->line('Scheduled for: '.$scheduledAt->format('l, M j, Y \a\t g:i A T'))
             ->line($this->message)
             ->line('If you have any questions, please reply to this email or contact us via the support channel in the app.');
+
+        if ($parentContact) {
+            $mail->line('')->action('Manage your notification preferences', URL::temporarySignedRoute(
+                'parents.preferences.show',
+                now()->addDays(7),
+                ['parentContact' => $parentContact->id],
+            ));
+        }
+
+        return $mail;
     }
 
     private function lessonPath(): string

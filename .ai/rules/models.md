@@ -48,3 +48,10 @@ To add a setting: add a case to `App\Enums\SettingKey` with its `default()`, `la
 Read with `Setting::get(SettingKey::Foo)` (falls back to the enum default when no row exists), write with `Setting::set(...)` (busts the cache). A row only exists once an admin saves.
 
 Trap: the `value` column is JSON-cast, and all settings are cached as one array. `Setting::cached()` deliberately uses `static::all()` + `mapWithKeys`, NOT `pluck('value','key')` — a query-builder pluck bypasses the cast and returns raw JSON strings. Same casts trap documented above for raw DB reads; don't "optimize" it into a pluck.
+
+## Looking up an encrypted column by exact value needs a blind-index hash column
+An `encrypted` cast (User::name, StudentProfile's old parent_* fields, ParentContact::{name,email,phone}) uses a random IV per write, so `WHERE column = ?` can never match its ciphertext — this is why encrypted columns are already excluded from Filament search (see .ai/rules/filament-resources.md).
+
+If a feature genuinely needs exact-match lookup against an encrypted value (not just display), add a separate indexed `{column}_hash` string column: HMAC-SHA256 of the plaintext keyed off `config('app.key')`, written only by a model observer alongside the encrypted value it indexes (never fillable/settable directly, so it can't drift out of sync). Never make the hash column itself encrypted or displayed — it's a lookup key only.
+
+See ParentContact.email_hash/phone_hash (added 2026-09 for the "request a preferences link by email/phone" flow) for a full worked example, including the observer that maintains them.
